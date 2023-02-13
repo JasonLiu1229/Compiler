@@ -1,5 +1,3 @@
-<img src="Pictures/UA.png" alt="drawing" style="width:150px;"/>
-
 # Compiler
     In this project we will create a compiler from scratch. The compiler we are programming, 
     is a compiler for c. This compiler will be made in Python.
@@ -13,3 +11,7 @@
     Orfeo.Terkuçi@student.uantwerpen.be
 
 ### Sources
+    Nothing atm
+
+<br>
+<img src="Pictures/UA.png" alt="drawing" style="width:150px;"/>
