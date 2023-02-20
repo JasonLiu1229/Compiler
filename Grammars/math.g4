@@ -2,7 +2,7 @@ grammar math;
 math    :   expr EOF ;
 expr    :
 ;
-INT     :   [0 - 9] ;
+INT     :   [0-9] ;
 UNOP    :   ('+' | '-') ;
 BINOP1  :   (UNOP | '*') ;
 BINOP2  :   ('<' | '>' | '==') ;
