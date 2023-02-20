@@ -1,4 +1,4 @@
-grammar math;
+grammar Math;
 math    :   expr EOF ;
 expr    :
 ;
