@@ -1,21 +1,23 @@
 grammar Math;
-math    :   expr EOF
-        |   expr ';'
-        ;
-expr    :   '(' expr ')'
-        |   expr op expr
-        |   expr unop expr
-        |   expr comp_op expr
-        |   expr comp_eq expr
-        |   expr logop expr
-        |   INT
-        |   NEGINT
-        |   ID
-        ;
+math        :   expr EOF
+            |   expr ';'
+            ;
+expr        :   '(' expr ')'
+            |   expr op expr
+            |   expr unop expr
+            |   expr comp_op expr
+            |   expr comp_eq expr
+            |   expr logop expr
+            |   INT
+            |   NEGINT
+            |   ID
+            |   ID ASSIGN ID
+            |   ID ASSIGN INT
+            ;
 op          :   (MUL  | DIV | MOD );
 unop        :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
-comp_eq     :   (GEQ | LEQ | NEQ);
+comp_eq     :    (GEQ | LEQ | NEQ);
 logop       :   (AND_OP | OR_OP | NOT_OP) ;
 // Identifiers and data types
 ID          :   ([a-z] | [A-Z])+ ;             // match lower-case identifiers
@@ -36,7 +38,7 @@ NEQ         :   '!=';
 OR_OP       :   '||';
 AND_OP      :   '&&';
 NOT_OP      :   '!';
-
+ASSIGN      :   '=';
 // Redundant characters to be removed
 SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
