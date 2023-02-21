@@ -8,14 +8,14 @@ expr    :   '(' expr ')'
         |   expr comp_op expr
         |   expr comp_eq expr
         |   expr logop expr
-        |    INT
+        |   INT
         |   NEGINT
         |   ID
         ;
 op          :   (MUL  | DIV | MOD );
 unop        :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
-comp_eq    :    (GEQ | LEQ | NEQ);
+comp_eq     :   (GEQ | LEQ | NEQ);
 logop       :   (AND_OP | OR_OP | NOT_OP) ;
 // Identifiers and data types
 ID          :   ([a-z] | [A-Z])+ ;             // match lower-case identifiers
