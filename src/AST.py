@@ -3,35 +3,35 @@ class Node:
         self.token = token
         self.value = value
 
-    class exprNode:
+    class ExprNode:
         def __init__(self) -> None:
             super().__init__()
 
-    class bin_opNode:
+    class BinOpNode:
         def __init__(self) -> None:
             super().__init__()
 
-    class un_opNode:
+    class UnOpNode:
         def __init__(self) -> None:
             super().__init__()
 
-    class comp_opNode:
+    class CompOpNode:
         def __init__(self) -> None:
             super().__init__()
 
-    class comp_eqNode:
+    class CompEqNode:
         def __init__(self) -> None:
             super().__init__()
 
-    class log_opNode:
+    class LogOpNode:
         def __init__(self) -> None:
             super().__init__()
 
 class AST:
-    def __init__(self, rootNode, inputString) -> None:
-        self.input = inputString
-        self.root = rootNode
+    def __init__(self, root_node, input_string) -> None:
+        self.input = input_string
+        self.root = root_node
         self.nodes = []
 
-    def insert(self, Node, substring):
-        self.nodes.insert(AST(Node, substring))
+    def insert(self, node, substring):
+        self.nodes.insert(AST(node, substring))

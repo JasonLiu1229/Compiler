@@ -3,22 +3,22 @@ math        :   expr EOF
             |   expr ';'
             ;
 expr        :   '(' expr ')'
-            |   expr op expr
-            |   expr unop expr
+            |   expr binary_op expr
+            |   expr unary_op expr
             |   expr comp_op expr
             |   expr comp_eq expr
-            |   expr logop expr
+            |   expr log_op expr
             |   INT
             |   NEGINT
             |   ID
             |   ID ASSIGN ID
             |   ID ASSIGN INT
             ;
-op          :   (MUL  | DIV | MOD );
-unop        :   (SUM | DIF);
+binary_op   :   (MUL  | DIV | MOD );
+unary_op    :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
-comp_eq     :    (GEQ | LEQ | NEQ);
-logop       :   (AND_OP | OR_OP | NOT_OP) ;
+comp_eq     :   (GEQ | LEQ | NEQ);
+log_op       :   (AND_OP | OR_OP | NOT_OP);
 // Identifiers and data types
 ID          :   ([a-z] | [A-Z])+ ;             // match lower-case identifiers
 INT         :   [0-9]+;
