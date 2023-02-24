@@ -13,7 +13,8 @@ def main(argv):
     parse_tree = parser.math()
     visitor = AST_CREATOR()
     AST = visitor.visit(parse_tree)
-    # print(parse_tree.toStringTree(recog=parser))
+    AST.print()
+    print(parse_tree.toStringTree(recog=parser))
 
 if __name__ == '__main__':
     main(sys.argv)
