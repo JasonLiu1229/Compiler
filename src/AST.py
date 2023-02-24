@@ -1,40 +1,44 @@
 # External libraries
 from output.MathVisitor import MathVisitor
+from src.output.MathParser import MathParser
 
-class Node:
-    def __init__(self, token, value):
-        self.token = token
-        self.value = value
-
-    class ExprNode:
-        def __init__(self) -> None:
-            super().__init__()
-
-    class BinOpNode:
-        def __init__(self) -> None:
-            super().__init__()
-
-    class UnOpNode:
-        def __init__(self) -> None:
-            super().__init__()
-
-    class CompOpNode:
-        def __init__(self) -> None:
-            super().__init__()
-
-    class CompEqNode:
-        def __init__(self) -> None:
-            super().__init__()
-
-    class LogOpNode:
-        def __init__(self) -> None:
-            super().__init__()
 
 class AST (MathVisitor):
-    def __init__(self, root_node, input_string) -> None:
-        self.input = input_string
-        self.root = root_node
-        self.nodes = []
+    def __init__(self) -> None:
+        super().__init__()
 
-    def insert(self, node, substring):
-        self.nodes.insert(AST(node, substring))
+    def visitMath(self, ctx: MathParser.MathContext):
+        return super().visitMath(ctx)
+
+    def visitExpr(self, ctx: MathParser.ExprContext):
+        return super().visitExpr(ctx)
+
+    def visitId(self, ctx: MathParser.IdContext):
+        return super().visitId(ctx)
+
+    def visitInt(self, ctx: MathParser.IntContext):
+        return super().visitInt(ctx)
+
+    def visitNegint(self, ctx: MathParser.NegintContext):
+        return super().visitNegint(ctx)
+
+    def visitBinary_op(self, ctx: MathParser.Binary_opContext):
+        return super().visitBinary_op(ctx)
+
+    def visitUnary_op(self, ctx: MathParser.Unary_opContext):
+        return super().visitUnary_op(ctx)
+
+    def visitComp_op(self, ctx: MathParser.Comp_opContext):
+        return super().visitComp_op(ctx)
+
+    def visitComp_eq(self, ctx: MathParser.Comp_eqContext):
+        return super().visitComp_eq(ctx)
+
+    def visitLog_op(self, ctx: MathParser.Log_opContext):
+        return super().visitLog_op(ctx)
+
+    def visitAssign(self, ctx: MathParser.AssignContext):
+        return super().visitAssign(ctx)
+
+    def print(self):
+        pass
