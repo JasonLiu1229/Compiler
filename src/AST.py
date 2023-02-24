@@ -2,11 +2,12 @@
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 
-class AST (MathVisitor):
+class AST_CREATOR (MathVisitor):
     def __init__(self) -> None:
         super().__init__()
 
     def visitMath(self, ctx: MathParser.MathContext):
+        # self.visitInstr(ctx.children[0])
         return super().visitMath(ctx)
 
     def visitInstr(self, ctx: MathParser.InstrContext):
@@ -43,4 +44,7 @@ class AST (MathVisitor):
         return super().visitAssign(ctx)
 
     def print(self):
+        pass
+
+    def create(self):
         pass
