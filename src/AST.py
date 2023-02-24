@@ -1,7 +1,6 @@
 # External libraries
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
-from typing import Type
 
 class AST_CREATOR (MathVisitor):
     def __init__(self) -> None:
