@@ -1,3 +1,6 @@
+# External libraries
+from output.MathVisitor import MathVisitor
+
 class Node:
     def __init__(self, token, value):
         self.token = token
@@ -27,7 +30,7 @@ class Node:
         def __init__(self) -> None:
             super().__init__()
 
-class AST:
+class AST (MathVisitor):
     def __init__(self, root_node, input_string) -> None:
         self.input = input_string
         self.root = root_node
