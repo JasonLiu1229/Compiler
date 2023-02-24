@@ -1,6 +1,7 @@
 # External libraries
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
+from typing import Type
 
 class AST_CREATOR (MathVisitor):
     def __init__(self) -> None:
@@ -43,8 +44,27 @@ class AST_CREATOR (MathVisitor):
     def visitAssign(self, ctx: MathParser.AssignContext):
         return super().visitAssign(ctx)
 
-    def print(self):
+    def create(self):
         pass
 
-    def create(self):
+
+
+class Node:
+    def __init__(self, key, value) -> None:
+        super().__init__()
+        self.key = key
+        self.value = value
+
+class AST:
+    def __init__(self) -> None:
+        super().__init__()
+        self.root = None
+        self.children = []
+
+    def add_child(self, child):
+        if not isinstance(child, AST):
+            raise TypeError("child must be set to an AST")
+        self.children.insert(child)
+
+    def print(self):
         pass
