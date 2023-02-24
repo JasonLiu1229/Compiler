@@ -1,7 +1,7 @@
 import sys
 from antlr4 import *
-from Grammars.output.MathLexer import MathLexer
-from Grammars.output.MathParser import MathParser
+from output.MathLexer import MathLexer
+from output.MathParser import MathParser
 
 def main(argv):
     input_stream = FileStream(argv[1])
