@@ -12,8 +12,7 @@ def main(argv):
     parser = MathParser(CommonTokenStream(lexer))
     parse_tree = parser.math()
     visitor = AST_CREATOR()
-    AST = visitor.create()
-    result = visitor.visit(parse_tree)
+    AST = visitor.visit(parse_tree)
     # print(parse_tree.toStringTree(recog=parser))
 
 if __name__ == '__main__':

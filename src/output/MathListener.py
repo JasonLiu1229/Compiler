@@ -53,15 +53,6 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#negint.
-    def enterNegint(self, ctx:MathParser.NegintContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#negint.
-    def exitNegint(self, ctx:MathParser.NegintContext):
-        pass
-
-
     # Enter a parse tree produced by MathParser#binary_op.
     def enterBinary_op(self, ctx:MathParser.Binary_opContext):
         pass

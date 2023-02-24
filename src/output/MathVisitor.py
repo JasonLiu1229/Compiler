@@ -34,11 +34,6 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#negint.
-    def visitNegint(self, ctx:MathParser.NegintContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathParser#binary_op.
     def visitBinary_op(self, ctx:MathParser.Binary_opContext):
         return self.visitChildren(ctx)
