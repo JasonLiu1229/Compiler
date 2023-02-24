@@ -14,6 +14,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#instr.
+    def visitInstr(self, ctx:MathParser.InstrContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#expr.
     def visitExpr(self, ctx:MathParser.ExprContext):
         return self.visitChildren(ctx)

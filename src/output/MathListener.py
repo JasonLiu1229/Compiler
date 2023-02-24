@@ -17,6 +17,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#instr.
+    def enterInstr(self, ctx:MathParser.InstrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#instr.
+    def exitInstr(self, ctx:MathParser.InstrContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#expr.
     def enterExpr(self, ctx:MathParser.ExprContext):
         pass
