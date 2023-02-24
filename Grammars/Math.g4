@@ -8,17 +8,21 @@ expr        :   '(' expr ')'
             |   expr comp_op expr
             |   expr comp_eq expr
             |   expr log_op expr
-            |   INT
-            |   NEGINT
-            |   ID
-            |   ID ASSIGN ID
-            |   ID ASSIGN INT
+            |   int
+            |   negint
+            |   id
+            |   id assign id
+            |   id assign int
             ;
+id          :   ID;
+int         :   INT;
+negint      :   NEGINT;
 binary_op   :   (MUL  | DIV | MOD );
 unary_op    :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
 comp_eq     :   (GEQ | LEQ | NEQ);
-log_op       :   (AND_OP | OR_OP | NOT_OP);
+log_op      :   (AND_OP | OR_OP | NOT_OP);
+assign      :   ASSIGN;
 // Identifiers and data types
 ID          :   ([a-z] | [A-Z])+ ;             // match lower-case identifiers
 INT         :   [0-9]+;
