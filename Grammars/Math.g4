@@ -1,6 +1,7 @@
 grammar Math;
-math        :   expr EOF
-            |   expr ';'
+math        :   instr* EOF
+            ;
+instr       :   expr ';'
             ;
 expr        :   '(' expr ')'
             |   expr binary_op expr
