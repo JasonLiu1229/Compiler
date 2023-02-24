@@ -1,7 +1,6 @@
 # External libraries
 from output.MathVisitor import MathVisitor
-from src.output.MathParser import MathParser
-
+from output.MathParser import MathParser
 
 class AST (MathVisitor):
     def __init__(self) -> None:
@@ -9,6 +8,9 @@ class AST (MathVisitor):
 
     def visitMath(self, ctx: MathParser.MathContext):
         return super().visitMath(ctx)
+
+    def visitInstr(self, ctx: MathParser.InstrContext):
+        return super().visitInstr(ctx)
 
     def visitExpr(self, ctx: MathParser.ExprContext):
         return super().visitExpr(ctx)
