@@ -1,7 +1,7 @@
 # External libraries
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
-
+import json
 keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "log_op", "assign_op"]
 
 class AST_CREATOR (MathVisitor):
@@ -109,18 +109,46 @@ class Node:
         self.key = key
         self.value = value
 
+    def print(self):
+        print(self.get_str())
+
+    def save(self):
+        out = { self.key : self.value }
+        return out
+    def get_str(self):
+        return self.key + '\t' + ':' + '\t' + str(self.value)
+
 class AST:
     def __init__(self) -> None:
         super().__init__()
-        self.root = None
-        self.children = []
+        self.root : Node | None = None
+        self.children : list[Node] | [] = []
 
     def add_child(self, child):
         if not isinstance(child, AST):
             raise TypeError("child must be set to an AST")
         self.children.insert(len(self.children), child)
 
+    def save(self):
+        out = {self.root.key: self.root.value}
+        if out[self.root.key] is None:
+            out[self.root.key] = []
+        for i in range(len(self.children)):
+            if self.children[i] is not None and self.root.value is None:
+                out[self.root.key].insert(len(out[self.root.key]) , self.children[i].save())
+        return out
+
     def print(self):
-        if self.root.key in keywords:
-            print("idk yet")
-        print(self.root.key + '\t' + ':' + '\t')
+        # out = self.save()
+        # for child in self.children:
+        #     if child is not None and isinstance(child , AST):
+        #         child.print()
+        #     elif child is not None:
+        #         out += "\t" + child.get_str() + "\n"
+        # out += "}"
+        # out = json.dumps(self.save() , indent=4)
+        # out = self.save()
+        print(json.dumps(self.save() , indent=4))
+
+    def get_str(self):
+        return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
