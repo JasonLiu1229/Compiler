@@ -115,6 +115,9 @@ class AST_CREATOR (MathVisitor):
         expr_ast.root = Node("expr" , None)
         for c in ctx.getChildren():
             expr_ast.children.insert(len(expr_ast.children) , self.visit_child(c))
+        for child in expr_ast.children:
+            if child is None:
+                expr_ast.children.remove(child)
         # Resolve the operations order
         self.resolve_binary(expr_ast)
         self.resolve_unary(expr_ast)
@@ -122,7 +125,7 @@ class AST_CREATOR (MathVisitor):
         new_ast = self.resolve_datatype(expr_ast)
         return new_ast
 
-    def resolve_binary(self, expr_ast):
+    def resolve_binary(self, expr_ast) -> AST | Node:
         for i in range(len(expr_ast.children)):
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , Node) and expr_ast.children[i].key in keywords_binary:
                 new_el = AST()
@@ -132,19 +135,22 @@ class AST_CREATOR (MathVisitor):
                     new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
                 new_el.root = expr_ast.children[i]
                 expr_ast.children = [new_el]
+                if len(expr_ast.children) == 1:
+                    expr_ast.root = expr_ast.children[0].root
+                    expr_ast.children = expr_ast.children[0].children
                 return expr_ast
 
-    def resolve_unary(self, expr_ast):
+    def resolve_unary(self, expr_ast) -> AST | Node:
         for i in range(len(expr_ast.children)):
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_unary:
                 new_el = AST()
                 if i < len(expr_ast.children):
                     new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
                 new_el.root = expr_ast.children[i]
-                expr_ast.children = [new_el]
+                expr_ast = new_el
                 return expr_ast
 
-    def resolve_assign(self, expr_ast):
+    def resolve_assign(self, expr_ast) -> AST | Node:
         for i in range(len(expr_ast.children)):
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
                 new_el = AST()
@@ -157,6 +163,8 @@ class AST_CREATOR (MathVisitor):
                 return expr_ast
 
     def resolve_datatype(self, expr_ast) -> AST | Node:
+        if expr_ast.root.value is not None:
+            return expr_ast
         if len(expr_ast.children) == 1:
             if isinstance(expr_ast.children[0] , AST):
                 expr_ast = expr_ast.children[0]
