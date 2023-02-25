@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,24,99,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,26,99,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,1,0,5,0,24,8,0,10,0,12,0,27,
         9,0,1,0,1,0,1,1,1,1,1,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,
         1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,3,2,56,8,2,1,2,1,
@@ -60,7 +60,8 @@ class MathParser ( Parser ):
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "ID", "INT", "MUL", "DIV", "MOD", "SUM", "DIF", "LT", 
                       "LEQ", "GT", "GEQ", "EQ", "NEQ", "OR_OP", "AND_OP", 
-                      "NOT_OP", "ASSIGN", "SP", "NEWLINE", "WS", "LN" ]
+                      "NOT_OP", "ASSIGN", "SP", "NEWLINE", "WS", "LN", "COMMENT", 
+                      "LCOMMENT" ]
 
     RULE_math = 0
     RULE_instr = 1
@@ -102,6 +103,8 @@ class MathParser ( Parser ):
     NEWLINE=22
     WS=23
     LN=24
+    COMMENT=25
+    LCOMMENT=26
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)

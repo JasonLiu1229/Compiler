@@ -48,7 +48,10 @@ SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
 WS          :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
-
+// Comments
+// Ref : https://stackoverflow.com/a/23414078
+COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);
+LCOMMENT    : '//' ~[\r\n]* -> channel(HIDDEN);
 /*
 (mandatory) Unary operators + and -.
 (mandatory) Binary operations +, -, *, and /.
