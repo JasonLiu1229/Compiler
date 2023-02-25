@@ -3,6 +3,55 @@ from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
 keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "log_op", "assign_op"]
+keywords_datatype = ["id" , "int"]
+keywords_binary = ["binary_op", "unary_op", "comp_op", "comp_eq", "log_op"]
+keywords_unary = ["unary_op"]
+keywords_assign = ["assign_op"]
+
+class Node:
+    def __init__(self, key, value) -> None:
+        super().__init__()
+        self.key = key
+        self.value = value
+
+    def print(self):
+        print(self.get_str())
+
+    def save(self):
+        out = { self.key : self.value }
+        return out
+    def get_str(self):
+        return self.key + '\t' + ':' + '\t' + str(self.value)
+
+class AST:
+    def __init__(self) -> None:
+        super().__init__()
+        self.root : Node | None = None
+        self.children : list[Node] | [] = []
+
+    def add_child(self, child):
+        if not isinstance(child, AST):
+            raise TypeError("child must be set to an AST")
+        self.children.insert(len(self.children), child)
+
+    def save(self):
+        out = {self.root.key: self.root.value}
+        if out[self.root.key] is None:
+            out[self.root.key] = []
+        else:
+            out["children"] = []
+        for i in range(len(self.children)):
+            if self.children[i] is not None and self.root.value is None:
+                out[self.root.key].insert(len(out[self.root.key]) , self.children[i].save())
+            elif self.children[i] is not None:
+                out["children"].insert(len(out["children"]) , self.children[i].save())
+        return out
+
+    def print(self):
+        print(json.dumps(self.save() , indent=4))
+
+    def get_str(self):
+        return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
 
 class AST_CREATOR (MathVisitor):
     def __init__(self) -> None:
@@ -62,12 +111,59 @@ class AST_CREATOR (MathVisitor):
             |   id assign int
             |   id assign expr
         """
-        # self.visitInstr(ctx.children[0])
-        # print(list(ctx.getChildren()))
         expr_ast = AST()
         expr_ast.root = Node("expr" , None)
         for c in ctx.getChildren():
             expr_ast.children.insert(len(expr_ast.children) , self.visit_child(c))
+        # Resolve the operations order
+        self.resolve_binary(expr_ast)
+        self.resolve_unary(expr_ast)
+        self.resolve_assign(expr_ast)
+        new_ast = self.resolve_datatype(expr_ast)
+        return new_ast
+
+    def resolve_binary(self, expr_ast):
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , Node) and expr_ast.children[i].key in keywords_binary:
+                new_el = AST()
+                if i > 0:
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i - 1])
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.children = [new_el]
+                return expr_ast
+
+    def resolve_unary(self, expr_ast):
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_unary:
+                new_el = AST()
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.children = [new_el]
+                return expr_ast
+
+    def resolve_assign(self, expr_ast):
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
+                new_el = AST()
+                if i > 0:
+                    new_el.children.insert(len(new_el.children) , expr_ast.children[i-1])
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children) , expr_ast.children[i+1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.children = [new_el]
+                return expr_ast
+
+    def resolve_datatype(self, expr_ast) -> AST | Node:
+        if len(expr_ast.children) == 1:
+            if isinstance(expr_ast.children[0] , AST):
+                expr_ast = expr_ast.children[0]
+            elif isinstance(expr_ast.children[0] , Node):
+                # expr_ast.root = expr_ast.children[0]
+                # expr_ast.children = []
+                expr_ast = expr_ast.children[0]
         return expr_ast
 
     def visitId(self, ctx: MathParser.IdContext):
@@ -103,52 +199,3 @@ class AST_CREATOR (MathVisitor):
         return root
 
 
-class Node:
-    def __init__(self, key, value) -> None:
-        super().__init__()
-        self.key = key
-        self.value = value
-
-    def print(self):
-        print(self.get_str())
-
-    def save(self):
-        out = { self.key : self.value }
-        return out
-    def get_str(self):
-        return self.key + '\t' + ':' + '\t' + str(self.value)
-
-class AST:
-    def __init__(self) -> None:
-        super().__init__()
-        self.root : Node | None = None
-        self.children : list[Node] | [] = []
-
-    def add_child(self, child):
-        if not isinstance(child, AST):
-            raise TypeError("child must be set to an AST")
-        self.children.insert(len(self.children), child)
-
-    def save(self):
-        out = {self.root.key: self.root.value}
-        if out[self.root.key] is None:
-            out[self.root.key] = []
-        for i in range(len(self.children)):
-            if self.children[i] is not None and self.root.value is None:
-                out[self.root.key].insert(len(out[self.root.key]) , self.children[i].save())
-        return out
-
-    def print(self):
-        # out = self.save()
-        # for child in self.children:
-        #     if child is not None and isinstance(child , AST):
-        #         child.print()
-        #     elif child is not None:
-        #         out += "\t" + child.get_str() + "\n"
-        # out += "}"
-        # out = json.dumps(self.save() , indent=4)
-        # out = self.save()
-        print(json.dumps(self.save() , indent=4))
-
-    def get_str(self):
-        return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
