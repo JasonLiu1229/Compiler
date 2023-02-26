@@ -8,25 +8,42 @@ expr        :   '(' expr ')'
             |   expr unary_op expr
             |   expr comp_op expr
             |   expr comp_eq expr
-            |   expr log_op expr
+            |   expr bin_log_op expr
+            |   un_log_op expr
             |   unary_op expr
             |   int
-            |   id
-            |   id assign id
-            |   id assign int
-            |   id assign expr
+            |   var
+            |   var assign expr
+            |   var assign var
+            |   var assign int
+            |   cvar_decl assign expr
+            |   cvar_decl assign var
+            |   cvar_decl assign int
+            |   var_decl assign expr
+            |   var_decl assign var
+            |   var_decl assign int
             ;
-id          :   ID;
+var         :   VAR_NAME;
+cvar_decl   :   CONST TYPE VAR_NAME;
+var_decl    :   TYPE VAR_NAME;
 int         :   INT;
 binary_op   :   (MUL  | DIV | MOD);
 unary_op    :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
 comp_eq     :   (GEQ | LEQ | NEQ);
-log_op      :   (AND_OP | OR_OP | NOT_OP);
+bin_log_op  :   (AND_OP | OR_OP);
+un_log_op   :   (NOT_OP);
 assign      :   ASSIGN;
+// Keywords
+CONST       :   'const';
 // Identifiers and data types
-ID          :   ([a-z] | [A-Z])+ ;             // match lower-case identifiers
+TYPE        :   'char'
+            |   'float'
+            |   'int'
+            ;
+VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
 INT         :   [0-9]+;
+FLOAT       :   INT '.' INT;
 // Operations
 MUL         :   '*';
 DIV         :   '/';

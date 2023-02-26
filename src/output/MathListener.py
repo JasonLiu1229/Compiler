@@ -35,12 +35,30 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#id.
-    def enterId(self, ctx:MathParser.IdContext):
+    # Enter a parse tree produced by MathParser#var.
+    def enterVar(self, ctx:MathParser.VarContext):
         pass
 
-    # Exit a parse tree produced by MathParser#id.
-    def exitId(self, ctx:MathParser.IdContext):
+    # Exit a parse tree produced by MathParser#var.
+    def exitVar(self, ctx:MathParser.VarContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#cvar_decl.
+    def enterCvar_decl(self, ctx:MathParser.Cvar_declContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#cvar_decl.
+    def exitCvar_decl(self, ctx:MathParser.Cvar_declContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#var_decl.
+    def enterVar_decl(self, ctx:MathParser.Var_declContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#var_decl.
+    def exitVar_decl(self, ctx:MathParser.Var_declContext):
         pass
 
 
