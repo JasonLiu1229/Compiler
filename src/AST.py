@@ -3,8 +3,8 @@ from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
 keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "log_op", "assign_op"]
-keywords_datatype = ["id" , "int"]
-keywords_binary = ["binary_op", "unary_op", "comp_op", "comp_eq", "log_op"]
+keywords_datatype = ["id" , "int" , "float" , "char"]
+keywords_binary = ["binary_op", "comp_op", "comp_eq", "log_op"]
 keywords_unary = ["unary_op"]
 keywords_assign = ["assign_op"]
 
@@ -53,7 +53,7 @@ class AST:
     def get_str(self):
         return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
 
-class AST_CREATOR (MathVisitor):
+class AstCreator (MathVisitor):
     def __init__(self) -> None:
         super().__init__()
 
@@ -64,8 +64,8 @@ class AST_CREATOR (MathVisitor):
             return self.visitInstr(ctx)
         elif isinstance(ctx, MathParser.ExprContext):
             return self.visitExpr(ctx)
-        elif isinstance(ctx, MathParser.IdContext):
-            return self.visitId(ctx)
+        elif isinstance(ctx, MathParser.VarContext):
+            return self.visitVar(ctx)
         elif isinstance(ctx, MathParser.IntContext):
             return self.visitInt(ctx)
         elif isinstance(ctx, MathParser.Binary_opContext):
@@ -87,6 +87,7 @@ class AST_CREATOR (MathVisitor):
         math_ast.root = Node("math", None)
         for c in ctx.getChildren():
             math_ast.children.insert(len(math_ast.children), self.visit_child(c))
+        self.resolve_empty(math_ast)
         return math_ast
 
     def visitInstr(self, ctx: MathParser.InstrContext):
@@ -94,6 +95,7 @@ class AST_CREATOR (MathVisitor):
         instr_ast.root = Node("instr", None)
         for c in ctx.getChildren():
             instr_ast.children.insert(len(instr_ast.children), self.visit_child(c))
+        self.resolve_empty(instr_ast)
         return instr_ast
 
     def visitExpr(self, ctx: MathParser.ExprContext):
@@ -115,66 +117,15 @@ class AST_CREATOR (MathVisitor):
         expr_ast.root = Node("expr" , None)
         for c in ctx.getChildren():
             expr_ast.children.insert(len(expr_ast.children) , self.visit_child(c))
-        for child in expr_ast.children:
-            if child is None:
-                expr_ast.children.remove(child)
+        self.resolve_empty(expr_ast)
         # Resolve the operations order
-        self.resolve_binary(expr_ast)
         self.resolve_unary(expr_ast)
+        self.resolve_binary(expr_ast)
         self.resolve_assign(expr_ast)
         new_ast = self.resolve_datatype(expr_ast)
         return new_ast
 
-    def resolve_binary(self, expr_ast) -> AST | Node:
-        for i in range(len(expr_ast.children)):
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , Node) and expr_ast.children[i].key in keywords_binary:
-                new_el = AST()
-                if i > 0:
-                    new_el.children.insert(len(new_el.children), expr_ast.children[i - 1])
-                if i < len(expr_ast.children):
-                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
-                new_el.root = expr_ast.children[i]
-                expr_ast.children = [new_el]
-                if len(expr_ast.children) == 1:
-                    expr_ast.root = expr_ast.children[0].root
-                    expr_ast.children = expr_ast.children[0].children
-                return expr_ast
-
-    def resolve_unary(self, expr_ast) -> AST | Node:
-        for i in range(len(expr_ast.children)):
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_unary:
-                new_el = AST()
-                if i < len(expr_ast.children):
-                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
-                new_el.root = expr_ast.children[i]
-                expr_ast = new_el
-                return expr_ast
-
-    def resolve_assign(self, expr_ast) -> AST | Node:
-        for i in range(len(expr_ast.children)):
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
-                new_el = AST()
-                if i > 0:
-                    new_el.children.insert(len(new_el.children) , expr_ast.children[i-1])
-                if i < len(expr_ast.children):
-                    new_el.children.insert(len(new_el.children) , expr_ast.children[i+1])
-                new_el.root = expr_ast.children[i]
-                expr_ast.children = [new_el]
-                return expr_ast
-
-    def resolve_datatype(self, expr_ast) -> AST | Node:
-        if expr_ast.root.value is not None:
-            return expr_ast
-        if len(expr_ast.children) == 1:
-            if isinstance(expr_ast.children[0] , AST):
-                expr_ast = expr_ast.children[0]
-            elif isinstance(expr_ast.children[0] , Node):
-                # expr_ast.root = expr_ast.children[0]
-                # expr_ast.children = []
-                expr_ast = expr_ast.children[0]
-        return expr_ast
-
-    def visitId(self, ctx: MathParser.IdContext):
+    def visitVar(self, ctx: MathParser.VarContext):
         root = Node(keywords[0], ctx.children[0].getText())
         return root
 
@@ -206,4 +157,203 @@ class AST_CREATOR (MathVisitor):
         root = Node(keywords[7], ctx.children[0].getText())
         return root
 
+    def resolve_binary(self , expr_ast) -> AST | Node:
+        if isinstance(expr_ast , Node):
+            return expr_ast
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , Node) and expr_ast.children[i].key in keywords_binary:
+                new_el = AST()
+                if i > 0:
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i - 1])
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.children = [new_el]
+                if len(expr_ast.children) == 1:
+                    expr_ast.root = expr_ast.children[0].root
+                    expr_ast.children = expr_ast.children[0].children
+                    return expr_ast
+                else:
+                    for j in range(len(expr_ast.children)):
+                        expr_ast.children[j] = self.resolve_binary(expr_ast.children[j])
+                    return expr_ast
+            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , AST):
+                expr_ast.children[i] = self.resolve_binary(expr_ast.children[i])
+        return expr_ast
 
+    def resolve_unary(self, expr_ast) -> AST | Node:
+        if isinstance(expr_ast , Node):
+            return expr_ast
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_unary:
+                new_el = AST()
+                if i > 0:
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i - 1])
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children), expr_ast.children[i + 1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.root = new_el.root
+                expr_ast.children = new_el.children
+                if len(expr_ast.children) == 1:
+                    return expr_ast
+                else:
+                    for j in range(len(expr_ast.children)):
+                        expr_ast.children[j] = self.resolve_unary(expr_ast.children[j])
+                    return expr_ast
+            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i] , AST):
+                expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
+        return expr_ast
+
+    @staticmethod
+    def resolve_assign(expr_ast) -> AST | Node:
+        for i in range(len(expr_ast.children)):
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
+                new_el = AST()
+                if i > 0:
+                    new_el.children.insert(len(new_el.children) , expr_ast.children[i-1])
+                if i < len(expr_ast.children):
+                    new_el.children.insert(len(new_el.children) , expr_ast.children[i+1])
+                new_el.root = expr_ast.children[i]
+                expr_ast.children = [new_el]
+                return expr_ast
+
+    @staticmethod
+    def resolve_datatype(expr_ast) -> AST | Node:
+        if expr_ast.root.value is not None:
+            return expr_ast
+        if len(expr_ast.children) == 1:
+            if isinstance(expr_ast.children[0] , AST):
+                expr_ast = expr_ast.children[0]
+            elif isinstance(expr_ast.children[0] , Node):
+                # expr_ast.root = expr_ast.children[0]
+                # expr_ast.children = []
+                expr_ast = expr_ast.children[0]
+        return expr_ast
+
+    @staticmethod
+    def resolve_empty(expr_ast):
+        for child in expr_ast.children:
+            if child is None:
+                expr_ast.children.remove(child)
+
+    def optimise(self, input_ast : AST) -> AST | Node:
+        if isinstance(input_ast , Node):
+            return input_ast
+        # Unary operation node replacements
+        if input_ast.root.key == "unary_op":
+            new_el = Node("", None)
+            # check if they are both literals
+            if len(input_ast.children) == 1:
+                # unary sum
+                if input_ast.root.value == "+":
+                    return input_ast.children[0]
+                # unary dif
+                elif input_ast.root.value == "-":
+                    new_el = input_ast.children[0]
+                    if not isinstance(new_el, Node):
+                        return input_ast
+                    new_el.key = "int"
+                    new_el.value = - new_el.value
+                    return new_el
+            elif len(input_ast.children) == 2:
+                first = input_ast.children[0]
+                second = input_ast.children[1]
+                if first is not None and isinstance(first, AST):
+                    first = self.optimise(first)
+                if second is not None and isinstance(second, AST):
+                    second = self.optimise(second)
+                if first is not None and first.key != "var" and second is not None and second.key != "var":
+                    if input_ast.root.value == "+":
+                        new_el.value = first.value + second.value
+                    if input_ast.root.value == "-":
+                        new_el.value = first.value - second.value
+                    if isinstance(new_el.value, float):
+                        new_el.key = "float"
+                    elif isinstance(new_el.value, int):
+                        new_el.key = "int"
+                    return new_el
+        elif input_ast.root.key == "binary_op":
+            new_el = Node("", None)
+            first = input_ast.children[0]
+            second = input_ast.children[1]
+            # check if they are both literals
+            if first is not None and isinstance(first, AST):
+                first = self.optimise(first)
+            if second is not None and isinstance(second, AST):
+                second = self.optimise(second)
+            if first is not None and first.key != "var" and second is not None and second.key != "var":
+                if input_ast.root.value == '*':
+                    new_el.value = first.value * second.value
+                elif input_ast.root.value == '/':
+                    new_el.value = first.value / second.value
+                elif input_ast.root.value == "%":
+                    new_el.value = first.value % second.value
+                if isinstance(new_el.value , float):
+                    new_el.key = "float"
+                elif isinstance(new_el.value , int):
+                    new_el.key = "int"
+                return new_el
+        # Comparison operations
+        elif input_ast.root.key == "comp_op":
+            new_el = Node("", None)
+            first = input_ast.children[0]
+            second = input_ast.children[1]
+            # check if they are both literals
+            if first is not None and isinstance(first, AST):
+                first = self.optimise(first)
+            if second is not None and isinstance(second, AST):
+                second = self.optimise(second)
+            if first is not None and first.key != "var" and second is not None and second.key != "var":
+                if input_ast.root.value == '>':
+                    new_el.value = (first.value > second.value)
+                elif input_ast.root.value == '<':
+                    new_el.value = (first.value < second.value)
+                elif input_ast.root.value == "==":
+                    new_el.value = (first.value == second.value)
+            if isinstance(new_el.value, bool):
+                new_el.key = "bool"
+            return new_el
+        elif input_ast.root.key == "comp_eq":
+            new_el = Node("", None)
+            first = input_ast.children[0]
+            second = input_ast.children[1]
+            # check if they are both literals
+            if first is not None and isinstance(first, AST):
+                first = self.optimise(first)
+            if second is not None and isinstance(second, AST):
+                second = self.optimise(second)
+            if first is not None and first.key != "var" and second is not None and second.key != "var":
+                if input_ast.root.value == '>=':
+                    new_el.value = (first.value >= second.value)
+                elif input_ast.root.value == '<=':
+                    new_el.value = (first.value <= second.value)
+                elif input_ast.root.value == "!=":
+                    new_el.value = (first.value != second.value)
+            if isinstance(new_el.value, bool):
+                new_el.key = "bool"
+            return new_el
+        elif input_ast.root.key == "log_op":
+            new_el = Node("", None)
+            first = input_ast.children[0]
+            second = input_ast.children[1]
+            # check if they are both literals
+            if first is not None and isinstance(first, AST):
+                first = self.optimise(first)
+            if second is not None and isinstance(second, AST):
+                second = self.optimise(second)
+            if first is not None and first.key != "var" and second is not None and second.key != "var":
+                if input_ast.root.value == '&&':
+                    new_el.value = (first.value and second.value)
+                elif input_ast.root.value == '||':
+                    new_el.value = (first.value or second.value)
+                elif input_ast.root.value == "!":
+                    pass
+            if isinstance(new_el.value, bool):
+                new_el.key = "bool"
+            return new_el
+        elif input_ast.root.key == "assign":
+            pass
+        else:
+            for i in range(len(input_ast.children)):
+                input_ast.children[i] = self.optimise(input_ast.children[i])
+        return input_ast
