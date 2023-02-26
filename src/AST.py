@@ -2,6 +2,8 @@
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
+
+# Standard Variables
 keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op"]
 keywords_datatype = ["id" , "int" , "float" , "char"]
 keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op"]
@@ -56,6 +58,38 @@ class AST:
 
     def print(self , indent : int = 4):
         print(json.dumps(self.save() , indent=indent))
+
+    def dot_language(self, file_name):
+        """
+        Create dot language format file
+
+        :param file_name: string that determines the file name
+        :return: None
+        """
+        # Create file
+        file = open(file_name + ".txt", "w+")
+
+        # Start of dot language
+        dictionary = {}
+
+        self.recursive_dot(dictionary)
+
+        # Write in file
+
+        file.close()
+
+        # Print data of file
+        f = open(file_name + ".txt", 'r')
+
+        file_contents = f.read()
+
+        print(file_contents)
+
+        f.close()
+
+
+    def recursive_dot(self, dictionary):
+        pass
 
     def get_str(self):
         return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
