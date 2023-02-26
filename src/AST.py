@@ -2,9 +2,9 @@
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
-keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "log_op", "assign_op"]
+keywords = ["id", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op"]
 keywords_datatype = ["id" , "int" , "float" , "char"]
-keywords_binary = ["binary_op", "comp_op", "comp_eq", "log_op"]
+keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op"]
 keywords_unary = ["unary_op"]
 keywords_assign = ["assign_op"]
 
@@ -76,8 +76,10 @@ class AstCreator (MathVisitor):
             return self.visitComp_eq(ctx)
         elif isinstance(ctx, MathParser.Comp_opContext):
             return self.visitComp_op(ctx)
-        elif isinstance(ctx, MathParser.Log_opContext):
-            return self.visitLog_op(ctx)
+        elif isinstance(ctx, MathParser.Bin_log_opContext):
+            return self.visitBin_log_op(ctx)
+        elif isinstance(ctx, MathParser.Un_log_opContext):
+            return self.visitUn_log_op(ctx)
         elif isinstance(ctx, MathParser.AssignContext):
             return self.visitAssign(ctx)
 
@@ -149,12 +151,16 @@ class AstCreator (MathVisitor):
         root = Node(keywords[5], ctx.children[0].getText())
         return root
 
-    def visitLog_op(self, ctx: MathParser.Log_opContext):
+    def visitBin_log_op(self, ctx: MathParser.Bin_log_opContext):
         root = Node(keywords[6], ctx.children[0].getText())
         return root
 
-    def visitAssign(self, ctx: MathParser.AssignContext):
+    def visitUn_log_op(self, ctx: MathParser.Un_log_opContext):
         root = Node(keywords[7], ctx.children[0].getText())
+        return root
+
+    def visitAssign(self, ctx: MathParser.AssignContext):
+        root = Node(keywords[8], ctx.children[0].getText())
         return root
 
     def resolve_binary(self , expr_ast) -> AST | Node:
@@ -332,7 +338,7 @@ class AstCreator (MathVisitor):
             if isinstance(new_el.value, bool):
                 new_el.key = "bool"
             return new_el
-        elif input_ast.root.key == "log_op":
+        elif input_ast.root.key == "bin_log_op":
             new_el = Node("", None)
             first = input_ast.children[0]
             second = input_ast.children[1]
@@ -346,8 +352,18 @@ class AstCreator (MathVisitor):
                     new_el.value = (first.value and second.value)
                 elif input_ast.root.value == '||':
                     new_el.value = (first.value or second.value)
-                elif input_ast.root.value == "!":
-                    pass
+            if isinstance(new_el.value, bool):
+                new_el.key = "bool"
+            return new_el
+        elif input_ast.root.key == "un_log_op":
+            new_el = Node("", None)
+            first = input_ast.children[0]
+            # Check if condition is a literal
+            if first is not None and isinstance(first, AST):
+                first = self.optimise(first)
+            if input_ast.root.value == "!":
+                new_el.value = not first.value
+            # Set the key name for the return node
             if isinstance(new_el.value, bool):
                 new_el.key = "bool"
             return new_el

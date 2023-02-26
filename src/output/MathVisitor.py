@@ -64,8 +64,13 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#log_op.
-    def visitLog_op(self, ctx:MathParser.Log_opContext):
+    # Visit a parse tree produced by MathParser#bin_log_op.
+    def visitBin_log_op(self, ctx:MathParser.Bin_log_opContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#un_log_op.
+    def visitUn_log_op(self, ctx:MathParser.Un_log_opContext):
         return self.visitChildren(ctx)
 
 

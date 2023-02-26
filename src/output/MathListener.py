@@ -107,12 +107,21 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#log_op.
-    def enterLog_op(self, ctx:MathParser.Log_opContext):
+    # Enter a parse tree produced by MathParser#bin_log_op.
+    def enterBin_log_op(self, ctx:MathParser.Bin_log_opContext):
         pass
 
-    # Exit a parse tree produced by MathParser#log_op.
-    def exitLog_op(self, ctx:MathParser.Log_opContext):
+    # Exit a parse tree produced by MathParser#bin_log_op.
+    def exitBin_log_op(self, ctx:MathParser.Bin_log_opContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#un_log_op.
+    def enterUn_log_op(self, ctx:MathParser.Un_log_opContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#un_log_op.
+    def exitUn_log_op(self, ctx:MathParser.Un_log_opContext):
         pass
 
 
