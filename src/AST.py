@@ -448,10 +448,10 @@ class AstCreator (MathVisitor):
         if second is not None and isinstance(second, AST):
             second = self.optimise(second)
         # Resolve variables if they need to be
-        if isinstance(first , Node) and first.value is None:
-            self.optimise_variables(first)
-        if isinstance(second, Node) and second.value is None:
-            self.optimise_variables(second)
+        if isinstance(first , Node):
+            first = self.optimise_variables(first)
+        if isinstance(second, Node):
+            second = self.optimise_variables(second)
         if first is not None and first.value is not None and second is not None and second.value is not None:
             if input_ast.root.value == '*':
                 new_el.value = first.value * second.value
@@ -543,29 +543,43 @@ class AstCreator (MathVisitor):
         # Get the rvalue to assign to the ID
         second = input_ast.children[1]
         # Check if condition is a literal
-        if first is not None and not (isinstance(first, Node)):
+        if first is None or not (isinstance(first, Node)):
             return input_ast
-        if first is not None and isinstance(first , VarNode):
+        if first is not None and isinstance(first , Node):
             first = self.optimise_variables(first)
             new_el = first
         if second is not None and isinstance(second, AST):
             second = self.optimise(second)
+        if second is not None and isinstance(second , Node):
+            second = self.optimise_variables(second)
         if input_ast.root.value == "=":
+            if new_el.key not in self.symbol_table:
+                raise SyntaxError("Variable " + new_el.key + " not declared in this scope")
+            if new_el.key in self.symbol_table and self.symbol_table[new_el.key] is not None:
+                if self.symbol_table[new_el.key].value is not None and self.symbol_table[new_el.key].const:
+                    raise RuntimeError("Attempting to modify a const variable " + new_el.key)
             if isinstance(first , VarNode):
-                if new_el.key not in self.symbol_table:
-                    raise SyntaxError("Variable " + new_el.key + " not declared in this scope" )
                 new_el.value = second.value
-                self.symbol_table[new_el.key] = new_el.value
+                self.symbol_table[new_el.key].value = new_el.value
                 return new_el
             else:
-                new_el.key = first.value
+                new_el.key = first.key
                 new_el.value = second.value
+                self.symbol_table[new_el.key].value = new_el.value
         return new_el
 
     def optimise_variables(self, input_node : Node) -> Node :
         # Search for the variable name in the symbols table
         if input_node.key in self.symbol_table:
-            input_node.value = self.symbol_table[input_node.key]
+            if self.symbol_table[input_node.key] is None:
+                if isinstance(input_node , VarNode):
+                    new_node = VarNode(input_node.key , input_node.value , input_node.type , input_node.const)
+                    self.symbol_table[new_node.key] = new_node
+                return input_node
+            if self.symbol_table[input_node.key] is not None and self.symbol_table[input_node.key].const:
+                if input_node.value is not None and input_node.value != self.symbol_table[input_node.key].value:
+                    raise RuntimeError("Attempting to modify a const variable " + input_node.key)
+            input_node.value = self.symbol_table[input_node.key].value
         return input_node
 
     def optimise(self, input_ast : AST | Node) -> AST | Node:

@@ -3,4 +3,5 @@
 // float result = x + y;
 
 int x = 12;
+x = 18;
 float y = x / 6;
