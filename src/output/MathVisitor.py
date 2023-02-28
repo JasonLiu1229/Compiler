@@ -34,6 +34,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#pvar_decl.
+    def visitPvar_decl(self, ctx:MathParser.Pvar_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#var_decl.
     def visitVar_decl(self, ctx:MathParser.Var_declContext):
         return self.visitChildren(ctx)

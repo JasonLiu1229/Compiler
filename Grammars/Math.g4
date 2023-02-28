@@ -19,12 +19,19 @@ expr        :   '(' expr ')'
             |   cvar_decl assign expr
             |   cvar_decl assign var
             |   cvar_decl assign int
+            |   cvar_decl
+            |   pvar_decl
+            |   pvar_decl assign expr
+            |   pvar_decl assign var
+            |   pvar_decl assign int
             |   var_decl assign expr
             |   var_decl assign var
             |   var_decl assign int
+            |   var_decl
             ;
 var         :   VAR_NAME;
 cvar_decl   :   CONST TYPE VAR_NAME;
+pvar_decl   :   TYPE '*' VAR_NAME;
 var_decl    :   TYPE VAR_NAME;
 int         :   INT;
 binary_op   :   (MUL  | DIV | MOD);

@@ -53,6 +53,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#pvar_decl.
+    def enterPvar_decl(self, ctx:MathParser.Pvar_declContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#pvar_decl.
+    def exitPvar_decl(self, ctx:MathParser.Pvar_declContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#var_decl.
     def enterVar_decl(self, ctx:MathParser.Var_declContext):
         pass
