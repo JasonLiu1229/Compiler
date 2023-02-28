@@ -77,6 +77,7 @@ class AST:
         """
         # Create file
         file = open("./Output/" + file_name + ".txt", "w+")
+        file.close()
 
         # Start of dot language
         new_dictionary = dict()
@@ -84,14 +85,15 @@ class AST:
         self.recursive_dot(new_dictionary, count)
         self.connect("./Output/" + file_name + ".txt", new_dictionary)
 
-        # Write in file
+        # print dot language
+
+        file = open("./Output/" + file_name + ".txt", "r")
+
+        file_contents = file.read()
+
+        print(file_contents)
 
         file.close()
-
-        # Print data of file
-        f = open("./Output/" + file_name + ".txt", 'w+')
-
-        f.close()
 
     def recursive_dot(self, dictionary, count, name = None):
         if self.root.key not in dictionary or count[self.root.key] == 1:
@@ -124,7 +126,11 @@ class AST:
                 self.children[i].recursive_dot(dictionary, count, name_key)
 
     def connect(self, file_name, dictionary):
-        pass
+        with open(str(file_name), "w") as f:
+            for key, value in dictionary.items():
+                for v in value:
+                    string = str(key) + "\t-->\t" + str(v) + "\n"
+                    f.write(string)
 
 
     def get_str(self):

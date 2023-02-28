@@ -16,7 +16,7 @@ def main(argv):
     ast = visitor.optimise(ast)
     # ast.print()
     # print(parse_tree.toStringTree(recog=parser))
-    ast.dot_language("test")
+    ast.dot_language("output")
 
 if __name__ == '__main__':
     main(sys.argv)
