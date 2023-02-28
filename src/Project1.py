@@ -1,10 +1,10 @@
 import sys
-from antlr4 import *
-from output.MathLexer import MathLexer
-from output.MathParser import MathParser
-from output.MathVisitor import MathVisitor
-from output.MathListener import MathListener
-from AST import  AstCreator
+from antlr4                 import *
+from output.MathLexer       import MathLexer
+from output.MathParser      import MathParser
+from output.MathVisitor     import MathVisitor
+from output.MathListener    import MathListener
+from AST                    import AstCreator
 
 def main(argv):
     input_stream = FileStream(argv[1])
@@ -14,8 +14,9 @@ def main(argv):
     visitor = AstCreator()
     ast = visitor.visit(parse_tree)
     ast = visitor.optimise(ast)
-    ast.print()
-    print(parse_tree.toStringTree(recog=parser))
+    # ast.print()
+    # print(parse_tree.toStringTree(recog=parser))
+    ast.dot_language("test")
 
 if __name__ == '__main__':
     main(sys.argv)

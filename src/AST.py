@@ -25,6 +25,15 @@ class Node:
     def get_str(self):
         return self.key + '\t' + ':' + '\t' + str(self.value)
 
+    def recursive_dot(self, dictionary, count, name):
+        if self.key not in dictionary or count[self.key] == 1:
+            dictionary[self.key] = set()
+            name = self.key
+        else:
+            dictionary[name] = set()
+        dictionary[name].add(self.value)
+
+
 class AST:
     def __init__(self, root : Node = None, children : list[Node] = None) -> None:
         super().__init__()
@@ -67,29 +76,56 @@ class AST:
         :return: None
         """
         # Create file
-        file = open(file_name + ".txt", "w+")
+        file = open("./Output/" + file_name + ".txt", "w+")
 
         # Start of dot language
-        dictionary = {}
-
-        self.recursive_dot(dictionary)
+        new_dictionary = dict()
+        count = dict()
+        self.recursive_dot(new_dictionary, count)
+        self.connect("./Output/" + file_name + ".txt", new_dictionary)
 
         # Write in file
 
         file.close()
 
         # Print data of file
-        f = open(file_name + ".txt", 'r')
-
-        file_contents = f.read()
-
-        print(file_contents)
+        f = open("./Output/" + file_name + ".txt", 'w+')
 
         f.close()
 
+    def recursive_dot(self, dictionary, count, name = None):
+        if self.root.key not in dictionary or count[self.root.key] == 1:
+            dictionary[self.root.key] = set()
+            count[self.root.key] = 1
+            name = self.root.key
+        else:
+            dictionary[name] = set()
 
-    def recursive_dot(self, dictionary):
+        for i in range(len(self.children)):
+            if isinstance(self.children[i], Node):
+                name_key = None
+                if self.children[i].key not in dictionary:
+                    dictionary[name].add(self.children[i].key)
+                    count[self.children[i].key] = 1
+                else:
+                    name_key = self.children[i].key + str(count[self.children[i].key])
+                    dictionary[name].add(name_key)
+                    count[self.children[i].key] += 1
+                self.children[i].recursive_dot(dictionary, count, name_key)
+            else:
+                name_key = None
+                if self.children[i].root.key not in dictionary:
+                    dictionary[name].add(self.children[i].root.key)
+                    count[self.children[i].root.key] = 1
+                else:
+                    name_key = self.children[i].root.key + str(count[self.children[i].root.key])
+                    dictionary[name].add(name_key)
+                    count[self.children[i].root.key] += 1
+                self.children[i].recursive_dot(dictionary, count, name_key)
+
+    def connect(self, file_name, dictionary):
         pass
+
 
     def get_str(self):
         return self.root.key + '\t' + ':' + '\t' + str(self.root.value)

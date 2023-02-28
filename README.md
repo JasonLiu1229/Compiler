@@ -20,7 +20,8 @@
 
 <a name="sources"></a>
 ### Sources
-    Nothing atm
+[ https://github.com/antlr/antlr4/blob/master/doc/getting-started.md ](#Antlr) --- Antlr installation
+[ https://graphviz.org/doc/info/lang.html ](#Dot_language) --- Dot language
 
 <a name="authors"></a>
 ### Authors
