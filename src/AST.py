@@ -169,6 +169,13 @@ class AST:
         return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
 
 class AstCreator (MathVisitor):
+
+    # TODO: Add support for characters
+    # TODO: Add support for pointer and address operations
+    # TODO: Add support for conversions
+    # TODO: Finetune the error listener
+    # TODO: Add a semantics error check
+
     def __init__(self) -> None:
         super().__init__()
         self.base_ast : AST = AST()
@@ -587,6 +594,8 @@ class AstCreator (MathVisitor):
             return self.optimise_variables(input_ast)
         if isinstance(input_ast , Node):
             return self.optimise_variables(input_ast)
+        for i in range(len(input_ast.children)):
+            input_ast.children[i] = self.optimise(input_ast.children[i])
         # Unary operation node replacements
         if input_ast.root.key == "assign_op":
             return self.optimise_assign(input_ast)
@@ -603,7 +612,4 @@ class AstCreator (MathVisitor):
             return self.optimise_bin_log(input_ast)
         elif input_ast.root.key == "un_log_op":
             return self.optimise_un_log(input_ast)
-        else:
-            for i in range(len(input_ast.children)):
-                input_ast.children[i] = self.optimise(input_ast.children[i])
         return input_ast
