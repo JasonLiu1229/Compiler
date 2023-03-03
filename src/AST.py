@@ -56,7 +56,10 @@ class VarNode( Node ):
         return self.get_str()
 
     def save(self):
-        out_key = self.type + " " + self.key
+        out_key = ""
+        if self.type != "":
+            out_key += self.type + " "
+        out_key += self.key
         if self.const:
             out_key = "const " + out_key
         out = { out_key : self.value }
@@ -306,7 +309,7 @@ class AstCreator (MathVisitor):
         const = False
         ptr = False
         v_type = ""
-        root = VarNode("" , None , type , const)
+        root = VarNode("" , None , v_type , const)
         for i in range(len(ctx.children)):
             if ctx.children[i].getText() == "const":
                 const = True
@@ -320,13 +323,16 @@ class AstCreator (MathVisitor):
             else:
                 root = self.visit_child(ctx.children[i])
                 self.resolve_binary(root)
+                self.resolve_variables(root)
                 self.resolve_assign(root)
+                self.optimise(root)
                 new_ast = self.resolve_datatype(root)
                 root = new_ast
                 root.const = const
                 root.type = v_type
                 out.add_child(root)
-                # self.symbol_table[root.key] = VarNode(root.key , root.value , root.type , root.const)
+                if not isinstance(root , AST):
+                    self.symbol_table[root.key] = VarNode(root.key , root.value , root.type , root.const)
         return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
@@ -351,12 +357,12 @@ class AstCreator (MathVisitor):
         if len(ctx.children) == 1:
             root = VarNode(ctx.children[0].getText() , None , "")
             return root
-        # If more than 1 element: its a pointer
+        # If more than 1 element: it's a pointer
         root = VarNode(ctx.children[-1].getText(), None , "")
         return root
 
     def visitAddr_op(self, ctx: MathParser.Addr_opContext):
-        root = Node("addr_op" , )
+        root = Node("addr_op" , None)
         return root
 
     # Helper functions
