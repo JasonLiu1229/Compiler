@@ -4,3 +4,4 @@ y = x + y;
 //int z;
 //float* flt_ptr = &y;
 //char ch = 'x';
+int *a, b;

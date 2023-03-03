@@ -17,6 +17,7 @@
     - Dot format visualisation
 
 #### Project 2
+    - Expanding the grammar with variables
 
 <a name="sources"></a>
 ### Sources
