@@ -24,6 +24,7 @@ expr        :   '(' expr ')'
             |   cvar_decl
             |   pvar_decl
             |   pvar_decl assign addr_op
+            |   pvar_decl assign var
             |   var_decl assign expr
             |   var_decl assign var
             |   var_decl assign int

@@ -49,6 +49,21 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#float.
+    def visitFloat(self, ctx:MathParser.FloatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#char.
+    def visitChar(self, ctx:MathParser.CharContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#addr_op.
+    def visitAddr_op(self, ctx:MathParser.Addr_opContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#binary_op.
     def visitBinary_op(self, ctx:MathParser.Binary_opContext):
         return self.visitChildren(ctx)

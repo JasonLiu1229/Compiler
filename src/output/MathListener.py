@@ -80,6 +80,33 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#float.
+    def enterFloat(self, ctx:MathParser.FloatContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#float.
+    def exitFloat(self, ctx:MathParser.FloatContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#char.
+    def enterChar(self, ctx:MathParser.CharContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#char.
+    def exitChar(self, ctx:MathParser.CharContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#addr_op.
+    def enterAddr_op(self, ctx:MathParser.Addr_opContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#addr_op.
+    def exitAddr_op(self, ctx:MathParser.Addr_opContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#binary_op.
     def enterBinary_op(self, ctx:MathParser.Binary_opContext):
         pass
