@@ -4,15 +4,17 @@ math        :   instr* EOF
 instr       :   declr ';'
             |   expr ';'
             ;
-declr       :   var_decl assign expr
-            |   var_decl assign expr
-            |   var_decl assign lvar
-            |   var_decl assign rvar
-            |   var_decl assign int
-            |   var_decl assign float
-            |   var_decl assign char
-            |   var_decl
+declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
+
+// Right-hand side variable use
+var_decl    :   lvar
+            |   lvar assign expr
+            ;
+
+deref       :   STR+ rvar;
+rvar        :   VAR_NAME;
+lvar        :   STR* VAR_NAME;
 
 expr        :   '(' expr ')'
             |   expr binary_op expr
@@ -29,11 +31,6 @@ expr        :   '(' expr ')'
             |   rvar assign int
             ;
 
-// Right-hand side variable use
-var_decl    :   CONST? TYPE (lvar ',')* lvar;
-deref       :   STR+ rvar;
-rvar        :   VAR_NAME;
-lvar        :   STR* VAR_NAME;
 int         :   INT;
 float       :   FLOAT;
 char        :   CHAR;
