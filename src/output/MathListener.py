@@ -26,39 +26,12 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#expr.
-    def enterExpr(self, ctx:MathParser.ExprContext):
+    # Enter a parse tree produced by MathParser#declr.
+    def enterDeclr(self, ctx:MathParser.DeclrContext):
         pass
 
-    # Exit a parse tree produced by MathParser#expr.
-    def exitExpr(self, ctx:MathParser.ExprContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#var.
-    def enterVar(self, ctx:MathParser.VarContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#var.
-    def exitVar(self, ctx:MathParser.VarContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#cvar_decl.
-    def enterCvar_decl(self, ctx:MathParser.Cvar_declContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#cvar_decl.
-    def exitCvar_decl(self, ctx:MathParser.Cvar_declContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#pvar_decl.
-    def enterPvar_decl(self, ctx:MathParser.Pvar_declContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#pvar_decl.
-    def exitPvar_decl(self, ctx:MathParser.Pvar_declContext):
+    # Exit a parse tree produced by MathParser#declr.
+    def exitDeclr(self, ctx:MathParser.DeclrContext):
         pass
 
 
@@ -71,30 +44,48 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#int.
-    def enterInt(self, ctx:MathParser.IntContext):
+    # Enter a parse tree produced by MathParser#deref.
+    def enterDeref(self, ctx:MathParser.DerefContext):
         pass
 
-    # Exit a parse tree produced by MathParser#int.
-    def exitInt(self, ctx:MathParser.IntContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#float.
-    def enterFloat(self, ctx:MathParser.FloatContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#float.
-    def exitFloat(self, ctx:MathParser.FloatContext):
+    # Exit a parse tree produced by MathParser#deref.
+    def exitDeref(self, ctx:MathParser.DerefContext):
         pass
 
 
-    # Enter a parse tree produced by MathParser#char.
-    def enterChar(self, ctx:MathParser.CharContext):
+    # Enter a parse tree produced by MathParser#lvar.
+    def enterLvar(self, ctx:MathParser.LvarContext):
         pass
 
-    # Exit a parse tree produced by MathParser#char.
-    def exitChar(self, ctx:MathParser.CharContext):
+    # Exit a parse tree produced by MathParser#lvar.
+    def exitLvar(self, ctx:MathParser.LvarContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#rvar.
+    def enterRvar(self, ctx:MathParser.RvarContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#rvar.
+    def exitRvar(self, ctx:MathParser.RvarContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#expr.
+    def enterExpr(self, ctx:MathParser.ExprContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#expr.
+    def exitExpr(self, ctx:MathParser.ExprContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#rtype.
+    def enterRtype(self, ctx:MathParser.RtypeContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#rtype.
+    def exitRtype(self, ctx:MathParser.RtypeContext):
         pass
 
 

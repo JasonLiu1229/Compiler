@@ -19,23 +19,8 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#expr.
-    def visitExpr(self, ctx:MathParser.ExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#var.
-    def visitVar(self, ctx:MathParser.VarContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#cvar_decl.
-    def visitCvar_decl(self, ctx:MathParser.Cvar_declContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#pvar_decl.
-    def visitPvar_decl(self, ctx:MathParser.Pvar_declContext):
+    # Visit a parse tree produced by MathParser#declr.
+    def visitDeclr(self, ctx:MathParser.DeclrContext):
         return self.visitChildren(ctx)
 
 
@@ -44,18 +29,28 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#int.
-    def visitInt(self, ctx:MathParser.IntContext):
+    # Visit a parse tree produced by MathParser#deref.
+    def visitDeref(self, ctx:MathParser.DerefContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#float.
-    def visitFloat(self, ctx:MathParser.FloatContext):
+    # Visit a parse tree produced by MathParser#lvar.
+    def visitLvar(self, ctx:MathParser.LvarContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#char.
-    def visitChar(self, ctx:MathParser.CharContext):
+    # Visit a parse tree produced by MathParser#rvar.
+    def visitRvar(self, ctx:MathParser.RvarContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#expr.
+    def visitExpr(self, ctx:MathParser.ExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#rtype.
+    def visitRtype(self, ctx:MathParser.RtypeContext):
         return self.visitChildren(ctx)
 
 

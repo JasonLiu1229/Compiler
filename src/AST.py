@@ -188,10 +188,10 @@ class AstCreator (MathVisitor):
             return self.visitInstr(ctx)
         elif isinstance(ctx, MathParser.ExprContext):
             return self.visitExpr(ctx)
-        elif isinstance(ctx, MathParser.VarContext):
-            return self.visitVar(ctx)
-        elif isinstance(ctx, MathParser.IntContext):
-            return self.visitInt(ctx)
+        elif isinstance(ctx, MathParser.RvarContext):
+            return self.visitRvar(ctx)
+        elif isinstance(ctx, MathParser.RtypeContext):
+            return self.visitRtype(ctx)
         elif isinstance(ctx, MathParser.Binary_opContext):
             return self.visitBinary_op(ctx)
         elif isinstance(ctx, MathParser.Unary_opContext):
@@ -208,8 +208,12 @@ class AstCreator (MathVisitor):
             return self.visitAssign(ctx)
         elif isinstance(ctx, MathParser.Var_declContext):
             return self.visitVar_decl(ctx)
-        elif isinstance(ctx, MathParser.Cvar_declContext):
-            return self.visitCvar_decl(ctx)
+        elif isinstance(ctx , MathParser.LvarContext):
+            return self.visitLvar(ctx)
+        elif isinstance(ctx , MathParser.DeclrContext):
+            return self.visitDeclr(ctx)
+        elif isinstance(ctx , MathParser.DerefContext):
+            return self.visitDeref(ctx)
 
 
     def visitMath(self, ctx: MathParser.MathContext):
@@ -256,12 +260,16 @@ class AstCreator (MathVisitor):
         new_ast = self.resolve_datatype(expr_ast)
         return new_ast
 
-    def visitVar(self, ctx: MathParser.VarContext):
+    def visitRvar(self, ctx: MathParser.RvarContext):
         root = Node(keywords[0], ctx.children[0].getText())
         return root
 
-    def visitInt(self, ctx: MathParser.IntContext):
-        root = Node(keywords[1], int(ctx.children[0].getText()))
+    def visitRtype(self, ctx: MathParser.RtypeContext):
+        # TODO: Fix value giving for different types
+        if ctx.children[0].getText().isdigit():
+            return Node(keywords[1], ctx.children[0].getText())
+        else:
+            return Node(keywords[1], int(ctx.children[0].getText()))
         return root
 
     def visitBinary_op(self, ctx: MathParser.Binary_opContext):
@@ -292,22 +300,67 @@ class AstCreator (MathVisitor):
         root = Node(keywords[8], ctx.children[0].getText())
         return root
 
-    def visitCvar_decl(self, ctx: MathParser.Cvar_declContext):
-        # CONST TYPE VAR_NAME
-        # const int x
-        # check if type is in allowed types
-        if ctx.children[1].getText() not in keywords_datatype:
-            raise TypeError(ctx.children[1].getText() + " is not a valid type")
-        root = VarNode(const= bool(ctx.children[0].getText()) , vtype= ctx.children[1].getText() , key= ctx.children[2].getText() , value= None)
-        return root
+    def visitDeclr(self, ctx: MathParser.DeclrContext):
+        # CONST? TYPE STR* (var_decl ',')* var_decl
+        out = AST()
+        out.root = Node("declr" , None)
+        const = False
+        ptr = False
+        v_type = ""
+        root = VarNode("" , None , type , const)
+        for i in range(len(ctx.children)):
+            if ctx.children[i].getText() == "const":
+                const = True
+            elif ctx.children[i].getText() == "*":
+                ptr = True
+            elif ctx.children[i].getText() in keywords_datatype and v_type == "":
+                v_type = ctx.children[i].getText()
+            elif ctx.children[i].getText() == ",":
+                root = VarNode("" , None , v_type , const)
+                ptr = False
+            else:
+                root = self.visit_child(ctx.children[i])
+                self.resolve_binary(root)
+                self.resolve_assign(root)
+                new_ast = self.resolve_datatype(root)
+                root = new_ast
+                root.const = const
+                root.type = v_type
+                out.add_child(root)
+                # self.symbol_table[root.key] = VarNode(root.key , root.value , root.type , root.const)
+        return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
         # TYPE VAR_NAME
         # int x
-        root = VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
+        out = VarNode("" , None , "")
+        if len(ctx.children) == 1:
+            out = self.visit_child(ctx.children[0])
+        else:
+            out = AST()
+            for c in ctx.children:
+                out.add_child(self.visit_child(c))
+            # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
+            out.root = Node("expr" , None)
+        return out
+
+    def visitDeref(self, ctx: MathParser.DerefContext):
+        root = Node()
         return root
 
-        # Tree reduction methods
+    def visitLvar(self, ctx: MathParser.LvarContext):
+        if len(ctx.children) == 1:
+            root = VarNode(ctx.children[0].getText() , None , "")
+            return root
+        # If more than 1 element: its a pointer
+        root = VarNode(ctx.children[-1].getText(), None , "")
+        return root
+
+    def visitAddr_op(self, ctx: MathParser.Addr_opContext):
+        root = Node("addr_op" , )
+        return root
+
+    # Tree reduction methods
 
     def resolve_binary(self, expr_ast) -> AST | Node:
         if isinstance(expr_ast, Node):
@@ -359,6 +412,10 @@ class AstCreator (MathVisitor):
         return expr_ast
 
     def resolve_assign(self, expr_ast: AST | Node) -> AST | Node:
+        if isinstance(expr_ast , Node):
+            return expr_ast
+        if len(expr_ast.children) < 3:
+            return expr_ast
         for i in range(len(expr_ast.children)):
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
                 new_el = AST()
@@ -406,6 +463,8 @@ class AstCreator (MathVisitor):
 
     @staticmethod
     def resolve_empty(expr_ast):
+        if isinstance(expr_ast , Node):
+            return expr_ast
         for child in expr_ast.children:
             if child is None:
                 expr_ast.children.remove(child)
