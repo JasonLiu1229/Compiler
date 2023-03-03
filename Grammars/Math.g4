@@ -1,8 +1,19 @@
 grammar Math;
 math        :   instr* EOF
             ;
-instr       :   expr ';'
+instr       :   declr ';'
+            |   expr ';'
             ;
+declr       :   var_decl assign expr
+            |   var_decl assign expr
+            |   var_decl assign lvar
+            |   var_decl assign rvar
+            |   var_decl assign int
+            |   var_decl assign float
+            |   var_decl assign char
+            |   var_decl
+            ;
+
 expr        :   '(' expr ')'
             |   expr binary_op expr
             |   expr unary_op expr
@@ -12,36 +23,22 @@ expr        :   '(' expr ')'
             |   un_log_op expr
             |   unary_op expr
             |   int
-            |   var
-            |   var assign expr
-            |   var assign var
-            |   var assign int
-            |   cvar_decl assign expr
-            |   cvar_decl assign var
-            |   cvar_decl assign int
-            |   cvar_decl assign float
-            |   cvar_decl assign char
-            |   cvar_decl
-            |   pvar_decl
-            |   pvar_decl assign addr_op
-            |   pvar_decl assign var
-            |   var_decl assign expr
-            |   var_decl assign var
-            |   var_decl assign int
-            |   var_decl assign float
-            |   var_decl assign char
-            |   var_decl
+            |   rvar
+            |   rvar assign expr
+            |   rvar assign rvar
+            |   rvar assign int
             ;
 
-var         :   VAR_NAME;
-cvar_decl   :   CONST TYPE VAR_NAME;
-pvar_decl   :   TYPE '*' VAR_NAME;
-var_decl    :   TYPE VAR_NAME;
+// Right-hand side variable use
+var_decl    :   CONST? TYPE (lvar ',')* lvar;
+deref       :   STR+ rvar;
+rvar        :   VAR_NAME;
+lvar        :   STR* VAR_NAME;
 int         :   INT;
 float       :   FLOAT;
 char        :   CHAR;
-addr_op     :   ADDR_OP var;
-binary_op   :   (MUL  | DIV | MOD);
+addr_op     :   ADDR rvar;
+binary_op   :   (STR  | DIV | MOD);
 unary_op    :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
 comp_eq     :   (GEQ | LEQ | NEQ);
@@ -60,7 +57,7 @@ INT         :   [0-9]+;
 FLOAT       :   INT '.' INT;
 CHAR        :   '\'' . '\'';
 // Operations
-MUL         :   '*';
+STR         :   '*';
 DIV         :   '/';
 MOD         :   '%';
 SUM         :   '+';
@@ -75,7 +72,7 @@ OR_OP       :   '||';
 AND_OP      :   '&&';
 NOT_OP      :   '!';
 ASSIGN      :   '=';
-ADDR_OP     :   '&';
+ADDR     :   '&';
 // Redundant characters to be removed
 SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
