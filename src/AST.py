@@ -170,7 +170,6 @@ class AST:
 
 class AstCreator (MathVisitor):
 
-    # TODO: Add support for characters
     # TODO: Add support for pointer and address operations
     # TODO: Add support for conversions
     # TODO: Finetune the error listener
@@ -265,12 +264,12 @@ class AstCreator (MathVisitor):
         return root
 
     def visitRtype(self, ctx: MathParser.RtypeContext):
-        # TODO: Fix value giving for different types
         if ctx.children[0].getText().isdigit():
-            return Node(keywords[1], ctx.children[0].getText())
+            return Node(keywords_datatype[0], int(ctx.children[0].getText()))
+        elif self.isfloat(ctx.children[0].getText()):
+            return Node(keywords_datatype[1], float(ctx.children[0].getText()))
         else:
-            return Node(keywords[1], int(ctx.children[0].getText()))
-        return root
+            return Node(keywords_datatype[2], ctx.children[0].getText())
 
     def visitBinary_op(self, ctx: MathParser.Binary_opContext):
         root = Node(keywords[2], ctx.children[0].getText())
@@ -359,6 +358,15 @@ class AstCreator (MathVisitor):
     def visitAddr_op(self, ctx: MathParser.Addr_opContext):
         root = Node("addr_op" , )
         return root
+
+    # Helper functions
+
+    def isfloat(self, string):
+        try:
+            float(string)
+            return True
+        except ValueError:
+            return False
 
     # Tree reduction methods
 
@@ -672,3 +680,4 @@ class AstCreator (MathVisitor):
         elif input_ast.root.key == "un_log_op":
             return self.optimise_un_log(input_ast)
         return input_ast
+
