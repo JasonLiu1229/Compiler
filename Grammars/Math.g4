@@ -4,17 +4,20 @@ math        :   instr* EOF
 instr       :   declr ';'
             |   expr ';'
             ;
-declr       :   CONST? TYPE (var_decl ',')* var_decl
+declr       :   CONST? TYPE STR* (var_decl ',')* var_decl
             ;
 
 // Right-hand side variable use
-var_decl    :   lvar
-            |   lvar assign expr
+var_decl    :   lvar assign expr
+            |   lvar assign rvar
+            |   lvar assign rtype
+            |   lvar assign addr_op
+            |   lvar
             ;
 
 deref       :   STR+ rvar;
-rvar        :   VAR_NAME;
 lvar        :   STR* VAR_NAME;
+rvar        :   VAR_NAME;
 
 expr        :   '(' expr ')'
             |   expr binary_op expr
@@ -24,16 +27,17 @@ expr        :   '(' expr ')'
             |   expr bin_log_op expr
             |   un_log_op expr
             |   unary_op expr
-            |   int
+            |   rtype
             |   rvar
             |   rvar assign expr
             |   rvar assign rvar
-            |   rvar assign int
+            |   rvar assign rtype
             ;
 
-int         :   INT;
-float       :   FLOAT;
-char        :   CHAR;
+rtype       :   INT
+            |   FLOAT
+            |   CHAR
+            ;
 addr_op     :   ADDR rvar;
 binary_op   :   (STR  | DIV | MOD);
 unary_op    :   (SUM | DIF);
