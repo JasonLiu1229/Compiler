@@ -19,21 +19,27 @@ expr        :   '(' expr ')'
             |   cvar_decl assign expr
             |   cvar_decl assign var
             |   cvar_decl assign int
+            |   cvar_decl assign float
+            |   cvar_decl assign char
             |   cvar_decl
             |   pvar_decl
-            |   pvar_decl assign expr
-            |   pvar_decl assign var
-            |   pvar_decl assign int
+            |   pvar_decl assign addr_op
             |   var_decl assign expr
             |   var_decl assign var
             |   var_decl assign int
+            |   var_decl assign float
+            |   var_decl assign char
             |   var_decl
             ;
+
 var         :   VAR_NAME;
 cvar_decl   :   CONST TYPE VAR_NAME;
 pvar_decl   :   TYPE '*' VAR_NAME;
 var_decl    :   TYPE VAR_NAME;
 int         :   INT;
+float       :   FLOAT;
+char        :   CHAR;
+addr_op     :   ADDR_OP var;
 binary_op   :   (MUL  | DIV | MOD);
 unary_op    :   (SUM | DIF);
 comp_op     :   (GT | LT | EQ);
@@ -51,6 +57,7 @@ TYPE        :   'char'
 VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
 INT         :   [0-9]+;
 FLOAT       :   INT '.' INT;
+CHAR        :   '\'' . '\'';
 // Operations
 MUL         :   '*';
 DIV         :   '/';
@@ -67,6 +74,7 @@ OR_OP       :   '||';
 AND_OP      :   '&&';
 NOT_OP      :   '!';
 ASSIGN      :   '=';
+ADDR_OP     :   '&';
 // Redundant characters to be removed
 SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
