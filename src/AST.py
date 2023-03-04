@@ -1,8 +1,12 @@
 # External libraries
+import colorama
+
 import antlr4.error.ErrorListener
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
+import warnings
+from colorama import Fore
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op" , "const_var"]
@@ -10,7 +14,8 @@ keywords_datatype = ["int" , "float" , "char"]
 keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op"]
 keywords_unary = ["unary_op"]
 keywords_assign = ["assign_op"]
-
+conversions = [("float" , "int") , ("int" , "char")]
+conv_promotions = [("int" , "float") , ("char" , "int")]
 class ErrorListener (antlr4.error.ErrorListener.ErrorListener):
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
@@ -644,9 +649,39 @@ class AstCreator (MathVisitor):
                 return new_el
             else:
                 new_el.key = first.key
-                new_el.value = second.value
+                # Check that the assigned value is of correct type
+                if self.symbol_table[new_el.key].type != second.key:
+                    # Check for any valid conversions
+                    # Promoting conversions are good
+                    if (self.symbol_table[new_el.key].type , second.key) in conv_promotions:
+                        new_el.value = second.value
+                    # Implicit demoting conversions
+                    elif (self.symbol_table[new_el.key].type , second.key) in conversions:
+                        # colorama.init(autoreset=True)
+                        warnings.warn(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                            new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                        # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                        #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                        new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
+                    # No conversions
+                    else:
+                        raise TypeError("Assign value of invalid type. Should be " +
+                                        self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
+                                                                                                         "No valid conversion from " +
+                                        self.symbol_table[new_el.key].type + " to " + second.key)
+                else:
+                    new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
         return new_el
+
+    @staticmethod
+    def convert(value, d_type):
+        if d_type == "int":
+            return int(value)
+        elif d_type == "float":
+            return float(value)
+        elif d_type == "char":
+            return chr(value)
 
     def optimise_variables(self, input_node : Node) -> Node :
         # Search for the variable name in the symbols table
