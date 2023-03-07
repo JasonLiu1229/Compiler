@@ -53,10 +53,11 @@ class Node:
 
 class VarNode( Node ):
 
-    def __init__(self, key: str, value , vtype: str , const : bool = False) -> None:
+    def __init__(self, key: str, value , vtype: str , const : bool = False , deref_level: int = 0) -> None:
         super().__init__(key, value)
         self.type = vtype
         self.const = const
+        self.deref_level = deref_level
 
     def print(self):
         return self.get_str()
@@ -358,13 +359,16 @@ class AstCreator (MathVisitor):
     def visitDeref(self, ctx: MathParser.DerefContext):
         # STR rvar
         # STR deref
-        root = Node()
-        input = ctx
-        while true:
-            if isinstance(input.children[1], MathParser.RvarContext):
-                return Node(input.children[1].getText(), None)
+        inp = ctx
+        key = ""
+        deref_count = 0
+        # Get deref level
+        while True:
+            if isinstance(inp.children[1], MathParser.RvarContext):
+                key = inp.children[1].getText()
+                break
             else:
-                input = ctx.children[1]
+                inp = inp.children[1]
 
     def visitLvar(self, ctx: MathParser.LvarContext):
         if len(ctx.children) == 1:
@@ -665,7 +669,6 @@ class AstCreator (MathVisitor):
                         new_el.value = second.value
                     # Implicit demoting conversions
                     elif (self.symbol_table[new_el.key].type , second.key) in conversions:
-                        # colorama.init(autoreset=True)
                         warnings.warn(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
                             new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
                         # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
