@@ -1,10 +1,11 @@
 grammar Math;
+
 math        :   instr* EOF
             ;
 instr       :   declr ';'
             |   expr ';'
             ;
-declr       :   CONST? TYPE STR* (var_decl ',')* var_decl
+declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
 
 // Right-hand side variable use
@@ -15,7 +16,10 @@ var_decl    :   lvar assign expr
             |   lvar
             ;
 
-deref       :   STR+ rvar;
+deref       :   STR deref
+            |   STR rvar
+            ;
+
 lvar        :   STR* VAR_NAME;
 rvar        :   VAR_NAME;
 
@@ -32,6 +36,10 @@ expr        :   '(' expr ')'
             |   rvar assign expr
             |   rvar assign rvar
             |   rvar assign rtype
+            |   deref assign expr
+            |   deref assign rvar
+            |   deref assign rtype
+            |   deref assign deref
             ;
 
 rtype       :   INT
@@ -46,6 +54,7 @@ comp_eq     :   (GEQ | LEQ | NEQ);
 bin_log_op  :   (AND_OP | OR_OP);
 un_log_op   :   (NOT_OP);
 assign      :   ASSIGN;
+
 // Keywords
 CONST       :   'const';
 // Identifiers and data types
@@ -79,6 +88,7 @@ SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
 WS          :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
+
 // Comments
 // Ref : https://stackoverflow.com/a/23414078
 COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);
