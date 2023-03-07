@@ -36,10 +36,13 @@ expr        :   '(' expr ')'
             |   rvar assign expr
             |   rvar assign rvar
             |   rvar assign rtype
+            |   rvar assign addr_op
+            |   rvar assign deref
             |   deref assign expr
             |   deref assign rvar
             |   deref assign rtype
             |   deref assign deref
+            |   deref assign addr_op
             ;
 
 rtype       :   INT
