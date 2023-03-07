@@ -16,6 +16,7 @@ keywords_unary = ["unary_op"]
 keywords_assign = ["assign_op"]
 conversions = [("float" , "int") , ("int" , "char")]
 conv_promotions = [("int" , "float") , ("char" , "int")]
+
 class ErrorListener (antlr4.error.ErrorListener.ErrorListener):
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
@@ -355,8 +356,15 @@ class AstCreator (MathVisitor):
         return out
 
     def visitDeref(self, ctx: MathParser.DerefContext):
+        # STR rvar
+        # STR deref
         root = Node()
-        return root
+        input = ctx
+        while true:
+            if isinstance(input.children[1], MathParser.RvarContext):
+                return Node(input.children[1].getText(), None)
+            else:
+                input = ctx.children[1]
 
     def visitLvar(self, ctx: MathParser.LvarContext):
         if len(ctx.children) == 1:
