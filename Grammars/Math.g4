@@ -4,9 +4,12 @@ math        :   instr* EOF
             ;
 instr       :   declr ';'
             |   expr ';'
+            |   printf ';'
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
+
+printf      :   'printf' '(' (rvar | rtype) ')';
 
 // Right-hand side variable use
 var_decl    :   lvar assign addr_op
@@ -46,6 +49,7 @@ expr        :   '(' expr ')'
 rtype       :   INT
             |   FLOAT
             |   CHAR
+            |   STRING
             ;
 addr_op     :   ADDR rvar;
 binary_op   :   (STR  | DIV | MOD);
@@ -67,6 +71,7 @@ VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;            
 INT         :   [0-9]+;
 FLOAT       :   INT '.' INT;
 CHAR        :   '\'' . '\'';
+STRING      :   '"' (.)*? '"';
 // Operations
 STR         :   '*';
 DIV         :   '/';
