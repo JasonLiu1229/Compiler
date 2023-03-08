@@ -6,6 +6,7 @@ from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
 import json
 import warnings
+import copy
 from colorama import Fore
 
 # Standard Variables
@@ -354,7 +355,7 @@ class AstCreator (MathVisitor):
                 root.assign_type(v_type)
                 out.add_child(root)
                 if not isinstance(root , AST):
-                    self.symbol_table[root.key] = VarNode(root.key , root.value , root.type , root.const)
+                    self.symbol_table[root.key] = copy.copy(root)
         return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
@@ -487,12 +488,17 @@ class AstCreator (MathVisitor):
                 if expr_ast.children[0].key == "var":
                     expr_ast = expr_ast.children[0]
                     expr_ast.key = expr_ast.value
-                    expr_ast.value = None
+                    if expr_ast.key in self.symbol_table.keys() and self.symbol_table[expr_ast.key] is not None:
+                        expr_ast.value = self.symbol_table[expr_ast.key].value
+                    else:
+                        expr_ast.value = None
                 elif isinstance(expr_ast.children[0] , VarNode):
                     expr_ast = expr_ast.children[0]
                     # Add the variable declaration to the symbols table
                     if expr_ast.key not in self.symbol_table:
                         self.symbol_table[expr_ast.key] = None
+                    else:
+                        expr_ast.value = self.symbol_table[expr_ast.key].value
                 else:
                     expr_ast = expr_ast.children[0]
         return expr_ast
@@ -681,7 +687,11 @@ class AstCreator (MathVisitor):
         if second is not None and isinstance(second, AST):
             second = self.optimise(second)
         if second is not None and isinstance(second , Node):
-            second = self.optimise_variables(second)
+            if isinstance(first , VarNode) and first.ptr:
+                val = self.symbol_table[second.key]
+                second = VarNode(val.key , val.value , val.type , val.const , val.ptr , val.deref_level , val.total_deref)
+            else:
+                second = self.optimise_variables(second)
         if input_ast.root.value == "=":
             if new_el.key not in self.symbol_table:
                 raise SyntaxError("Variable " + new_el.key + " not declared in this scope")
@@ -696,10 +706,11 @@ class AstCreator (MathVisitor):
                 elif new_el.ptr:
                     if new_el.deref_level > 0 and not isinstance(second , VarNode):
                         raise RuntimeError("Attempting to assign pointer of depth greater than 0 to a non-pointer value")
-                    if new_el.deref_level > 0 and new_el.deref_level > second.deref_level + 1:
-                        raise RuntimeError("Pointer depth incompatible")
-                    out_el = new_el.value
-                    out_el.value = second.value
+                    if new_el.total_deref > second.total_deref + 1:
+                        raise RuntimeError("Pointer depth incompatible for pointer "
+                                           + new_el.key + " with depth " + str(new_el.total_deref) + " and pointer "
+                                           + second.key + " with depth " + str(second.total_deref))
+                    new_el.value = self.symbol_table[second.key]
                 else:
                     new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
@@ -707,7 +718,7 @@ class AstCreator (MathVisitor):
             else:
                 new_el.key = first.key
                 # Check that the assigned value is of correct type
-                if self.symbol_table[new_el.key].type != second.key:
+                if self.symbol_table[new_el.key].type != second.key and second.key not in self.symbol_table.keys():
                     # Check for any valid conversions
                     # Promoting conversions are good
                     if (self.symbol_table[new_el.key].type , second.key) in conv_promotions:
@@ -720,6 +731,8 @@ class AstCreator (MathVisitor):
                         #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
                         new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
                     # No conversions
+                    elif second.key not in self.symbol_table.keys():
+                        raise RuntimeError("Variable " + second.key + " was not declared in this scope")
                     else:
                         raise TypeError("Assign value of invalid type. Should be " +
                                         self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
