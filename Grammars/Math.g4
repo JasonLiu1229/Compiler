@@ -9,10 +9,8 @@ declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
 
 // Right-hand side variable use
-var_decl    :   lvar assign expr
-            |   lvar assign rvar
-            |   lvar assign rtype
-            |   lvar assign addr_op
+var_decl    :   lvar assign addr_op
+            |   lvar assign expr
             |   lvar
             ;
 
@@ -31,8 +29,6 @@ expr        :   '(' expr ')'
             |   expr bin_log_op expr
             |   un_log_op expr
             |   unary_op expr
-            |   rtype
-            |   rvar
             |   rvar assign expr
             |   rvar assign rvar
             |   rvar assign rtype
@@ -43,6 +39,8 @@ expr        :   '(' expr ')'
             |   deref assign rtype
             |   deref assign deref
             |   deref assign addr_op
+            |   rtype
+            |   rvar
             ;
 
 rtype       :   INT

@@ -23,8 +23,8 @@ def main(argv):
     visitor = AstCreator()
     ast = visitor.visit(parse_tree)
     ast.print()
-    ast = visitor.optimise(ast)
-    ast.print()
+    # ast = visitor.optimise(ast)
+    # ast.print()
 
     print(parse_tree.toStringTree(recog=parser))
 

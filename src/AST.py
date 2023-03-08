@@ -37,6 +37,8 @@ class Node:
         print(self.get_str())
 
     def save(self):
+        if isinstance(self.value , VarNode):
+            return { self.key : self.value.save() }
         out = { self.key : self.value }
         return out
     def get_str(self):
@@ -53,11 +55,13 @@ class Node:
 
 class VarNode( Node ):
 
-    def __init__(self, key: str, value , vtype: str , const : bool = False , deref_level: int = 0) -> None:
+    def __init__(self, key: str, value , vtype: str , const : bool = False , ptr: bool = False , deref_level: int = 0 , total_deref: int = 0) -> None:
         super().__init__(key, value)
         self.type = vtype
         self.const = const
+        self.ptr = ptr
         self.deref_level = deref_level
+        self.total_deref = total_deref
 
     def print(self):
         return self.get_str()
@@ -65,12 +69,23 @@ class VarNode( Node ):
     def save(self):
         out_key = ""
         if self.type != "":
-            out_key += self.type + " "
-        out_key += self.key
+            out_key += self.type
+            if self.type != "":
+                out_key += " "
+        out_key += str('*'*self.deref_level) + self.key
         if self.const:
             out_key = "const " + out_key
-        out = { out_key : self.value }
+        if isinstance(self.value , VarNode):
+            # out_key = str('*'*(self.deref_level+1)) + out_key
+            out = {out_key : self.value.save()}
+        else:
+            out = { out_key : self.value }
         return out
+
+    def assign_type(self, vtype):
+        self.type = vtype
+        if isinstance(self.value , VarNode):
+            self.value.assign_type(vtype)
 
     def get_str(self):
         return self.type + ' ' + self.key + '\t' + ':' + '\t' + str(self.value)
@@ -223,6 +238,8 @@ class AstCreator (MathVisitor):
             return self.visitDeclr(ctx)
         elif isinstance(ctx , MathParser.DerefContext):
             return self.visitDeref(ctx)
+        elif isinstance(ctx , MathParser.Addr_opContext):
+            return self.visitAddr_op(ctx)
 
 
     def visitMath(self, ctx: MathParser.MathContext):
@@ -263,11 +280,11 @@ class AstCreator (MathVisitor):
             expr_ast.add_child(self.visit_child(c))
         self.resolve_empty(expr_ast)
         # Resolve the operations order
+        expr_ast = self.resolve_datatype(expr_ast)
         self.resolve_unary(expr_ast)
         self.resolve_binary(expr_ast)
         self.resolve_assign(expr_ast)
-        new_ast = self.resolve_datatype(expr_ast)
-        return new_ast
+        return expr_ast
 
     def visitRvar(self, ctx: MathParser.RvarContext):
         root = Node(keywords[0], ctx.children[0].getText())
@@ -310,33 +327,31 @@ class AstCreator (MathVisitor):
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
-        # CONST? TYPE STR* (var_decl ',')* var_decl
+        # CONST? TYPE (var_decl ',')* var_decl
         out = AST()
         out.root = Node("declr" , None)
         const = False
-        ptr = False
         v_type = ""
-        root = VarNode("" , None , v_type , const)
+        root = VarNode("", None, v_type, const)
         for i in range(len(ctx.children)):
             if ctx.children[i].getText() == "const":
                 const = True
-            elif ctx.children[i].getText() == "*":
-                ptr = True
             elif ctx.children[i].getText() in keywords_datatype and v_type == "":
                 v_type = ctx.children[i].getText()
             elif ctx.children[i].getText() == ",":
                 root = VarNode("" , None , v_type , const)
-                ptr = False
             else:
                 root = self.visit_child(ctx.children[i])
+                self.resolve_unary(root)
                 self.resolve_binary(root)
                 self.resolve_variables(root)
                 self.resolve_assign(root)
+                self.resolve_empty(root)
                 self.optimise(root)
                 new_ast = self.resolve_datatype(root)
                 root = new_ast
                 root.const = const
-                root.type = v_type
+                root.assign_type(v_type)
                 out.add_child(root)
                 if not isinstance(root , AST):
                     self.symbol_table[root.key] = VarNode(root.key , root.value , root.type , root.const)
@@ -356,30 +371,32 @@ class AstCreator (MathVisitor):
             out.root = Node("expr" , None)
         return out
 
-    def visitDeref(self, ctx: MathParser.DerefContext):
-        # STR rvar
-        # STR deref
-        inp = ctx
-        key = ""
-        deref_count = 0
-        # Get deref level
-        while True:
-            if isinstance(inp.children[1], MathParser.RvarContext):
-                key = inp.children[1].getText()
-                break
-            else:
-                inp = inp.children[1]
-
     def visitLvar(self, ctx: MathParser.LvarContext):
         if len(ctx.children) == 1:
-            root = VarNode(ctx.children[0].getText() , None , "")
+            root = VarNode(ctx.children[-1].getText() , None , "")
             return root
         # If more than 1 element: it's a pointer
-        root = VarNode(ctx.children[-1].getText(), None , "")
+        root = VarNode(ctx.children[-1].getText(), None , "" , total_deref= len(ctx.children) - 1)
+        # Make a length-1 chain on the symbol table for the pointer
+        current_node = root
+        for i in range(len(ctx.children) - 1):
+            # new_node = VarNode(current_node.key , None , current_node.type , current_node.const , i + 1)
+            if current_node.key not in self.symbol_table.keys():
+                self.symbol_table[current_node.key] = root
+                root.value = current_node
+                root.ptr = True
+            current_node.value = VarNode(current_node.key , None , current_node.type , current_node.const , current_node.total_deref > 1 , i + 1 , current_node.total_deref - 1)
+            current_node = current_node.value
+
         return root
 
     def visitAddr_op(self, ctx: MathParser.Addr_opContext):
-        root = Node("addr_op" , None)
+        # resolve second child (rvar)
+        r_var = self.visit_child(ctx.children[1])
+        r_var = self.resolve_variables(r_var)
+        # Search for variable in the symbol table
+
+        root = r_var
         return root
 
     # Helper functions
@@ -485,20 +502,22 @@ class AstCreator (MathVisitor):
             return input_ast
         if input_ast.key == "var":
             input_ast.key = input_ast.value
-            input_ast.value = None
+            if input_ast.key in self.symbol_table.keys() and self.symbol_table[input_ast.key] is not None:
+                input_ast.value = self.symbol_table[input_ast.key].value
         elif isinstance(input_ast, VarNode):
             # Add the variable declaration to the symbols table
             if input_ast.key not in self.symbol_table:
                 self.symbol_table[input_ast.key] = None
         return input_ast
 
-    @staticmethod
-    def resolve_empty(expr_ast):
+    def resolve_empty(self, expr_ast):
         if isinstance(expr_ast , Node):
             return expr_ast
         for child in expr_ast.children:
             if child is None:
                 expr_ast.children.remove(child)
+            else:
+                child = self.resolve_empty(child)
 
     # Optimising tree by reducing operations with literals to their result
 
@@ -534,6 +553,20 @@ class AstCreator (MathVisitor):
                 elif isinstance(new_el.value, int):
                     new_el.key = "int"
             return new_el
+
+    def visitDeref(self, ctx: MathParser.DerefContext):
+        # STR rvar
+        # STR deref
+        inp = ctx
+        key = ""
+        deref_count = 0
+        # Get deref level
+        while True:
+            if isinstance(inp.children[1], MathParser.RvarContext):
+                key = inp.children[1].getText()
+                break
+            else:
+                inp = inp.children[1]
 
     def optimise_binary(self, input_ast: AST) -> AST | Node:
         new_el = Node("", None)
@@ -656,7 +689,19 @@ class AstCreator (MathVisitor):
                 if self.symbol_table[new_el.key].value is not None and self.symbol_table[new_el.key].const:
                     raise RuntimeError("Attempting to modify a const variable " + new_el.key)
             if isinstance(first , VarNode):
-                new_el.value = second.value
+                # Deref the required number of times
+
+                if new_el.ptr and new_el.deref_level > 0 and not isinstance(second , VarNode):
+                    raise RuntimeError("Attempting to assign value of pointer of depth " + new_el.deref_level + " to a non-pointer value")
+                elif new_el.ptr:
+                    if new_el.deref_level > 0 and not isinstance(second , VarNode):
+                        raise RuntimeError("Attempting to assign pointer of depth greater than 0 to a non-pointer value")
+                    if new_el.deref_level > 0 and new_el.deref_level > second.deref_level + 1:
+                        raise RuntimeError("Pointer depth incompatible")
+                    out_el = new_el.value
+                    out_el.value = second.value
+                else:
+                    new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
                 return new_el
             else:
