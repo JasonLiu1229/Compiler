@@ -373,6 +373,8 @@ class AstCreator (MathVisitor):
         return out
 
     def visitLvar(self, ctx: MathParser.LvarContext):
+        if ctx.children[-1].getText() in self.symbol_table.keys():
+            raise AttributeError("Redeclaration of variable " + ctx.children[-1].getText())
         if len(ctx.children) == 1:
             root = VarNode(ctx.children[-1].getText() , None , "")
             return root
@@ -688,6 +690,8 @@ class AstCreator (MathVisitor):
             second = self.optimise(second)
         if second is not None and isinstance(second , Node):
             if isinstance(first , VarNode) and first.ptr:
+                if second.key in keywords_datatype:
+                    raise AttributeError("Attempting to assign a non-variable to a pointer")
                 val = self.symbol_table[second.key]
                 second = VarNode(val.key , val.value , val.type , val.const , val.ptr , val.deref_level , val.total_deref)
             else:
@@ -700,7 +704,6 @@ class AstCreator (MathVisitor):
                     raise RuntimeError("Attempting to modify a const variable " + new_el.key)
             if isinstance(first , VarNode):
                 # Deref the required number of times
-
                 if new_el.ptr and new_el.deref_level > 0 and not isinstance(second , VarNode):
                     raise RuntimeError("Attempting to assign value of pointer of depth " + new_el.deref_level + " to a non-pointer value")
                 elif new_el.ptr:
@@ -731,13 +734,21 @@ class AstCreator (MathVisitor):
                         #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
                         new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
                     # No conversions
+
                     elif second.key not in self.symbol_table.keys():
-                        raise RuntimeError("Variable " + second.key + " was not declared in this scope")
+                        raise AttributeError("Variable " + second.key + " was not declared in this scope")
                     else:
                         raise TypeError("Assign value of invalid type. Should be " +
                                         self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
                                                                                                          "No valid conversion from " +
                                         self.symbol_table[new_el.key].type + " to " + second.key)
+                elif isinstance(new_el.value, VarNode) and second.key in keywords_datatype:
+                    raise AttributeError("Attempting to assign a pointer to a non-variable type")
+                elif self.symbol_table[new_el.key].ptr and not self.symbol_table[second.key].ptr:
+                    entry = self.symbol_table[new_el.key]
+                    second_entry = self.symbol_table[second.key]
+                    raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +
+                                         "’ from type ‘" + second_entry.type + str('*')*second_entry.total_deref + "’")
                 else:
                     new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
