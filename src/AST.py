@@ -15,8 +15,8 @@ keywords_unary = ["unary_op"]
 keywords_indecr = ["incr" , "decr"]
 keywords_assign = ["assign_op"]
 keywords_functions = ["printf"]
-conversions = [("float" , "int") , ("int" , "char")]
-conv_promotions = [("int" , "float") , ("char" , "int")]
+conversions = [("float" , "int") , ("int" , "char") , ("float" , "char")]
+conv_promotions = [("int" , "float") , ("char" , "int") , ("char" , "float")]
 
 class ErrorListener (antlr4.error.ErrorListener.ErrorListener):
 
@@ -335,6 +335,7 @@ class AstCreator (MathVisitor):
         self.resolve_unary(expr_ast)
         self.resolve_binary(expr_ast)
         self.resolve_assign(expr_ast)
+        # expr_ast = self.unnest(expr_ast)
         return expr_ast
 
     def visitCast(self, ctx: MathParser.CastContext):
@@ -410,15 +411,19 @@ class AstCreator (MathVisitor):
                 self.resolve_variables(root)
                 self.resolve_assign(root)
                 self.resolve_empty(root)
-                self.optimise(root)
                 new_ast = self.resolve_datatype(root)
-                root = new_ast
-                root.const = const
-                if isinstance(root , VarNode):
-                    root.assign_type(v_type)
-                out.add_child(root)
-                if not isinstance(root , AST):
-                    self.symbol_table[root.key] = copy.copy(root)
+                # new_ast = self.unnest(new_ast)
+                if isinstance(new_ast , VarNode):
+                    new_ast.assign_type(v_type)
+                elif isinstance(new_ast.children[0] , VarNode):
+                    new_ast.children[0].assign_type(v_type)
+                new_ast = self.optimise(new_ast)
+                new_ast = new_ast
+                new_ast.const = const
+
+                out.add_child(new_ast)
+                if not isinstance(new_ast , AST):
+                    self.symbol_table[new_ast.key] = copy.copy(new_ast)
         return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
@@ -809,6 +814,7 @@ class AstCreator (MathVisitor):
                 # Deref the required number of times
                 if new_el.ptr and new_el.deref_level > 0 and not isinstance(second , VarNode):
                     raise RuntimeError("Attempting to assign value of pointer of depth " + new_el.deref_level + " to a non-pointer value")
+                # Pointer assignment
                 elif new_el.ptr:
                     if new_el.deref_level > 0 and not isinstance(second , VarNode):
                         raise RuntimeError("Attempting to assign pointer of depth greater than 0 to a non-pointer value")
@@ -817,6 +823,32 @@ class AstCreator (MathVisitor):
                                            + new_el.key + " with depth " + str(new_el.total_deref) + " and pointer "
                                            + second.key + " with depth " + str(second.total_deref))
                     new_el.value = self.symbol_table[second.key]
+                # Check if type matches
+                elif second.key not in self.symbol_table.keys() and new_el.type != second.key:
+                        # Check for any valid conversions
+                        # Promoting conversions are good
+                        if (self.symbol_table[new_el.key].type, second.key) in conv_promotions:
+                            new_el.value = self.convert(second.value , self.symbol_table[new_el.key].type)
+                        # Implicit demoting conversions
+                        elif (self.symbol_table[new_el.key].type, second.key) in conversions:
+                            warnings.warn(
+                                Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                                    new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                            # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                            #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                            new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
+                        # No conversions
+                        else:
+                            raise TypeError("Assign value of invalid type. Should be " +
+                                            self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
+                                                                                                             "No valid conversion from " +
+                                            self.symbol_table[new_el.key].type + " to " + second.key)
+                elif second.key in self.symbol_table.keys() and self.symbol_table[second.key].type != new_el.type:
+                    warnings.warn(
+                        Fore.YELLOW + "Implicit conversion from " + self.symbol_table[second.key].type + " to "
+                        + self.symbol_table[new_el.key].type + " for variable " +
+                        new_el.key + ". Possible loss of information")
+                    new_el.value = self.convert(second.value , new_el.type)
                 else:
                     new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
@@ -859,9 +891,15 @@ class AstCreator (MathVisitor):
     def convert(value, d_type):
         try:
             if d_type == "int":
-                return ord(value)
+                if isinstance(value , str):
+                    return ord(value)
+                else:
+                    return int(value)
             elif d_type == "float":
-                return float(value)
+                if isinstance(value , str):
+                    return float(ord(value))
+                else:
+                    return float(value)
             elif d_type == "char":
                 return chr(value)
         except:
@@ -894,6 +932,7 @@ class AstCreator (MathVisitor):
     def optimise_cast(self, input_node: AST) -> Node:
         # Check type of cast
         input_node.children[0].value = self.convert(input_node.children[0].value , input_node.root.value)
+        input_node.children[0].key = input_node.root.value
         # if input_node.root.value == "int":
         #     input_node.children[0].value = int(input_node.children[0].value)
         # if input_node.root.value == "float":
@@ -919,7 +958,9 @@ class AstCreator (MathVisitor):
         for i in range(len(input_ast.children)):
             input_ast.children[i] = self.optimise(input_ast.children[i])
         # Unary operation node replacements
-        if input_ast.root.key == "assign_op":
+        if input_ast.root.key == "cast":
+            return self.optimise_cast(input_ast)
+        elif input_ast.root.key == "assign_op":
             return self.optimise_assign(input_ast)
         elif input_ast.root.key == "unary_op":
             return self.optimise_unary(input_ast)
@@ -936,8 +977,6 @@ class AstCreator (MathVisitor):
             return self.optimise_un_log(input_ast)
         elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
             return self.optimise_incr_decr(input_ast)
-        elif input_ast.root.key == "cast":
-            return self.optimise_cast(input_ast)
         else:
             return self.unnest(input_ast)
             # return input_ast
