@@ -12,6 +12,7 @@ keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_lo
 keywords_datatype = ["int" , "float" , "char"]
 keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op"]
 keywords_unary = ["unary_op"]
+keywords_indecr = ["incr" , "decr"]
 keywords_assign = ["assign_op"]
 keywords_functions = ["printf"]
 conversions = [("float" , "int") , ("int" , "char")]
@@ -235,7 +236,6 @@ class AST:
 
 class AstCreator (MathVisitor):
 
-    # TODO: Add support for pointer and address operations
     # TODO: Finetune the error listener
     # TODO: Add a semantics error check
 
@@ -281,6 +281,12 @@ class AstCreator (MathVisitor):
             return self.visitAddr_op(ctx)
         elif isinstance(ctx , MathParser.PrintfContext):
             return self.visitPrintf(ctx)
+        elif isinstance(ctx , MathParser.IncrContext):
+            return self.visitIncr(ctx)
+        elif isinstance(ctx , MathParser.DecrContext):
+            return self.visitDecr(ctx)
+        elif isinstance(ctx , MathParser.CastContext):
+            return self.visitCast(ctx)
 
 
     def visitMath(self, ctx: MathParser.MathContext):
@@ -331,6 +337,18 @@ class AstCreator (MathVisitor):
         self.resolve_assign(expr_ast)
         return expr_ast
 
+    def visitCast(self, ctx: MathParser.CastContext):
+        out = Node("cast" , ctx.children[0].getText()[1:-1])
+        return out
+
+    def visitIncr(self, ctx: MathParser.IncrContext):
+        out = Node("incr" , None)
+        return out
+
+    def visitDecr(self, ctx: MathParser.DecrContext):
+        out = Node("decr", None)
+        return out
+
     def visitRvar(self, ctx: MathParser.RvarContext):
         root = Node(keywords[0], ctx.children[0].getText())
         return root
@@ -341,7 +359,7 @@ class AstCreator (MathVisitor):
         elif self.isfloat(ctx.children[0].getText()):
             return Node(keywords_datatype[1], float(ctx.children[0].getText()))
         else:
-            return Node(keywords_datatype[2], ctx.children[0].getText())
+            return Node(keywords_datatype[2], ctx.children[0].getText()[1:-1])
 
     def visitBinary_op(self, ctx: MathParser.Binary_opContext):
         root = Node(keywords[2], ctx.children[0].getText())
@@ -449,14 +467,40 @@ class AstCreator (MathVisitor):
 
     # Helper functions
 
+    def visitDeref(self, ctx: MathParser.DerefContext):
+        # STR rvar
+        # STR deref
+        inp = ctx
+        key = ""
+        deref_count = 1
+        # Get deref level
+        while True:
+            if isinstance(inp.children[1], MathParser.RvarContext):
+                key = inp.children[1].getText()
+                if self.symbol_table[key] is not None:
+                    # Get pointer from symbol table
+                    pointer = self.symbol_table[key]
+                    if not isinstance(pointer , VarNode):
+                        raise AttributeError("Variable " + key + " is not a pointer")
+                    elif pointer.total_deref < deref_count:
+                        raise RuntimeError("Trying to get pointer dereference depth" + str(deref_count)
+                                           +" when pointer only has depth " + pointer.total_deref)
+                    for i in range(deref_count):
+                        pointer = pointer.value
+                    out = copy.copy(pointer)
+                    return out
+            else:
+                inp = inp.children[1]
+                deref_count += 1
+
+    # Tree reduction methods
+
     def isfloat(self, string):
         try:
             float(string)
             return True
         except ValueError:
             return False
-
-    # Tree reduction methods
 
     def resolve_binary(self, expr_ast) -> AST | Node:
         if isinstance(expr_ast, Node):
@@ -489,8 +533,9 @@ class AstCreator (MathVisitor):
             return expr_ast
         for i in range(len(expr_ast.children)):
             expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[
-                i].key in keywords_unary:
+            # Unary operations
+            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
+                    expr_ast.children[i].key in keywords_unary:
                 new_el = AST()
                 if i > 0:
                     new_el.add_child(expr_ast.children[i - 1])
@@ -505,6 +550,21 @@ class AstCreator (MathVisitor):
                     for j in range(len(expr_ast.children)):
                         expr_ast.children[j] = self.resolve_unary(expr_ast.children[j])
                     return expr_ast
+            # Increment and decrement operations
+            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
+                    expr_ast.children[i].key in keywords_indecr:
+                # form rvar incr or rvar decr
+                expr_ast.root = expr_ast.children[i]
+                expr_ast.children.remove(expr_ast.children[i])
+                expr_ast.children[0] = self.resolve_variables(expr_ast.children[0])
+                return expr_ast
+            # Casting operation
+            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
+                    expr_ast.children[i].key == "cast":
+                expr_ast.root = expr_ast.children[i]
+                expr_ast.children.remove(expr_ast.children[i])
+                expr_ast.children[0] = self.resolve_variables(expr_ast.children[0])
+                return expr_ast
             elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], AST):
                 expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
         return expr_ast
@@ -586,7 +646,6 @@ class AstCreator (MathVisitor):
         return input_ast
 
     # Optimising tree by reducing operations with literals to their result
-
     def optimise_unary(self, input_ast: AST) -> AST | Node:
         new_el = Node("", None)
         # check if they are both literals
@@ -619,32 +678,6 @@ class AstCreator (MathVisitor):
                 elif isinstance(new_el.value, int):
                     new_el.key = "int"
             return new_el
-
-    def visitDeref(self, ctx: MathParser.DerefContext):
-        # STR rvar
-        # STR deref
-        inp = ctx
-        key = ""
-        deref_count = 1
-        # Get deref level
-        while True:
-            if isinstance(inp.children[1], MathParser.RvarContext):
-                key = inp.children[1].getText()
-                if self.symbol_table[key] is not None:
-                    # Get pointer from symbol table
-                    pointer = self.symbol_table[key]
-                    if not isinstance(pointer , VarNode):
-                        raise AttributeError("Variable " + key + " is not a pointer")
-                    elif pointer.total_deref < deref_count:
-                        raise RuntimeError("Trying to get pointer dereference depth" + str(deref_count)
-                                           +" when pointer only has depth " + pointer.total_deref)
-                    for i in range(deref_count):
-                        pointer = pointer.value
-                    out = copy.copy(pointer)
-                    return out
-            else:
-                inp = inp.children[1]
-                deref_count += 1
 
     def optimise_binary(self, input_ast: AST) -> AST | Node:
         new_el = Node("", None)
@@ -764,7 +797,7 @@ class AstCreator (MathVisitor):
                     raise AttributeError("Attempting to assign a non-variable to a pointer")
                 val = self.symbol_table[second.key]
                 second = VarNode(val.key , val.value , val.type , val.const , val.ptr , val.deref_level , val.total_deref)
-            else:
+            elif second.value is None:
                 second = self.optimise_variables(second)
         if input_ast.root.value == "=":
             if new_el.key not in self.symbol_table:
@@ -824,12 +857,15 @@ class AstCreator (MathVisitor):
 
     @staticmethod
     def convert(value, d_type):
-        if d_type == "int":
-            return int(value)
-        elif d_type == "float":
-            return float(value)
-        elif d_type == "char":
-            return chr(value)
+        try:
+            if d_type == "int":
+                return ord(value)
+            elif d_type == "float":
+                return float(value)
+            elif d_type == "char":
+                return chr(value)
+        except:
+            raise RuntimeError("Bad Cast")
 
     def optimise_variables(self, input_node : Node) -> Node :
         # Search for the variable name in the symbols table
@@ -855,6 +891,26 @@ class AstCreator (MathVisitor):
                 # input_node.value = self.symbol_table[input_node.value["par" + ]]
         return input_node
 
+    def optimise_cast(self, input_node: AST) -> Node:
+        # Check type of cast
+        input_node.children[0].value = self.convert(input_node.children[0].value , input_node.root.value)
+        # if input_node.root.value == "int":
+        #     input_node.children[0].value = int(input_node.children[0].value)
+        # if input_node.root.value == "float":
+        #     input_node.children[0].value = float(input_node.children[0].value)
+        # if input_node.root.value == "char":
+        #     input_node.children[0].value = chr(input_node.children[0].value)
+        return input_node.children[0]
+
+    def optimise_incr_decr(self, input_node: AST) -> Node:
+        # Check which operation to perform
+        if input_node.root.key == "incr":
+            input_node.children[0].value += 1
+            return input_node.children[0]
+        if input_node.root.key == "decr":
+            input_node.children[0].value -= 1
+            return input_node.children[0]
+
     def optimise(self, input_ast : AST | Node) -> AST | Node:
         if isinstance(input_ast , VarNode) or isinstance(input_ast, FunctionNode):
             return self.optimise_variables(input_ast)
@@ -878,6 +934,10 @@ class AstCreator (MathVisitor):
             return self.optimise_bin_log(input_ast)
         elif input_ast.root.key == "un_log_op":
             return self.optimise_un_log(input_ast)
+        elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
+            return self.optimise_incr_decr(input_ast)
+        elif input_ast.root.key == "cast":
+            return self.optimise_cast(input_ast)
         else:
             return self.unnest(input_ast)
-            return input_ast
+            # return input_ast

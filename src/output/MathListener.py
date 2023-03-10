@@ -89,6 +89,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#cast.
+    def enterCast(self, ctx:MathParser.CastContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#cast.
+    def exitCast(self, ctx:MathParser.CastContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#rtype.
     def enterRtype(self, ctx:MathParser.RtypeContext):
         pass
@@ -122,6 +131,24 @@ class MathListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathParser#unary_op.
     def exitUnary_op(self, ctx:MathParser.Unary_opContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#incr.
+    def enterIncr(self, ctx:MathParser.IncrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#incr.
+    def exitIncr(self, ctx:MathParser.IncrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#decr.
+    def enterDecr(self, ctx:MathParser.DecrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#decr.
+    def exitDecr(self, ctx:MathParser.DecrContext):
         pass
 
 

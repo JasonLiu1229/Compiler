@@ -54,6 +54,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#cast.
+    def visitCast(self, ctx:MathParser.CastContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#rtype.
     def visitRtype(self, ctx:MathParser.RtypeContext):
         return self.visitChildren(ctx)
@@ -71,6 +76,16 @@ class MathVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathParser#unary_op.
     def visitUnary_op(self, ctx:MathParser.Unary_opContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#incr.
+    def visitIncr(self, ctx:MathParser.IncrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#decr.
+    def visitDecr(self, ctx:MathParser.DecrContext):
         return self.visitChildren(ctx)
 
 
