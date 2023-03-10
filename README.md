@@ -19,16 +19,21 @@
 #### Project 2
     - Expanding the grammar with variables
 
+#### Project 3
+    - Adding comments "//" and multiline comments "/**/"
+    - Convert C -> LLVM
+
 <a name="sources"></a>
 ### Sources
 [ https://github.com/antlr/antlr4/blob/master/doc/getting-started.md ](#Antlr) --- Antlr installation  
-[ https://graphviz.org/doc/info/lang.html ](#Dot_language) --- Dot language
+[ https://graphviz.org/doc/info/lang.html ](#Dot_language) --- Dot language   
+[ https://llvm.org/ ](#LLVM) --- LLVM  
+[ https://llvm.org/docs/LangRef.html ](#LLVM refernce page) --- LLVM ref. page
 
 <a name="authors"></a>
 ### Authors
-    Jason.Liu@student.uantwerpen.be
-    Orfeo.Terkuçi@student.uantwerpen.be
-
+    Jason.Liu@student.uantwerpen.be - Jason L. Student nr.: 20213082
+    Orfeo.Terkuçi@student.uantwerpen.be - Orfeo T. Student nr.: 20213863
 
 <br>
 <img src="Pictures/UA.png" alt="drawing" style="width:150px;"/>

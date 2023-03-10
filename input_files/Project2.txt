@@ -4,14 +4,14 @@
 //int z;
 //int ***a;
 //***a = 2;
-//float y = 3.14 , *x = &y;
+float y = 3.14 , *x = &y;
 //float* x;
-//float** flt_ptr;
+float** flt_ptr;
 //x = 4.2;
 
 //int y = 3;
-int x = 5;
-x;
+//int x = 5;
+//x;
 
 //char ch = 'x';
 //float a,b;
