@@ -461,6 +461,7 @@ class AstCreator (MathVisitor):
         if isinstance(expr_ast, Node):
             return expr_ast
         for i in range(len(expr_ast.children)):
+            expr_ast.children[i] = self.resolve_binary(expr_ast.children[i])
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[
                 i].key in keywords_binary:
                 new_el = AST()
@@ -486,6 +487,7 @@ class AstCreator (MathVisitor):
         if isinstance(expr_ast, Node):
             return expr_ast
         for i in range(len(expr_ast.children)):
+            expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[
                 i].key in keywords_unary:
                 new_el = AST()
@@ -512,6 +514,7 @@ class AstCreator (MathVisitor):
         if len(expr_ast.children) < 3:
             return expr_ast
         for i in range(len(expr_ast.children)):
+            expr_ast.children[i] = self.resolve_assign(expr_ast.children[i])
             if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
                 new_el = AST()
                 if i > 0:
@@ -570,6 +573,16 @@ class AstCreator (MathVisitor):
                 expr_ast.children.remove(child)
             else:
                 child = self.resolve_empty(child)
+
+    def unnest(self, input_ast: AST | Node):
+        if isinstance(input_ast , Node):
+            return input_ast
+        if len(input_ast.children) == 1:
+            return input_ast.children[0]
+        else:
+            for i in range(len(input_ast.children)):
+                input_ast.children[i] = self.unnest(input_ast.children[i])
+        return input_ast
 
     # Optimising tree by reducing operations with literals to their result
 
@@ -853,5 +866,6 @@ class AstCreator (MathVisitor):
             return self.optimise_bin_log(input_ast)
         elif input_ast.root.key == "un_log_op":
             return self.optimise_un_log(input_ast)
-        return input_ast
-
+        else:
+            return self.unnest(input_ast)
+            return input_ast
