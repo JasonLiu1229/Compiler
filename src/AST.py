@@ -221,7 +221,8 @@ class AST:
                     count[self.children[i].root.key] += 1
                 self.children[i].recursive_dot(dictionary, count, name_key)
 
-    def connect(self, file_name, dictionary):
+    @staticmethod
+    def connect(file_name, dictionary):
         with open(str(file_name), "w") as f:
             for key, value in dictionary.items():
                 for v in value:
@@ -572,7 +573,7 @@ class AstCreator (MathVisitor):
             if child is None:
                 expr_ast.children.remove(child)
             else:
-                child = self.resolve_empty(child)
+                self.resolve_empty(child)
 
     def unnest(self, input_ast: AST | Node):
         if isinstance(input_ast , Node):
@@ -624,14 +625,26 @@ class AstCreator (MathVisitor):
         # STR deref
         inp = ctx
         key = ""
-        deref_count = 0
+        deref_count = 1
         # Get deref level
         while True:
             if isinstance(inp.children[1], MathParser.RvarContext):
                 key = inp.children[1].getText()
-                break
+                if self.symbol_table[key] is not None:
+                    # Get pointer from symbol table
+                    pointer = self.symbol_table[key]
+                    if not isinstance(pointer , VarNode):
+                        raise AttributeError("Variable " + key + " is not a pointer")
+                    elif pointer.total_deref < deref_count:
+                        raise RuntimeError("Trying to get pointer dereference depth" + str(deref_count)
+                                           +" when pointer only has depth " + pointer.total_deref)
+                    for i in range(deref_count):
+                        pointer = pointer.value
+                    out = copy.copy(pointer)
+                    return out
             else:
                 inp = inp.children[1]
+                deref_count += 1
 
     def optimise_binary(self, input_ast: AST) -> AST | Node:
         new_el = Node("", None)
@@ -803,7 +816,6 @@ class AstCreator (MathVisitor):
                     raise AttributeError("Attempting to assign a pointer to a non-variable type")
                 elif self.symbol_table[new_el.key].ptr and not self.symbol_table[second.key].ptr:
                     entry = self.symbol_table[new_el.key]
-                    second_entry = self.symbol_table[second.key]
                     raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +"’ from type ‘float’")
                 else:
                     new_el.value = second.value
