@@ -1,6 +1,4 @@
 # External libraries
-import colorama
-
 import antlr4.error.ErrorListener
 from output.MathVisitor import MathVisitor
 from output.MathParser import MathParser
