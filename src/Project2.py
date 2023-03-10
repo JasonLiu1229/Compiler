@@ -24,9 +24,10 @@ def main(argv):
     ast = visitor.visit(parse_tree)
     ast.print()
     ast = visitor.optimise(ast)
-    ast.print()
+    # ast.print()
+    ast.dot_language("test")
 
-    print(parse_tree.toStringTree(recog=parser))
+    # print(parse_tree.toStringTree(recog=parser))
 
 
 
