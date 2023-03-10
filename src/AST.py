@@ -51,7 +51,12 @@ class Node:
             name = self.key
         else:
             dictionary[name] = set()
-        dictionary[name].add(self.value)
+
+        if isinstance(self.value, Node):
+            dictionary[name].add(self.value.key)
+            self.value.recursive_dot(dictionary, count,  self.value.key)
+        else:
+            dictionary[name].add(self.value)
 
 
 class VarNode( Node ):
@@ -158,6 +163,10 @@ class AST:
             dictionary[self.root.key] = set()
             count[self.root.key] = 1
             name = self.root.key
+        # elif self.root.key in dictionary and name is None:
+        #     name = self.root.key + str(count[self.root.key])
+        #     dictionary[name] = set()
+        #     count[self.root.key] += 1
         else:
             dictionary[name] = set()
 
@@ -197,7 +206,6 @@ class AST:
 class AstCreator (MathVisitor):
 
     # TODO: Add support for pointer and address operations
-    # TODO: Add support for conversions
     # TODO: Finetune the error listener
     # TODO: Add a semantics error check
 
