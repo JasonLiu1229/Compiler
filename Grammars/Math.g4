@@ -25,6 +25,7 @@ lvar        :   STR* VAR_NAME;
 rvar        :   VAR_NAME;
 
 expr        :   '(' expr ')'
+            |   cast expr
             |   expr binary_op expr
             |   expr unary_op expr
             |   expr comp_op expr
@@ -32,6 +33,10 @@ expr        :   '(' expr ')'
             |   expr bin_log_op expr
             |   un_log_op expr
             |   unary_op expr
+            |   decr rvar
+            |   incr rvar
+            |   rvar decr
+            |   rvar incr
             |   rvar assign expr
             |   rvar assign rvar
             |   rvar assign rtype
@@ -42,9 +47,12 @@ expr        :   '(' expr ')'
             |   deref assign rtype
             |   deref assign deref
             |   deref assign addr_op
+            |   deref
             |   rtype
             |   rvar
             ;
+
+cast        :   CAST;
 
 rtype       :   INT
             |   FLOAT
@@ -54,6 +62,8 @@ rtype       :   INT
 addr_op     :   ADDR rvar;
 binary_op   :   (STR  | DIV | MOD);
 unary_op    :   (SUM | DIF);
+incr        :   INCR;
+decr        :   DECR;
 comp_op     :   (GT | LT | EQ);
 comp_eq     :   (GEQ | LEQ | NEQ);
 bin_log_op  :   (AND_OP | OR_OP);
@@ -61,6 +71,7 @@ un_log_op   :   (NOT_OP);
 assign      :   ASSIGN;
 
 // Keywords
+CAST        :   '(' TYPE ')';
 CONST       :   'const';
 // Identifiers and data types
 TYPE        :   'char'
@@ -88,7 +99,9 @@ OR_OP       :   '||';
 AND_OP      :   '&&';
 NOT_OP      :   '!';
 ASSIGN      :   '=';
-ADDR     :   '&';
+ADDR        :   '&';
+INCR        :   '++';
+DECR        :   '--';
 // Redundant characters to be removed
 SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
@@ -99,12 +112,3 @@ LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
 // Ref : https://stackoverflow.com/a/23414078
 COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);
 LCOMMENT    : '//' ~[\r\n]* -> channel(HIDDEN);
-/*
-(mandatory) Unary operators + and -.
-(mandatory) Binary operations +, -, *, and /.
-(mandatory) Binary operations >, <, and ==.
-(optional) Comparison operators >=, <=, and !=.
-(mandatory) Brackets to overwrite the order of operations.
-(mandatory) Logical operators &&, ||, and !.
-(optional) Binary operator %.
-*/
