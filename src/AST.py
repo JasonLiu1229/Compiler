@@ -13,6 +13,7 @@ keywords_datatype = ["int" , "float" , "char"]
 keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op"]
 keywords_unary = ["unary_op"]
 keywords_assign = ["assign_op"]
+keywords_functions = ["printf"]
 conversions = [("float" , "int") , ("int" , "char")]
 conv_promotions = [("int" , "float") , ("char" , "int")]
 
@@ -98,6 +99,7 @@ class FunctionNode(Node):
 
     def __init__(self, key: str, value : dict) -> None:
         super().__init__(key, value)
+        self.body = None
 
     def print(self):
         print(self.get_str())
@@ -107,14 +109,17 @@ class FunctionNode(Node):
             return {self.key: self.value.save()}
         values = []
         for key,val in self.value.items():
-            values.append(str(key) + "=" + str(val))
+            values.append(str(key) + "=" + str(val.value))
         out = {self.key: values}
         return out
 
     def get_str(self):
         out = self.key + '\t' + ':' + '\t'
         for key,val in self.value.items():
-            out += str(key) + "=" + str(val)
+            if isinstance(val , Node):
+                out += str(key) + "=" + str(val.value)
+            else:
+                out += str(key) + "=" + str(val)
         return out
 
     def recursive_dot(self, dictionary, count, name):
@@ -295,7 +300,7 @@ class AstCreator (MathVisitor):
         return instr_ast
 
     def visitPrintf(self, ctx: MathParser.PrintfContext):
-        out = FunctionNode(ctx.children[0].getText() , {"print_val" : ctx.children[2].getText()})
+        out = FunctionNode(ctx.children[0].getText() , {"par0" : self.visit_child(ctx.children[2])})
         return out
 
     def visitExpr(self, ctx: MathParser.ExprContext):
@@ -813,10 +818,20 @@ class AstCreator (MathVisitor):
                 if input_node.value is not None and input_node.value != self.symbol_table[input_node.key].value:
                     raise RuntimeError("Attempting to modify a const variable " + input_node.key)
             input_node.value = self.symbol_table[input_node.key].value
+        elif isinstance(input_node , FunctionNode) and input_node.key in keywords_functions:
+            for i in range(len(input_node.value)):
+                if input_node.value["par" + str(i)].key in keywords_datatype:
+                    return input_node
+                elif self.symbol_table[input_node.value["par" + str(i)].value] is None:
+                    raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
+                else:
+                    input_node.value["par" + str(i)].key = self.symbol_table[input_node.value["par" + str(i)].value].type
+                    input_node.value["par" + str(i)].value = self.symbol_table[input_node.value["par" + str(i)].value].value
+                # input_node.value = self.symbol_table[input_node.value["par" + ]]
         return input_node
 
     def optimise(self, input_ast : AST | Node) -> AST | Node:
-        if isinstance(input_ast , VarNode):
+        if isinstance(input_ast , VarNode) or isinstance(input_ast, FunctionNode):
             return self.optimise_variables(input_ast)
         if isinstance(input_ast , Node):
             return self.optimise_variables(input_ast)
