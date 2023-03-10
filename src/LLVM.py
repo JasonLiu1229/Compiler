@@ -10,6 +10,9 @@ class LLVM:
         self.ast = input_ast
         self.file_name = None
 
+    def type_checker(self):
+        pass
+
     def convert(self):
         pass
 
