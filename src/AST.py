@@ -96,6 +96,32 @@ class VarNode( Node ):
     def get_str(self):
         return self.type + ' ' + self.key + '\t' + ':' + '\t' + str(self.value)
 
+class FunctionNode(Node):
+
+    def __init__(self, key: str, value : dict) -> None:
+        super().__init__(key, value)
+
+    def print(self):
+        print(self.get_str())
+
+    def save(self):
+        if isinstance(self.value, VarNode):
+            return {self.key: self.value.save()}
+        values = []
+        for key,val in self.value.items():
+            values.append(str(key) + "=" + str(val))
+        out = {self.key: values}
+        return out
+
+    def get_str(self):
+        out = self.key + '\t' + ':' + '\t'
+        for key,val in self.value.items():
+            out += str(key) + "=" + str(val)
+        return out
+
+    def recursive_dot(self, dictionary, count, name):
+        super().recursive_dot(dictionary, count, name)
+
 
 class AST:
     def __init__(self, root : Node = None, children : list[Node] = None) -> None:
@@ -249,6 +275,8 @@ class AstCreator (MathVisitor):
             return self.visitDeref(ctx)
         elif isinstance(ctx , MathParser.Addr_opContext):
             return self.visitAddr_op(ctx)
+        elif isinstance(ctx , MathParser.PrintfContext):
+            return self.visitPrintf(ctx)
 
 
     def visitMath(self, ctx: MathParser.MathContext):
@@ -267,6 +295,10 @@ class AstCreator (MathVisitor):
             instr_ast.add_child(self.visit_child(c))
         self.resolve_empty(instr_ast)
         return instr_ast
+
+    def visitPrintf(self, ctx: MathParser.PrintfContext):
+        out = FunctionNode(ctx.children[0].getText() , {"print_val" : ctx.children[2].getText()})
+        return out
 
     def visitExpr(self, ctx: MathParser.ExprContext):
         """
@@ -360,7 +392,8 @@ class AstCreator (MathVisitor):
                 new_ast = self.resolve_datatype(root)
                 root = new_ast
                 root.const = const
-                root.assign_type(v_type)
+                if isinstance(root , VarNode):
+                    root.assign_type(v_type)
                 out.add_child(root)
                 if not isinstance(root , AST):
                     self.symbol_table[root.key] = copy.copy(root)
@@ -755,8 +788,7 @@ class AstCreator (MathVisitor):
                 elif self.symbol_table[new_el.key].ptr and not self.symbol_table[second.key].ptr:
                     entry = self.symbol_table[new_el.key]
                     second_entry = self.symbol_table[second.key]
-                    raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +
-                                         "’ from type ‘" + second_entry.type + str('*')*second_entry.total_deref + "’")
+                    raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +"’ from type ‘float’")
                 else:
                     new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value

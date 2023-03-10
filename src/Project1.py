@@ -4,8 +4,7 @@ from output.MathLexer import MathLexer
 from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
 from output.MathListener import MathListener
-from AST import  AstCreator
-from AST import  ErrorListener
+from AST import  *
 
 def main(argv):
     input_stream = FileStream(argv[1])
@@ -22,9 +21,9 @@ def main(argv):
     parse_tree = parser.math()
     visitor = AstCreator()
     ast = visitor.visit(parse_tree)
-    ast.print()
     # ast = visitor.optimise(ast)
     # ast.print()
+    ast.print()
 
     print(parse_tree.toStringTree(recog=parser))
 
