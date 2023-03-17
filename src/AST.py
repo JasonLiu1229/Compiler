@@ -6,7 +6,7 @@ import json
 import warnings
 import copy
 from colorama import Fore
-from pygraphviz import *
+from graphviz import Digraph
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op" , "const_var"]
@@ -225,10 +225,11 @@ class AST:
     def print(self , indent : int = 4):
         print(json.dumps(self.save() , indent=indent))
 
-    def dot_language(self, file_name):
+    def dot_language(self, file_name , print_toggle: bool = False):
         """
         Create dot language format file
 
+        :param print_toggle: If true, it prints the output on the screen
         :param file_name: string that determines the file name
         :return: None
         """
@@ -246,8 +247,8 @@ class AST:
         file = open("./Output/" + file_name + ".dot", "r")
 
         file_contents = file.read()
-
-        print(file_contents)
+        if print_toggle:
+            print(file_contents)
 
         file.close()
 
@@ -1058,9 +1059,10 @@ class AstCreator (MathVisitor):
             return self.optimise_un_log(input_ast)
         elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
             return self.optimise_incr_decr(input_ast)
-        else:
+        elif input_ast.root.key not in ["declr" , "math"]:
             return self.unnest(input_ast)
-            # return input_ast
+        else:
+            return input_ast
 
     def warn(self):
         for warn in self.warnings:
