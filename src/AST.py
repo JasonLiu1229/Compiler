@@ -178,6 +178,7 @@ class AST:
         self.recursive_dot(new_dictionary, count)
         self.connect("./Output/" + file_name + ".txt", new_dictionary)
 
+
         # print dot language
 
         file = open("./Output/" + file_name + ".txt", "r")
@@ -225,10 +226,12 @@ class AST:
     @staticmethod
     def connect(file_name, dictionary):
         with open(str(file_name), "w") as f:
+            f.write("digraph { \n")
             for key, value in dictionary.items():
                 for v in value:
-                    string = str(key) + "\t-->\t" + str(v) + "\n"
+                    string = str(key) + "\t->\t" + str(v) + "\n"
                     f.write(string)
+            f.write("}")
 
 
     def get_str(self):
