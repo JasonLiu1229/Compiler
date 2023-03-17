@@ -169,25 +169,24 @@ class AST:
         :return: None
         """
         # Create file
-        file = open("./Output/" + file_name + ".txt", "w+")
+        file = open("./Output/" + file_name + ".dot", "w+")
         file.close()
 
         # Start of dot language
-        new_dictionary = dict()
-        count = dict()
-        self.recursive_dot(new_dictionary, count)
-        self.connect("./Output/" + file_name + ".txt", new_dictionary)
+        # self.recursive_dot(new_dictionary, count)
+        self.connect("./Output/" + file_name + ".dot", self.save())
 
 
         # print dot language
 
-        file = open("./Output/" + file_name + ".txt", "r")
+        file = open("./Output/" + file_name + ".dot", "r")
 
         file_contents = file.read()
 
         print(file_contents)
 
         file.close()
+
 
     def recursive_dot(self, dictionary, count, name = None):
         if self.root.key not in dictionary or count[self.root.key] == 1:
