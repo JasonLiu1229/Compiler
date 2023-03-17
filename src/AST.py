@@ -6,7 +6,6 @@ import json
 import warnings
 import copy
 from colorama import Fore
-from pygraphviz import *
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op" , "const_var"]
