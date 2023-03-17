@@ -1,0 +1,12 @@
+digraph { 
+	node [shape=tree];
+	graph[smothing=avg_dist]
+"math"	->	{
+	"int x"	->	6
+	"float y"	->	17.384615384615383
+	"y"	->	23.384615384615383
+	"int z"	->	None
+	"float flt_ptr"	->	"float y"	->	23.384615384615383
+	"char ch"	->	"\x"
+}
+}

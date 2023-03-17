@@ -6,6 +6,7 @@ import json
 import warnings
 import copy
 from colorama import Fore
+from pygraphviz import *
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op" , "un_log_op", "assign_op" , "const_var"]
@@ -19,13 +20,27 @@ conversions = [("float" , "int") , ("int" , "char") , ("float" , "char")]
 conv_promotions = [("int" , "float") , ("char" , "int") , ("char" , "float")]
 
 class ErrorListener (antlr4.error.ErrorListener.ErrorListener):
+    def __init__(self):
+        super(ErrorListener, self).__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        out = "Syntax error at line " + str(line) + ":" + str(column) + ": '" + offendingSymbol.text + "'" + "\n" + msg
+        out = "Syntax error at line " + str(line) + ":" + str(column) + ": '"
+        if offendingSymbol is not None:
+            out += offendingSymbol.text
+        out += "'" + "\n" + msg
         raise SyntaxError(out)
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
+        # raise Exception("Ambiguity")
         super().reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
+
+    def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs):
+        super().reportAttemptingFullContext(recognizer, dfa, startIndex, stopIndex, conflictingAlts, configs)
+
+    def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
+        super().reportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
+
+
 
 
 class Node:
@@ -44,6 +59,14 @@ class Node:
         return out
     def get_str(self):
         return self.key + '\t' + ':' + '\t' + str(self.value)
+
+    def save_dot(self):
+        out = '\"' + self.key + '\"' + '\t' + '->' + '\t'
+        if isinstance(self.value , str):
+            out += '\"\\' + self.value + '\"\\'
+        else:
+            out += str(self.value)
+        return out
 
     def recursive_dot(self, dictionary, count, name):
         if self.key not in dictionary or count[self.key] == 1:
@@ -96,6 +119,16 @@ class VarNode( Node ):
     def get_str(self):
         return self.type + ' ' + self.key + '\t' + ':' + '\t' + str(self.value)
 
+    def save_dot(self):
+        out = '\"' + self.type + ' ' + self.key + '\"' + '\t' + '->' + '\t'
+        if isinstance(self.value , VarNode):
+            out += self.value.save_dot()
+        elif isinstance(self.value , str):
+            out += '\"\\' + self.value + '\"'
+        else:
+            out += str(self.value)
+        return out
+
 class FunctionNode(Node):
 
     def __init__(self, key: str, value : dict) -> None:
@@ -114,10 +147,28 @@ class FunctionNode(Node):
         out = {self.key: values}
         return out
 
+    def save_dot(self):
+        if isinstance(self.value, VarNode):
+            return {self.key: self.value.save()}
+        values = []
+        for key,val in self.value.items():
+            values.append(str(key) + "=" + str(val.value))
+        out = {self.key: values}
+        return out
+
     def get_str(self):
         out = self.key + '\t' + ':' + '\t'
         for key,val in self.value.items():
             if isinstance(val , Node):
+                out += str(key) + "=" + str(val.value)
+            else:
+                out += str(key) + "=" + str(val)
+        return out
+
+    def get_dot(self):
+        out = '\"' + self.key + '\"' + '\t' + '->' + '\t'
+        for key, val in self.value.items():
+            if isinstance(val, Node):
                 out += str(key) + "=" + str(val.value)
             else:
                 out += str(key) + "=" + str(val)
@@ -158,6 +209,19 @@ class AST:
                 out["children"].insert(len(out["children"]) , self.children[i].save())
         return out
 
+    def save_dot(self):
+        out = {'\"' + self.root.key + '\"': self.root.value}
+        if out['\"' + self.root.key + '\"'] is None:
+            out['\"' + self.root.key + '\"'] = []
+        else:
+            out["children"] = []
+        for i in range(len(self.children)):
+            if self.children[i] is not None and self.root.value is None:
+                out['\"' + self.root.key + '\"'].insert(len(out['\"' + self.root.key + '\"']), self.children[i].save_dot())
+            elif self.children[i] is not None:
+                out["children"].insert(len(out["children"]), self.children[i].save_dot())
+        return out
+
     def print(self , indent : int = 4):
         print(json.dumps(self.save() , indent=indent))
 
@@ -174,7 +238,7 @@ class AST:
 
         # Start of dot language
         # self.recursive_dot(new_dictionary, count)
-        self.connect("./Output/" + file_name + ".dot", self.save())
+        self.connect("./Output/" + file_name + ".dot", self.save_dot())
 
 
         # print dot language
@@ -222,19 +286,27 @@ class AST:
                     count[self.children[i].root.key] += 1
                 self.children[i].recursive_dot(dictionary, count, name_key)
 
-    @staticmethod
-    def connect(file_name, dictionary):
+
+    def connect(self, file_name, dictionary):
         with open(str(file_name), "w") as f:
-            f.write("digraph { \n")
+            # A = AGraph(dictionary , directed=True)
+            # A.graph_attr["shape"] = "tree"
+            # A.write(file_name)
+            f.write("digraph { \n\tnode [shape=tree];\n\tgraph[smothing=avg_dist]\n")
             for key, value in dictionary.items():
+                string = str(key) + "\t->\t{\n"
                 for v in value:
-                    string = str(key) + "\t->\t" + str(v) + "\n"
-                    f.write(string)
+                    string += "\t" + str(v) + "\n"
+                string += "}\n"
+                f.write(string)
             f.write("}")
 
 
     def get_str(self):
         return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
+
+    def get_dot(self):
+        return '\"' + self.root.key + '\"' + '\t' + '->' + '\t' + str(self.root.value)
 
 class AstCreator (MathVisitor):
 
@@ -245,6 +317,7 @@ class AstCreator (MathVisitor):
         super().__init__()
         self.base_ast : AST = AST()
         self.symbol_table : dict = dict()
+        self.warnings : list = []
 
     def visit_child(self, ctx):
         if isinstance(ctx, MathParser.MathContext):
@@ -833,7 +906,7 @@ class AstCreator (MathVisitor):
                             new_el.value = self.convert(second.value , self.symbol_table[new_el.key].type)
                         # Implicit demoting conversions
                         elif (self.symbol_table[new_el.key].type, second.key) in conversions:
-                            warnings.warn(
+                            self.warnings.append(
                                 Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
                                     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
                             # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
@@ -846,7 +919,7 @@ class AstCreator (MathVisitor):
                                                                                                              "No valid conversion from " +
                                             self.symbol_table[new_el.key].type + " to " + second.key)
                 elif second.key in self.symbol_table.keys() and self.symbol_table[second.key].type != new_el.type:
-                    warnings.warn(
+                    self.warnings.append(
                         Fore.YELLOW + "Implicit conversion from " + self.symbol_table[second.key].type + " to "
                         + self.symbol_table[new_el.key].type + " for variable " +
                         new_el.key + ". Possible loss of information")
@@ -865,7 +938,7 @@ class AstCreator (MathVisitor):
                         new_el.value = second.value
                     # Implicit demoting conversions
                     elif (self.symbol_table[new_el.key].type , second.key) in conversions:
-                        warnings.warn(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                        self.warnings.append(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
                             new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
                         # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
                         #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
@@ -893,16 +966,22 @@ class AstCreator (MathVisitor):
     def convert(value, d_type):
         try:
             if d_type == "int":
+                if isinstance(value , int):
+                    return value
                 if isinstance(value , str):
                     return ord(value)
                 else:
                     return int(value)
             elif d_type == "float":
+                if isinstance(value , float):
+                    return value
                 if isinstance(value , str):
                     return float(ord(value))
                 else:
                     return float(value)
             elif d_type == "char":
+                if isinstance(value , str):
+                    return value
                 return chr(value)
         except:
             raise RuntimeError("Bad Cast")
@@ -982,3 +1061,7 @@ class AstCreator (MathVisitor):
         else:
             return self.unnest(input_ast)
             # return input_ast
+
+    def warn(self):
+        for warn in self.warnings:
+            print(warn)
