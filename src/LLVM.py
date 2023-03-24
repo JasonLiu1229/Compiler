@@ -6,12 +6,14 @@ from AST import *
 from struct import *
 from decimal import *
 import numpy as np
+
+
 class LLVM:
 
     # TODO: var_node
     # TODO: AST
 
-    def __init__(self, input_ast: AST = None, symbol_table = None , file_name: str = "../Output/Output.ll") -> None:
+    def __init__(self, input_ast: AST = None, symbol_table=None, file_name: str = "../Output/Output.ll") -> None:
         """
         :type input_ast: object AST, default value None
         """
@@ -41,7 +43,7 @@ class LLVM:
             elif node.type == "char":
                 var_type = "i8"
             elif node.type == "float":
-                var_type = "float"     # We had problems getting the exact decimal representation of our floats, so we're using doubles now
+                var_type = "float"  # We had problems getting the exact decimal representation of our floats, so we're using doubles now
             ll_string += var_type
             if node.ptr:
                 ll_string += "*" * node.total_deref
@@ -50,14 +52,14 @@ class LLVM:
             # allocate the value
             if not scope_toggle:
                 ll_string += "\n\t"
-            while isinstance(node.value , Node):
+            while isinstance(node.value, Node):
                 ll_string += node.get_str() + "\n"
             else:
                 # match type
                 if not scope_toggle and not node.const:
                     ll_string += "store " + var_type + " "
-                    if isinstance(node.value , float):
-                        val = array('f' , [node.value])
+                    if isinstance(node.value, float):
+                        val = array('f', [node.value])
                         ll_string += str(val[0])
                     else:
                         ll_string += str(node.value)
@@ -67,8 +69,29 @@ class LLVM:
 
             f.write(ll_string)
 
-    def ast_convert(self, ast: AST):
+    def functionNodeConvert(self, func):
         pass
+
+    def ast_convert(self, ast: AST):
+        list1 = [self.ast]
+        check = True
+        while check:
+            for child in list1:
+                if isinstance(child, AST):
+                    index = list1.indexOf(child)
+                    list1.splice(index, 1)
+                    for _child in child.children:
+                        list1.insert(index, _child)
+            check = False
+            for child in list1:
+                if isinstance(child, AST):
+                    check = True
+
+        for child in list1:
+            if isinstance(child, FunctionNode):
+                self.functionNodeConvert(child)
+            elif isinstance(child, VarNode):
+                self.var_node_convert(child, True)  # True : Global False : Local
 
     def type_checker(self):
         pass
