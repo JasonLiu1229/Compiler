@@ -1,11 +1,8 @@
 from array import array
 
-import numpy
-
 from AST import *
 from struct import *
 from decimal import *
-import numpy as np
 
 
 class LLVM:

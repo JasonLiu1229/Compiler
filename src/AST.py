@@ -42,6 +42,7 @@ class AST:
             children = []
         self.root : Node | None = root
         self.children : list[Node] | [] = children
+        self.dic_count = {"instr" : 0, "expr" : 0}
 
     def add_child(self, child):
         if child is None:
@@ -67,14 +68,22 @@ class AST:
         return out
 
     def save_dot(self):
-        out = {'\"' + self.root.key + '\"': self.root.value}
-        if out['\"' + self.root.key + '\"'] is None:
-            out['\"' + self.root.key + '\"'] = []
+        name = ""
+        if self.root.key in self.dic_count:
+            name = '\"' + self.root.key + self.dic_count[self.root.key] +'\"'
+            self.dic_count[self.root.key] += 1
+        else:
+            name = '\"' + self.root.key + '\"'
+
+        out = {name: self.root.value}
+        if out[name] is None:
+            out[name] = []
         else:
             out["children"] = []
+
         for i in range(len(self.children)):
             if self.children[i] is not None and self.root.value is None:
-                out['\"' + self.root.key + '\"'].append(self.children[i].save_dot())
+                out[name].append(self.children[i].save_dot())
             elif self.children[i] is not None:
                 out["children"].insert(len(out["children"]), self.children[i].save_dot())
         return out
