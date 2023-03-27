@@ -9,7 +9,7 @@ def main(argv):
         # argv = directory , file_type , files
         directory = argv[1]
         file_type = argv[2]
-        for filename in argv[3:-1]:
+        for filename in argv[3:]:
             input_stream = FileStream(directory + filename + file_type)
             # Create error listener
             error_listener = ErrorListener()
@@ -27,6 +27,7 @@ def main(argv):
             # ast.print()
             ast = visitor.optimise(ast)
             ast.print()
+            ast.dot_language(filename)
             generator = LLVM(ast , visitor.symbol_table , "../Output/" + filename + ".ll")
             generator.convert()
     except Exception as e:
