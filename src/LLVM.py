@@ -54,13 +54,20 @@ class LLVM:
                 ll_string += " "
             # allocate the value
             if not scope_toggle:
-                ll_string += "\n\t"
+                ll_string += "\n"
             while isinstance(node.value, Node):
                 node = node.value
             else:
                 # match type
+                if node.value is None:
+                    if node.type == "int":
+                        node.value = 0
+                    elif node.type == "float":
+                        node.value = 0.0
+                    elif node.type == "char":
+                        node.value = ord('\0')
                 if not scope_toggle and not node.const:
-                    ll_string += "store " + var_type + " "
+                    ll_string += "\tstore " + var_type + " "
                     if isinstance(node.value, float):
                         val = array('f', [node.value])
                         ll_string += str(val[0])
@@ -73,9 +80,13 @@ class LLVM:
                     if isinstance(node.value , float):
                         val = array('f', [node.value])
                         ll_string += str(val[0]) + "\n"
+                    elif isinstance(node.value , str):
+                        ll_string += str(ord(node.value))
                     else:
                         ll_string += str(node.value) + "\n"
             ll_string += "\n"
+            if node.const or scope_toggle:
+                open(self.file_name , 'a').write(ll_string)
             return ll_string
 
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
@@ -159,16 +170,16 @@ class LLVM:
 
     def convertNode(self, input_node : Node , global_scope : bool = False , index: int = 0):
         with open(self.file_name , 'a') as f:
-            if isinstance(input_node , VarNode):
-                f.write(self.var_node_convert(input_node , global_scope))
-            elif isinstance(input_node , FunctionNode):
+            # if isinstance(input_node , VarNode):
+            #     f.write(self.var_node_convert(input_node , global_scope))
+            if isinstance(input_node , FunctionNode):
                 f.write(self.functionNodeConvert(input_node , index=index))
                 index += 1
         return index
 
     def convert(self):
         # clear file
-        open(self.file_name, 'w')
+        f = open(self.file_name, 'w')
         for val in self.symbol_table.values():
             if isinstance(val , VarNode):
                 self.var_node_convert(val, True)
@@ -183,17 +194,17 @@ class LLVM:
                         defn = False
                         declr = False
         # begin of main function
-        with open(self.file_name, 'a') as f:
-            f.write("define i32 @main () {\n")
+        # with open(self.file_name, 'a') as f:
+        #     f.write("define i32 @main () {\n")
 
         self.ast_convert(self.ast)
         i = 0
         for node in self.nodes:
-            i = self.convertNode(node , False , index=i)
+            i = self.convertNode(node , True , index=i)
 
         # end of main
-        with open(self.file_name, 'a') as f:
-            f.write("\tret i32 0\n}")
+        # with open(self.file_name, 'a') as f:
+        #     f.write("\tret i32 0\n}")
 
     def execute(self):
         pass
