@@ -483,7 +483,11 @@ class AstCreator (MathVisitor):
             if input_ast.root.value == '*':
                 new_el.value = first.value * second.value
             elif input_ast.root.value == '/':
-                new_el.value = first.value / second.value
+                # check for implicit casting
+                if first.key != "float" and second.key != "float":
+                    new_el.value = int(first.value / second.value)
+                else:
+                    new_el.value = first.value / second.value
             elif input_ast.root.value == "%":
                 new_el.value = int(first.value % second.value)
             if isinstance(new_el.value, float):
