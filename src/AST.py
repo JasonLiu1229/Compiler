@@ -74,7 +74,7 @@ class AST:
             out["children"] = []
         for i in range(len(self.children)):
             if self.children[i] is not None and self.root.value is None:
-                out['\"' + self.root.key + '\"'].insert(len(out['\"' + self.root.key + '\"']), self.children[i].save_dot())
+                out['\"' + self.root.key + '\"'].append(self.children[i].save_dot())
             elif self.children[i] is not None:
                 out["children"].insert(len(out["children"]), self.children[i].save_dot())
         return out
@@ -90,21 +90,21 @@ class AST:
         :return: None
         """
         # Create file
-        file = open("./Output/" + file_name + ".dot", "w+")
+        file = open("../Output/" + file_name + ".dot", "w+")
         file.close()
 
         # Start of dot language
         # self.recursive_dot(new_dictionary, count)
-        self.connect("./Output/" + file_name + ".dot", self.save_dot())
+        self.connect("../Output/" + file_name + ".dot", self.save_dot())
 
 
         # print dot language
 
-        file = open("./Output/" + file_name + ".dot", "r")
+        file = open("../Output/" + file_name + ".dot", "r")
 
         file_contents = file.read()
 
-        print(file_contents)
+        # print(file_contents)
 
         file.close()
 
