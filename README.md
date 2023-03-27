@@ -6,11 +6,13 @@
 
 ### Table Of contents
 1. [ Assignments. ](#assign)
-2. [ Sources. ](#sources)
-3. [ Authors. ](#authors)
+2. [ Testing. ](#testing)
+3. [ Sources. ](#sources)
+4. [ Authors. ](#authors)
 
 <a name="assign"></a>
 ### Assignments
+
 #### Project 1
     - Installing Antlr
     - Constructing the grammar
@@ -23,6 +25,10 @@
     - Adding comments "//" and multiline comments "/**/"
     - Convert C -> LLVM
 
+<a name="testing"></a>
+### How to test?
+
+
 <a name="sources"></a>
 ### Sources
 [ https://github.com/antlr/antlr4/blob/master/doc/getting-started.md ](#Antlr) --- Antlr installation  
@@ -34,6 +40,8 @@
 ### Authors
     Jason.Liu@student.uantwerpen.be - Jason L. Student nr.: 20213082
     Orfeo.Terkuçi@student.uantwerpen.be - Orfeo T. Student nr.: 20213863
+
+
 
 <br>
 <img src="Pictures/UA.png" alt="drawing" style="width:150px;"/>
