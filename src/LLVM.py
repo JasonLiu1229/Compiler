@@ -99,7 +99,7 @@ class LLVM:
         out += '%' + str(index + 1) \
                + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" \
                + str(index) + '\n'
-        index += 1
+        index += 2
         return out, index
 
     def printf_float(self, val: float , index : int = 1):
