@@ -224,7 +224,7 @@ class LLVM:
     def execute(self):
         pass
 
-    def printf_int(self, value : int, index : int = 0):
+    def printf_int(self, value : int, index : int = 1):
         #   %1 = alloca i32, align 4
         #   store i32 value, ptr %1, align 4
         #   %2 = load i32, ptr %1, align 4
@@ -234,6 +234,8 @@ class LLVM:
         out += "store i32" + str(value) + ", ptr %" + str(index) + "allign 4 \n"
         out += '%' + str(index + 1) + "= load i32, ptr %" + str(index) + ", allign 4 \n"
         index += 1
-        out += '%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" + str(index) + '\n'
+        out += '%' + str(index + 1) \
+               + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" \
+               + str(index) + '\n'
         index += 1
         return out, index
