@@ -82,7 +82,13 @@ class AstCreator (MathVisitor):
         return instr_ast
 
     def visitPrintf(self, ctx: MathParser.PrintfContext):
-        out = FunctionNode(ctx.children[0].getText() , {"par0" : self.visit_child(ctx.children[2])})
+        out = FunctionNode(ctx.children[0].getText() ,
+                           {"par0" : self.visit_child(ctx.children[2])}
+                           )
+        if not out.key in self.symbol_table.keys():
+            self.symbol_table[out.key] = [copy.copy(out)]
+        else:
+            self.symbol_table[out.key].append(copy.copy(out))
         return out
 
     def visitExpr(self, ctx: MathParser.ExprContext):
@@ -693,21 +699,31 @@ class AstCreator (MathVisitor):
                 if isinstance(input_node , VarNode):
                     new_node = VarNode(input_node.key , input_node.value , input_node.type , input_node.const)
                     self.symbol_table[new_node.key] = new_node
+                    # check for usage of this variable in functions
+                    for key , val in self.symbol_table.items():
+                        if isinstance(val , FunctionNode):
+                            for j in range(len(val.value)):
+                                pass
                 return input_node
-            if self.symbol_table[input_node.key] is not None and self.symbol_table[input_node.key].const:
-                if input_node.value is not None and input_node.value != self.symbol_table[input_node.key].value:
-                    raise RuntimeError("Attempting to modify a const variable " + input_node.key)
-            input_node.value = self.symbol_table[input_node.key].value
-        elif isinstance(input_node , FunctionNode) and input_node.key in keywords_functions:
+            if self.symbol_table[input_node.key] is not None:
+                if isinstance(input_node , VarNode) and self.symbol_table[input_node.key].const:
+                    if input_node.value is not None and input_node.value != self.symbol_table[input_node.key].value:
+                        raise RuntimeError("Attempting to modify a const variable " + input_node.key)
+                else:
+                    input_node.value = self.symbol_table[input_node.key].value
+        return input_node
+
+    def optimise_functions(self, input_node):
+        if isinstance(input_node, FunctionNode) and input_node.key in keywords_functions:
             for i in range(len(input_node.value)):
                 if input_node.value["par" + str(i)].key in keywords_datatype:
                     return input_node
                 elif self.symbol_table[input_node.value["par" + str(i)].value] is None:
                     raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
+                elif input_node.value["par" + str(i)].value in self.symbol_table.keys():
+                    input_node.value["par" + str(i)]= copy.copy(self.symbol_table[input_node.value["par" + str(i)].value])
                 else:
-                    input_node.value["par" + str(i)].key = self.symbol_table[input_node.value["par" + str(i)].value].type
-                    input_node.value["par" + str(i)].value = self.symbol_table[input_node.value["par" + str(i)].value].value
-                # input_node.value = self.symbol_table[input_node.value["par" + ]]
+                    pass
         return input_node
 
     def optimise_cast(self, input_node: AST) -> Node:
@@ -726,41 +742,48 @@ class AstCreator (MathVisitor):
         # Check which operation to perform
         if input_node.root.key == "incr":
             input_node.children[0].value += 1
-            return input_node.children[0]
         if input_node.root.key == "decr":
             input_node.children[0].value -= 1
-            return input_node.children[0]
+        if input_node.children[0].key in self.symbol_table.keys():
+            self.symbol_table[input_node.children[0].key].value = input_node.children[0].value
+        return input_node.children[0]
 
     def optimise(self, input_ast : AST | Node) -> AST | Node:
-        if isinstance(input_ast , VarNode) or isinstance(input_ast, FunctionNode):
-            return self.optimise_variables(input_ast)
-        if isinstance(input_ast , Node):
-            return self.optimise_variables(input_ast)
-        for i in range(len(input_ast.children)):
-            input_ast.children[i] = self.optimise(input_ast.children[i])
-        # Unary operation node replacements
-        if input_ast.root.key == "cast":
-            return self.optimise_cast(input_ast)
-        elif input_ast.root.key == "assign_op":
-            return self.optimise_assign(input_ast)
-        elif input_ast.root.key == "unary_op":
-            return self.optimise_unary(input_ast)
-        elif input_ast.root.key == "binary_op":
-            return self.optimise_binary(input_ast)
-        # Comparison operations
-        elif input_ast.root.key == "comp_op":
-            return self.optimise_comp_op(input_ast)
-        elif input_ast.root.key == "comp_eq":
-            return self.optimise_comp_eq(input_ast)
-        elif input_ast.root.key == "bin_log_op":
-            return self.optimise_bin_log(input_ast)
-        elif input_ast.root.key == "un_log_op":
-            return self.optimise_un_log(input_ast)
-        elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
-            return self.optimise_incr_decr(input_ast)
-        else:
-            return self.unnest(input_ast)
+        if isinstance(input_ast , AST):
+            for i in range(len(input_ast.children)):
+                input_ast.children[i] = self.optimise(input_ast.children[i])
+            if input_ast.root.key == "cast":
+                return self.optimise_cast(input_ast)
+            elif input_ast.root.key == "assign_op":
+                return self.optimise_assign(input_ast)
+            elif input_ast.root.key == "unary_op":
+                return self.optimise_unary(input_ast)
+            elif input_ast.root.key == "binary_op":
+                return self.optimise_binary(input_ast)
+            # Comparison operations
+            elif input_ast.root.key == "comp_op":
+                return self.optimise_comp_op(input_ast)
+            elif input_ast.root.key == "comp_eq":
+                return self.optimise_comp_eq(input_ast)
+            elif input_ast.root.key == "bin_log_op":
+                return self.optimise_bin_log(input_ast)
+            elif input_ast.root.key == "un_log_op":
+                return self.optimise_un_log(input_ast)
+            elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
+                return self.optimise_incr_decr(input_ast)
+            else:
+                return self.unnest(input_ast)
+                # return input_ast
+        elif isinstance(input_ast , FunctionNode):
             # return input_ast
+            return self.optimise_functions(input_ast)
+        elif isinstance(input_ast , VarNode):
+            return self.optimise_variables(input_ast)
+        elif isinstance(input_ast , Node):
+            return self.optimise_variables(input_ast)
+        # Unary operation node replacements
+
+
 
     def warn(self):
         for warn in self.warnings:

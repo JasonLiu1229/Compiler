@@ -86,10 +86,10 @@ class VarNode( Node ):
 
 class FunctionNode(Node):
 
-    def __init__(self, key: str, value : dict) -> None:
+    def __init__(self, key: str, value : dict , ret_type: str = None) -> None:
         super().__init__(key, value)
         self.body = None
-
+        self.ret_type = ret_type
     def print(self):
         print(self.get_str())
 

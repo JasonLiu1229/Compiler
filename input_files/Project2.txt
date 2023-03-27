@@ -1,21 +1,6 @@
-//const int x = 5*(3/10 + 9/10);
-//float y = x*2/( 2+1 * 2/3 +x) +8 * (8/4);
-//y = x + y; //calculate the result
-//int z;
-//int ***a;
-//***a = 2;
-float y = 3.14 , *x = &y;
-//float* x;
-float** flt_ptr;
-//x = 4.2;
-
-//int y = 3;
-//int x = 5;
-//x;
-
-//char ch = 'x';
-//float a,b;
-//a = 2;
-//b = 3.0;
-//int *a, b;
-int prank = 0;
+const int x = 5*(3/10 + 9/10);
+float y = x*2/( 2+1 * 2/3 +x) +8 * (8/4);
+y = x + y;
+int z;
+//float* flt_ptr = &y;
+char ch = 'x';
