@@ -130,6 +130,36 @@ class LLVM:
         index += 1
         return ll_out , index
 
+    def printf_char(self, val: str , index : int = 1):
+        """
+            define dso_local i32 @main() #0 {
+                %1 = alloca i8, align 1
+                store i8 16, ptr %1, align 1
+                %2 = load i8, ptr %1, align 1
+                %3 = sext i8 %2 to i32
+                %4 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %3)
+                ret i32 0
+            }
+                :param val:
+                :param index:
+                :return:
+                """
+        ll_out = ""
+        # allocate the float parameter variable
+        ll_out += "\t%" + str(index) + " = alloca float, align 1\n"
+        # store the float value
+        ll_out += "\tstore i8 " + str(ord(val)) + ", ptr %" + str(index) + ", align 1\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = load i8, ptr %" + str(index - 1) + ", align 1\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = sext i8 %" + str(index - 1) + " to i32\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(
+            index - 3) + ", i32 noundef %" \
+                  + str(index - 1) + ")\n"
+        index += 1
+        return ll_out, index
+
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
                             glob_decl : bool = False , index: int = 0):
         # Output string , declared as empty
@@ -148,21 +178,22 @@ class LLVM:
                     print_val = func.value["par0"]
                     # Define our string
                     std_decl = "@.str" + str(index) + " = private unnamed_addr constant ["
-                    if isinstance(print_val.value , str):
-                        std_decl += str(len(print_val.value))
-                    else:
-                        std_decl += '4'
+                    std_decl += '4'
                     std_decl += " x i8] c" + "\""
                     if isinstance(print_val , VarNode):
                         if print_val.type == "int":
                             std_decl += "%d\\0A\\00\""
                         elif print_val.type == "float":
                             std_decl += "%f\\0A\\00\""
+                        elif print_val.type == "char":
+                            std_decl += "%c\\0A\\00\""
                     else:
                         if print_val.key == "int":
                             std_decl += "%d\\0A\\00\""
                         elif print_val.key == "float":
                             std_decl += "%f\\0A\\00\""
+                        elif print_val.type == "char":
+                            std_decl += "%c\\0A\\00\""
 
                     ll_out += std_decl + "align 1\n\n"
                 f.write(ll_out)
@@ -203,6 +234,10 @@ class LLVM:
                 index = ret[1]
             elif isinstance(print_val.value , int):
                 ret = self.printf_int(print_val.value , index)
+                ll_out += ret[0]
+                index = ret[1]
+            elif isinstance(print_val.value , str):
+                ret = self.printf_char(print_val.value , index)
                 ll_out += ret[0]
                 index = ret[1]
             return ll_out , index
