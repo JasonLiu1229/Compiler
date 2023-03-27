@@ -86,6 +86,48 @@ class LLVM:
                 open(self.file_name , 'a').write(ll_string)
             return ll_string
 
+    def printf_int(self, value : int, index : int = 0):
+        #   %1 = alloca i32, align 4
+        #   store i32 value, ptr %1, align 4
+        #   %2 = load i32, ptr %1, align 4
+        #   %3 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %2)
+        out = str
+        out += '%' + str(index) + "= alloca i32, allign 4 \n"
+        out += "store i32" + str(value) + ", ptr %" + str(index) + "allign 4 \n"
+        out += '%' + str(index + 1) + "= load i32, ptr %" + str(index) + ", allign 4 \n"
+        index += 1
+        out += '%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" + str(index) + '\n'
+        index += 1
+        return out, index
+
+    def printf_float(self, val: float , index : int = 1):
+        """
+        define dso_local i32 @main() #0 {
+          %1 = alloca float, align 4
+          store float 1.600000e+01, ptr %1, align 4
+          %2 = load float, ptr %1, align 4
+          %3 = fpext float %2 to double
+          %4 = call i32 (ptr, ...) @printf(ptr noundef @.str, double noundef %3)
+          ret i32 0
+        }
+        :param val:
+        :param index:
+        :return:
+        """
+        ll_out = ""
+        # allocate the float parameter variable
+        ll_out += "\t%" + str(index) + " = alloca float, align 4\n"
+        # store the float value
+        ll_out += "\tstore float " + str(val) + ", ptr %" + str(index) + ", align 4\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = load float, ptr %" + str(index-1) + ", align 4\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = pfext float %" + str(index-1) + " to double\n"
+        index += 1
+        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str, double noundef %" \
+                  + str(index-1) + ")\n"
+        return ll_out
+
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
                             glob_decl : bool = False , index: int = 0):
         # Output string , declared as empty
@@ -126,13 +168,9 @@ class LLVM:
             if func.body is not None:
                 pass
         else:
-            """
-                ; print message 1
-                %str_ptr = getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0)
-                call i32 @printf(i8* %str_ptr)
-            """
-            # Get the function parameters
+            # Get function parameters
             print_val = func.value["par0"]
+            """
             # ll_out += "\t; load the value of @" + print_val.key + "\n\n"
             # Comment about what it does
             ll_out += "\t;print par" + str(index) + "\n"
@@ -156,6 +194,9 @@ class LLVM:
             # Call printf
             ll_out += ptr1 + "\n"
             ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
+            """
+            if isinstance(print_val.value , float):
+                ll_out += self.printf_float(print_val.value)
             return ll_out
 
     def ast_convert(self, ast: AST):
@@ -223,19 +264,3 @@ class LLVM:
 
     def execute(self):
         pass
-
-    def printf_int(self, value : int, index : int = 1):
-        #   %1 = alloca i32, align 4
-        #   store i32 value, ptr %1, align 4
-        #   %2 = load i32, ptr %1, align 4
-        #   %3 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %2)
-        out = str
-        out += '%' + str(index) + "= alloca i32, allign 4 \n"
-        out += "store i32" + str(value) + ", ptr %" + str(index) + "allign 4 \n"
-        out += '%' + str(index + 1) + "= load i32, ptr %" + str(index) + ", allign 4 \n"
-        index += 1
-        out += '%' + str(index + 1) \
-               + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" \
-               + str(index) + '\n'
-        index += 1
-        return out, index
