@@ -94,7 +94,7 @@ class LLVM:
         if declr:
             with open(self.file_name, 'a') as f:
                 if func.key == "printf":
-                    f.write("declare i32 @printf(i8*, ...)\n\n")
+                    f.write("declare i32 @printf(ptr noundef, ...)\n\n")
         if glob_decl:
             with open(self.file_name, 'a') as f:
                 print_val = ""
@@ -103,20 +103,24 @@ class LLVM:
                     # Get the function parameters
                     print_val = func.value["par0"]
                     # Define our string
-                    std_decl = "@.str" + str(index) + " = private unnamed_addr constant [" + str(len(str(print_val.value))) + " x i8] c" \
-                               + "\""
+                    std_decl = "@.str" + str(index) + " = private unnamed_addr constant ["
+                    if isinstance(print_val.value , str):
+                        std_decl += str(len(print_val.value))
+                    else:
+                        std_decl += '4'
+                    std_decl += " x i8] c" + "\""
                     if isinstance(print_val , VarNode):
                         if print_val.type == "int":
-                            std_decl += "%d\\00\""
+                            std_decl += "%d\\0A\\00\""
                         elif print_val.type == "float":
-                            std_decl += "%f\\00\""
+                            std_decl += "%f\\0A\\00\""
                     else:
                         if print_val.key == "int":
-                            std_decl += "%d\\00\""
+                            std_decl += "%d\\0A\\00\""
                         elif print_val.key == "float":
-                            std_decl += "%f\\00\""
+                            std_decl += "%f\\0A\\00\""
 
-                    ll_out += std_decl + "\n\n"
+                    ll_out += std_decl + "align 1\n\n"
                 f.write(ll_out)
         if defn:
             if func.body is not None:
@@ -129,15 +133,29 @@ class LLVM:
             """
             # Get the function parameters
             print_val = func.value["par0"]
+            # ll_out += "\t; load the value of @" + print_val.key + "\n\n"
             # Comment about what it does
-            ll_out += "\t;print " + str(index) + "\n"
+            ll_out += "\t;print par" + str(index) + "\n"
             # Assign pointers of the correct type for local variables
-            ptr1 = "\t%ptr" + str(index) + " = getelementptr inbounds  ([" + str(len(str(print_val.value))) + " x i8], " \
-                   + "[" + str(len(str(print_val.value))) + " x i8]*" + "@.str" + str(index)
+            ptr1 = "\t%ptr" + str(index) + " = getelementptr inbounds  ["
+            if isinstance(print_val.value, str):
+                ptr1 += str(len(print_val.value))
+            else:
+                ptr1 += '4'
+            ptr1 += " x i8], ["
+            if isinstance(print_val.value, str):
+                ptr1 += str(len(print_val.value))
+            else:
+                ptr1 += '4'
+            ptr1 += " x i8]* " + "@.str" + str(index) + ' , '
             # check type of printed variable
-            if print_val.key == "int" or print_val.key == "float":
-                ptr1 += ", i64 0 , i64 0)"
+            if isinstance(print_val , VarNode) and print_val.type == "int" or print_val.type == "float" :
+                ptr1 += "i64 0 , i64 0"
+            elif print_val.key == "int" or print_val.key == "float":
+                ptr1 += "i64 0 , i64 0"
+            # Call printf
             ll_out += ptr1 + "\n"
+            ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
             return ll_out
 
     def ast_convert(self, ast: AST):
@@ -191,17 +209,17 @@ class LLVM:
                         defn = False
                         declr = False
         # begin of main function
-        # with open(self.file_name, 'a') as f:
-        #     f.write("define i32 @main () {\n")
+        with open(self.file_name, 'a') as f:
+            f.write("define dso_local i32 @main () {\n")
 
         self.ast_convert(self.ast)
         i = 0
         for node in self.nodes:
-            i = self.convertNode(node , True , index=i)
+            i = self.convertNode(node , False , index=i)
 
         # end of main
-        # with open(self.file_name, 'a') as f:
-        #     f.write("\tret i32 0\n}")
+        with open(self.file_name, 'a') as f:
+            f.write("\tret i32 0\n}")
 
     def execute(self):
         pass
