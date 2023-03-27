@@ -87,10 +87,6 @@ class LLVM:
             return ll_string
 
     def printf_int(self, value : int, index : int = 0):
-        #   %1 = alloca i32, align 4
-        #   store i32 value, ptr %1, align 4
-        #   %2 = load i32, ptr %1, align 4
-        #   %3 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %2)
         out = str
         out += '%' + str(index) + "= alloca i32, allign 4 \n"
         out += "store i32" + str(value) + ", ptr %" + str(index) + "allign 4 \n"
@@ -99,7 +95,7 @@ class LLVM:
         out += '%' + str(index + 1) \
                + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" \
                + str(index) + '\n'
-        index += 2
+        index += 1
         return out, index
 
     def printf_float(self, val: float , index : int = 1):
