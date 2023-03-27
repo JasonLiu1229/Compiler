@@ -96,7 +96,9 @@ class LLVM:
         out += "store i32" + str(value) + ", ptr %" + str(index) + "allign 4 \n"
         out += '%' + str(index + 1) + "= load i32, ptr %" + str(index) + ", allign 4 \n"
         index += 1
-        out += '%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" + str(index) + '\n'
+        out += '%' + str(index + 1) \
+               + "= call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %" \
+               + str(index) + '\n'
         index += 1
         return out, index
 
