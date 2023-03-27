@@ -16,11 +16,12 @@ class Node:
         return self.key + '\t' + ':' + '\t' + str(self.value)
 
     def save_dot(self):
-        out = '\"' + self.key + '\"' + '\t' + '->' + '\t'
+        out = '<\"' + self.key + '\t' + ':' + '\t'
         if isinstance(self.value , str):
             out += '\"\\' + self.value + '\"\\'
         else:
             out += str(self.value)
+        out +=  '\">'
         return out
 
     def recursive_dot(self, dictionary, count, name):
