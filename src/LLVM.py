@@ -165,6 +165,56 @@ class LLVM:
         self.index_queue.remove(self.index_queue[0])
         return ll_out, index
 
+    def mult(self):
+        pass
+
+    def add(self):
+        pass
+
+    def diff(self):
+        pass
+
+    def div(self):
+        pass
+
+    def mod(self):
+        pass
+
+    def incr(self):
+        pass
+
+    def decr(self):
+        pass
+
+    def comp_gt(self):
+        pass
+
+    def comp_lt(self):
+        pass
+
+    def comp_eq(self):
+        pass
+
+    def comp_leq(self):
+        pass
+
+    def comp_geq(self):
+        pass
+
+    def comp_neq(self):
+        pass
+
+    def bin_log_and_op(self):
+        pass
+
+    def bin_log_or_op(self):
+        pass
+
+    def un_log_not_op(self):
+        pass
+
+    def assign(self):
+        pass
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
                             glob_decl : bool = False , index: int = 0):
         # Output string , declared as empty
