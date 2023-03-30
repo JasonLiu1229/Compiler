@@ -1,3 +1,4 @@
+import queue
 from array import array
 
 from AST import *
@@ -19,6 +20,7 @@ class LLVM:
         self.nodes = list()
         self.symbol_table = symbol_table
         self.file_name = file_name
+        self.index_queue = []
 
     def var_node_convert(self, node: VarNode, scope_toggle: bool):
         with open(self.file_name, 'a') as f:
@@ -96,9 +98,10 @@ class LLVM:
         out += "\tstore i32 " + str(value) + ", ptr %" + str(index) + ", align 4 \n"
         out += '\t%' + str(index + 1) + "= load i32, ptr %" + str(index) + ", align 4 \n"
         index += 1
-        out += '\t%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str" + str(index-1) + \
+        out += '\t%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str" + str(self.index_queue[0]) + \
                ", i32 noundef %" + str(index) + ')\n'
         index += 1
+        self.index_queue.remove(self.index_queue[0])
         return out, index
 
     def printf_float(self, val: float , index : int = 1):
@@ -125,9 +128,10 @@ class LLVM:
         index += 1
         ll_out += "\t%" + str(index) + " = fpext float %" + str(index-1) + " to double\n"
         index += 1
-        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(index-3) + ", double noundef %" \
+        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(self.index_queue[0]) + ", double noundef %" \
                   + str(index-1) + ")\n"
         index += 1
+        self.index_queue.remove(self.index_queue[0])
         return ll_out , index
 
     def printf_char(self, val: str , index : int = 1):
@@ -155,9 +159,10 @@ class LLVM:
         ll_out += "\t%" + str(index) + " = sext i8 %" + str(index - 1) + " to i32\n"
         index += 1
         ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(
-            index - 3) + ", i32 noundef %" \
+            self.index_queue[0]) + ", i32 noundef %" \
                   + str(index - 1) + ")\n"
         index += 1
+        self.index_queue.remove(self.index_queue[0])
         return ll_out, index
 
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
@@ -177,6 +182,7 @@ class LLVM:
                     # Get the function parameters
                     print_val = func.value["par0"]
                     # Define our string
+
                     std_decl = "@.str" + str(index) + " = private unnamed_addr constant ["
                     std_decl += '4'
                     std_decl += " x i8] c" + "\""
@@ -274,6 +280,7 @@ class LLVM:
             if isinstance(input_node , FunctionNode):
                 ret = self.functionNodeConvert(input_node , index=index)
                 f.write(ret[0])
+                self.index_queue.insert(0, ret[1])
                 index = ret[1] + 1
         return index
 
