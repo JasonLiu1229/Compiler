@@ -5,13 +5,13 @@ is a compiler for c. This compiler will be made in Python.
 This project is made for the course Compilers at the University of Antwerp.
 
 ### Table Of contents
-1. [ Assignments. ](#assign)
-2. [ Testing. ](#testing)
-3. [ Files. ](#dir)
+1. [ Assignments. ](#Assignments)
+2. [ Testing. ](#Testing)
+3. [ Files. ](#Files)
 4. [ Sources. ](#sources)
 5. [ Authors. ](#authors)
 
-<a name="assign"></a>
+<a name="Assignments"></a>
 ### Assignments
 
 #### Project 1
@@ -26,7 +26,7 @@ This project is made for the course Compilers at the University of Antwerp.
     - Adding comments "//" and multiline comments "/**/"
     - Convert C -> LLVM
 
-<a name="testing"></a>
+<a name="Testing"></a>
 ### How to test?
 Guide on how to test our Compiler, the guide is meant for Pycharm users.
 
@@ -59,7 +59,7 @@ python3 run.py -d ../input_files/ -t .c -i
 ```
 
 
-<a name="dir"></a>
+<a name="Files"></a>
 ### Files
     Grammar: ../Grammars/Math.g4
     Python scripts: ../src/
