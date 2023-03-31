@@ -35,13 +35,29 @@ If you do it in the terminal, match the parameters option of pycharm with the pa
 #### Jetbrains Pycharm
 <img src="Pictures/config.png" alt="drawing" style="width:600px;"></img>
 
-#### on Terminal
-    Eg.: Python3 Project1.py ../input_files/ .c Project1
+### Terminal
+There are two ways to run it via terminal
+Common parameter settings:
+- -d : <path\>  : directory of the input files
+- -t : <str\>   : file extension
+- -f : [str]    : files to parse
+- -i : parse all the files in the directory
 
-If you want to run this for Project 2, don't change the py file, only change the c file. 
+Example code with specified input files:
+
+    python3 -d ../input_files/ -t .c -f Project3 Project2 ...
     
+Example code with only the input directory and file extension
+    
+    python3 -d ../input_files/ -t .c -i
+
+ 
 #### Script
-    
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/ -t .c -i
+```
+
 
 <a name="dir"></a>
 ### Files

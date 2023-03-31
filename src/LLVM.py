@@ -1,10 +1,6 @@
-import queue
 import subprocess
 from array import array
 from AST import *
-from struct import *
-from decimal import *
-
 
 class LLVM:
 
@@ -84,7 +80,7 @@ class LLVM:
                         ll_string += str(node.value) + "\n"
             ll_string += "\n"
             if node.const or scope_toggle:
-                open(self.file_name , 'a').write(ll_string)
+                f.write(ll_string)
             return ll_string
 
     def printf_int(self, value : int, index : int = 0):
@@ -247,7 +243,6 @@ class LLVM:
                     f.write("declare i32 @printf(ptr noundef, ...)\n\n")
         if glob_decl:
             with open(self.file_name, 'a') as f:
-                print_val = ""
                 # Check the function name
                 if func.key == "printf":
                     # Get the function parameters
@@ -306,6 +301,7 @@ class LLVM:
             ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
             """
             if isinstance(print_val.value , float):
+                print_val.value = array("f", [print_val.value])[0]
                 ret = self.printf_float(print_val.value, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
@@ -319,7 +315,7 @@ class LLVM:
                 index_local = ret[1]
             return ll_out , index_local
 
-    def ast_convert(self, ast: AST):
+    def ast_convert(self):
         list1 = [self.ast]
         check = True
         while check:
@@ -359,8 +355,7 @@ class LLVM:
 
     def convert(self):
         # clear file
-        f = open(self.file_name, 'w')
-        glob_index = []
+        open(self.file_name , 'w')
         for val in self.symbol_table.values():
             if isinstance(val , VarNode):
                 self.var_node_convert(val, True)
@@ -378,7 +373,7 @@ class LLVM:
         with open(self.file_name, 'a') as f:
             f.write("define dso_local i32 @main () {\n")
 
-        self.ast_convert(self.ast)
+        self.ast_convert()
         i = 1
         for node in self.nodes:
             i = self.convertNode(node , False , index=i)
