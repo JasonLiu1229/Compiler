@@ -6,7 +6,10 @@ class LLVM:
 
     def __init__(self, input_ast: AST = None, symbol_table=None, file_name: str = "../Output/Output.ll") -> None:
         """
-        :type input_ast: object AST, default value None
+
+        :param input_ast: the AST to be converted
+        :param symbol_table: the symbol table of the AST
+        :param file_name: the file in which to write the LLVM code
         """
         super().__init__()
         self.ast = input_ast
@@ -16,6 +19,11 @@ class LLVM:
         self.index_queue = []
 
     def var_node_convert(self, node: VarNode, scope_toggle: bool):
+        """
+        Writes LLVM code for a VarNode type object
+        :param node: the node
+        :param scope_toggle: true if scope is global
+        """
         with open(self.file_name, 'a') as f:
             var_type = ""
             ll_string = ""
@@ -83,11 +91,12 @@ class LLVM:
                 f.write(ll_string)
             return ll_string
 
-    def printf_int(self, value: int, index: int = 0):
-        #   %1 = alloca i32, align 4
-        #   store i32 value, ptr %1, align 4
-        #   %2 = load i32, ptr %1, align 4
-        #   %3 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %2)
+    def printf_int(self, value: int, index: int = 1):
+        """
+        Writes LLVM code for printf function printing an integer
+        :param value: the value to print
+        :param index: the current local index
+        """
         out = ""
         out += '\t%' + str(index) + "= alloca i32, align 4 \n"
         out += "\tstore i32 " + str(value) + ", ptr %" + str(index) + ", align 4 \n"
@@ -101,17 +110,9 @@ class LLVM:
 
     def printf_float(self, val: float, index: int = 1):
         """
-        define dso_local i32 @main() #0 {
-          %1 = alloca float, align 4
-          store float 1.600000e+01, ptr %1, align 4
-          %2 = load float, ptr %1, align 4
-          %3 = fpext float %2 to double
-          %4 = call i32 (ptr, ...) @printf(ptr noundef @.str, double noundef %3)
-          ret i32 0
-        }
-        :param val:
-        :param index:
-        :return:
+        Writes LLVM code for printf function printing a float
+        :param val: the value to print
+        :param index: the current local index
         """
         ll_out = ""
         # allocate the float parameter variable
@@ -123,27 +124,18 @@ class LLVM:
         index += 1
         ll_out += "\t%" + str(index) + " = fpext float %" + str(index - 1) + " to double\n"
         index += 1
-        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(
-            self.index_queue[0]) + ", double noundef %" \
-                  + str(index - 1) + ")\n"
+        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + \
+                  str(self.index_queue[0]) + ", double noundef %" + str(index - 1) + ")\n"
         index += 1
         self.index_queue.remove(self.index_queue[0])
         return ll_out, index
 
     def printf_char(self, val: str, index: int = 1):
         """
-            define dso_local i32 @main() #0 {
-                %1 = alloca i8, align 1
-                store i8 16, ptr %1, align 1
-                %2 = load i8, ptr %1, align 1
-                %3 = sext i8 %2 to i32
-                %4 = call i32 (ptr, ...) @printf(ptr noundef @.str, i32 noundef %3)
-                ret i32 0
-            }
-                :param val:
-                :param index:
-                :return:
-                """
+        Writes LLVM code for printf function printing a character
+        :param val: the value to print
+        :param index: the current local index
+        """
         ll_out = ""
         # allocate the float parameter variable
         ll_out += "\t%" + str(index) + " = alloca float, align 1\n"
@@ -162,79 +154,196 @@ class LLVM:
         return ll_out, index
 
     @staticmethod
-    def sub(type: str, op1: str, op2: str):
-        return f"sub nsw {type} {op1}, {op2}"
+    def sub(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a subtract operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"sub nsw {var_type} {op1}, {op2}"
 
     @staticmethod
-    def mul(type, op1, op2):
-        return f"mul nsw {type} {op1}, {op2}"
+    def add(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an addition operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"add nsw {var_type} {op1}, {op2}"
 
     @staticmethod
-    def add(type: str, op1: str, op2: str):
-        return f"add nsw {type} {op1}, {op2}"
+    def mul(var_type, op1, op2):
+        """
+        Writes LLVM code for a multiplication operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"mul nsw {var_type} {op1}, {op2}"
 
     @staticmethod
-    def sdiv(type: str, op1: str, op2: str):
-        return f"sdiv {type} {op1}, {op2}"
+    def sdiv(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (signed)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"sdiv {var_type} {op1}, {op2}"
 
     @staticmethod
-    def udiv(type: str, op1: str, op2: str):
-        return f"udiv {type} {op1}, {op2}"
+    def udiv(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"udiv {var_type} {op1}, {op2}"
 
     @staticmethod
-    def mod(type: str, op1: str, op2: str):
-        return f"urem {type} {op1}, {op2}"
+    def mod(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a modulo operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"urem {var_type} {op1}, {op2}"
 
     @staticmethod
-    def incr(type: str, op: str):
-        return LLVM.add(type, op, "1")
+    def incr(var_type: str, op: str):
+        """
+        Writes LLVM code for an increment operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return LLVM.add(var_type, op, "1")
 
     @staticmethod
-    def decr(type: str, op: str):
-        return LLVM.sub(type, op, "1")
+    def decr(var_type: str, op: str):
+        """
+        Writes LLVM code for a decrement operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return LLVM.sub(var_type, op, "1")
 
     @staticmethod
-    def comp_gt(type: str, op1: str, op2: str):
-        return f'icmp sgt {type} {op1}, {op2}'
+    def comp_gt(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a greater than operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sgt {var_type} {op1}, {op2}'
 
     @staticmethod
-    def comp_lt(type: str, op1: str, op2: str):
-        return f'icmp slt {type} {op1}, {op2}'
+    def comp_lt(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a less than operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp slt {var_type} {op1}, {op2}'
 
     @staticmethod
-    def comp_eq(type: str, op1: str, op2: str):
-        return f'icmp eq {type} {op1}, {op2}'
+    def comp_eq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an is equal operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp eq {var_type} {op1}, {op2}'
 
     @staticmethod
-    def comp_leq(type: str, op1: str, op2: str):
-        return f'icmp sle {type} {op1}, {op2}'
+    def comp_geq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a greater than equals operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sge {var_type} {op1}, {op2}'
 
     @staticmethod
-    def comp_geq(type: str, op1: str, op2: str):
-        return f'icmp sge {type} {op1}, {op2}'
+    def comp_leq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a less than equals operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sle {var_type} {op1}, {op2}'
 
     @staticmethod
-    def comp_neq(type: str, op1: str, op2: str):
-        return f'icmp ne {type} {op1}, {op2}'
+    def comp_neq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a not equal operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp ne {var_type} {op1}, {op2}'
 
     @staticmethod
-    def and_op(type: str, op1: str, op2: str):
-        return f"and {type} {op1}, {op2}"
+    def and_op(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an AND operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"and {var_type} {op1}, {op2}"
 
     @staticmethod
-    def or_op(type: str, op1: str, op2: str):
-        return f"or {type} {op1}, {op2}"
+    def or_op(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an OR operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"or {var_type} {op1}, {op2}"
 
     @staticmethod
-    def not_op(type: str, op: str):
-        return f"not {type} {op}"
+    def not_op(var_type: str, op: str):
+        """
+        Writes LLVM code for an NOT operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return f"not {var_type} {op}"
 
     @staticmethod
-    def assign(type: str, value, ptr):
-        return f"store {type} {value}, {type}* {ptr}"
+    def assign(var_type: str, value, ptr):
+        """
+        Writes LLVM code for an assign operation
+        :param var_type: the type of value to assign to the variable
+        :param value: the value to store on the variable
+        :param ptr: The register to store the value in
+        """
+        return f"store {var_type} {value}, {var_type}* {ptr}"
 
     def functionNodeConvert(self, func: FunctionNode, declr: bool = False, defn: bool = False,
                             glob_decl: bool = False, index_local: int = 1, index_global: int = 1):
+        """
+        Writes LLVM code for function nodes according to the three parameters
+        :param func: the function node
+        :param declr: should function declaration be written
+        :param defn: should function definition be written
+        :param glob_decl: should the function declare global variables
+        :param index_local: the current local index
+        :param index_global: the current global index
+        :return: (ll_out , index) || index
+        ll_out: the LLVM code generated
+        index: local index if in the tuple, global index if separate
+        """
         # Output string , declared as empty
         ll_out = ""
         # Write the llvm code
@@ -276,31 +385,6 @@ class LLVM:
         else:
             # Get function parameters
             print_val = func.value["par0"]
-            """
-            # ll_out += "\t; load the value of @" + print_val.key + "\n\n"
-            # Comment about what it does
-            ll_out += "\t;print par" + str(index) + "\n"
-            # Assign pointers of the correct type for local variables
-            ptr1 = "\t%ptr" + str(index) + " = getelementptr inbounds  ["
-            if isinstance(print_val.value, str):
-                ptr1 += str(len(print_val.value))
-            else:
-                ptr1 += '4'
-            ptr1 += " x i8], ["
-            if isinstance(print_val.value, str):
-                ptr1 += str(len(print_val.value))
-            else:
-                ptr1 += '4'
-            ptr1 += " x i8]* " + "@.str" + str(index) + ' , '
-            # check type of printed variable
-            if isinstance(print_val , VarNode) and print_val.type == "int" or print_val.type == "float" :
-                ptr1 += "i64 0 , i64 0"
-            elif print_val.key == "int" or print_val.key == "float":
-                ptr1 += "i64 0 , i64 0"
-            # Call printf
-            ll_out += ptr1 + "\n"
-            ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
-            """
             if isinstance(print_val.value, float):
                 print_val.value = array("f", [print_val.value])[0]
                 ret = self.printf_float(print_val.value, index_local)
@@ -317,6 +401,9 @@ class LLVM:
             return ll_out, index_local
 
     def ast_convert(self):
+        """
+        Writes LLVM code for an AST type object
+        """
         list1 = [self.ast]
         check = True
         while check:
@@ -339,9 +426,15 @@ class LLVM:
         self.nodes = list1
 
     def type_checker(self):
+        """
+        Not implemented yet
+        """
         pass
 
     def convertNode(self, input_node: Node, global_scope: bool = False, index: int = 1) -> int:
+        """
+        Writes LLVM code for a node type object
+        """
         with open(self.file_name, 'a') as f:
             # if isinstance(input_node , VarNode):
             #     f.write(self.var_node_convert(input_node , global_scope))
@@ -355,6 +448,9 @@ class LLVM:
         return index
 
     def convert(self):
+        """
+        Converts the AST given in the constructor to LLVM code and writes the code to file
+        """
         # clear file
         open(self.file_name , 'w')
         for val in self.symbol_table.values():
@@ -384,4 +480,7 @@ class LLVM:
             f.write("\tret i32 0\n}")
 
     def execute(self):
+        """
+        Runs the generated llvm file
+        """
         subprocess.run(["lli", "-opaque-pointers", self.file_name])
