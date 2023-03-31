@@ -1,10 +1,12 @@
 import sys
 from antlr4 import *
 from output.MathLexer import MathLexer
-from AstCreator import  *
+from AstCreator import *
 from LLVM import *
 import os
-def run(directory , file_type , filenames):
+
+
+def run(directory, file_type, filenames):
     for filename in filenames:
         input_stream = FileStream(directory + filename + file_type)
         # Create error listener
@@ -20,13 +22,14 @@ def run(directory , file_type , filenames):
         parse_tree = parser.math()
         visitor = AstCreator()
         ast = visitor.visit(parse_tree)
-        # ast.print()
+        ast.print()
         ast = visitor.optimise(ast)
         ast.print()
         ast.dot_language(filename)
         generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
         generator.convert()
-        generator.execute()
+        # generator.execute()
+
 
 def main(argv):
     try:
@@ -40,15 +43,16 @@ def main(argv):
         if argv[3] == "-t":
             file_type = argv[4]
         if argv[5] == "-f":
-            run(directory= directory , file_type= file_type , filenames=argv[6:])
+            run(directory=directory, file_type=file_type, filenames=argv[6:])
         elif argv[5] == "-i":
             for file in os.listdir(directory):
                 if file.endswith(file_type):
                     filenames.append(file[:len(file) - len(file_type)])
-            run(directory= directory , file_type= file_type , filenames= filenames)
+            run(directory=directory, file_type=file_type, filenames=filenames)
     except Exception as e:
         print(str(e))
     # print(parse_tree.toStringTree(recog=parser))
+
 
 if __name__ == '__main__':
     main(sys.argv)

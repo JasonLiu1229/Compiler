@@ -68,26 +68,26 @@ class LLVM:
                         val = array('f', [node.value])
                         node.value = val[0]
                         ll_string += str(val[0])
-                    elif isinstance(node.value , str):
+                    elif isinstance(node.value, str):
                         ll_string += str(ord(node.value))
                     else:
                         ll_string += str(node.value)
                     ll_string += "," + var_type + "* %" + str(node.key) + "\n"
                 else:
-                    if isinstance(node.value , float):
+                    if isinstance(node.value, float):
                         val = array('f', [node.value])
                         node.value = val[0]
                         ll_string += str(val[0]) + "\n"
-                    elif isinstance(node.value , str):
+                    elif isinstance(node.value, str):
                         ll_string += str(ord(node.value))
                     else:
                         ll_string += str(node.value) + "\n"
             ll_string += "\n"
             if node.const or scope_toggle:
-                open(self.file_name , 'a').write(ll_string)
+                open(self.file_name, 'a').write(ll_string)
             return ll_string
 
-    def printf_int(self, value : int, index : int = 0):
+    def printf_int(self, value: int, index: int = 0):
         #   %1 = alloca i32, align 4
         #   store i32 value, ptr %1, align 4
         #   %2 = load i32, ptr %1, align 4
@@ -103,7 +103,7 @@ class LLVM:
         self.index_queue.remove(self.index_queue[0])
         return out, index
 
-    def printf_float(self, val: float , index : int = 1):
+    def printf_float(self, val: float, index: int = 1):
         """
         define dso_local i32 @main() #0 {
           %1 = alloca float, align 4
@@ -123,17 +123,18 @@ class LLVM:
         # store the float value
         ll_out += "\tstore float " + str(val) + ", ptr %" + str(index) + ", align 4\n"
         index += 1
-        ll_out += "\t%" + str(index) + " = load float, ptr %" + str(index-1) + ", align 4\n"
+        ll_out += "\t%" + str(index) + " = load float, ptr %" + str(index - 1) + ", align 4\n"
         index += 1
-        ll_out += "\t%" + str(index) + " = fpext float %" + str(index-1) + " to double\n"
+        ll_out += "\t%" + str(index) + " = fpext float %" + str(index - 1) + " to double\n"
         index += 1
-        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(self.index_queue[0]) + ", double noundef %" \
-                  + str(index-1) + ")\n"
+        ll_out += "\t%" + str(index) + " = call i32 (ptr, ...) @printf(ptr noundef @.str" + str(
+            self.index_queue[0]) + ", double noundef %" \
+                  + str(index - 1) + ")\n"
         index += 1
         self.index_queue.remove(self.index_queue[0])
-        return ll_out , index
+        return ll_out, index
 
-    def printf_char(self, val: str , index : int = 1):
+    def printf_char(self, val: str, index: int = 1):
         """
             define dso_local i32 @main() #0 {
                 %1 = alloca i8, align 1
@@ -236,8 +237,8 @@ class LLVM:
     def assign(type: str, value, ptr):
         return f"store {type} {value}, {type}* {ptr}"
 
-    def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
-                            glob_decl : bool = False , index_local: int = 1, index_global: int = 1):
+    def functionNodeConvert(self, func: FunctionNode, declr: bool = False, defn: bool = False,
+                            glob_decl: bool = False, index_local: int = 1, index_global: int = 1):
         # Output string , declared as empty
         ll_out = ""
         # Write the llvm code
@@ -256,7 +257,7 @@ class LLVM:
                     std_decl = "@.str" + str(index_global) + " = private unnamed_addr constant ["
                     std_decl += '4'
                     std_decl += " x i8] c" + "\""
-                    if isinstance(print_val , VarNode):
+                    if isinstance(print_val, VarNode):
                         if print_val.type == "int":
                             std_decl += "%d\\0A\\00\""
                         elif print_val.type == "float":
@@ -305,19 +306,19 @@ class LLVM:
             ll_out += ptr1 + "\n"
             ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
             """
-            if isinstance(print_val.value , float):
+            if isinstance(print_val.value, float):
                 ret = self.printf_float(print_val.value, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
-            elif isinstance(print_val.value , int):
+            elif isinstance(print_val.value, int):
                 ret = self.printf_int(print_val.value, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
-            elif isinstance(print_val.value , str):
+            elif isinstance(print_val.value, str):
                 ret = self.printf_char(print_val.value, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
-            return ll_out , index_local
+            return ll_out, index_local
 
     def ast_convert(self, ast: AST):
         list1 = [self.ast]
@@ -344,11 +345,11 @@ class LLVM:
     def type_checker(self):
         pass
 
-    def convertNode(self, input_node : Node , global_scope : bool = False , index: int = 1) -> int:
-        with open(self.file_name , 'a') as f:
+    def convertNode(self, input_node: Node, global_scope: bool = False, index: int = 1) -> int:
+        with open(self.file_name, 'a') as f:
             # if isinstance(input_node , VarNode):
             #     f.write(self.var_node_convert(input_node , global_scope))
-            if isinstance(input_node , FunctionNode):
+            if isinstance(input_node, FunctionNode):
                 if len(self.index_queue) == 0:
                     self.index_queue.append(index)
                 ret = self.functionNodeConvert(input_node, index_local=index)
@@ -362,14 +363,14 @@ class LLVM:
         f = open(self.file_name, 'w')
         glob_index = []
         for val in self.symbol_table.values():
-            if isinstance(val , VarNode):
+            if isinstance(val, VarNode):
                 self.var_node_convert(val, True)
-            elif isinstance(val , list):
+            elif isinstance(val, list):
                 i = 1
                 defn = True
                 declr = True
                 for entry in val:
-                    if isinstance(entry , FunctionNode):
+                    if isinstance(entry, FunctionNode):
                         self.index_queue.append(i)
                         i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
                         defn = False
@@ -381,11 +382,11 @@ class LLVM:
         self.ast_convert(self.ast)
         i = 1
         for node in self.nodes:
-            i = self.convertNode(node , False , index=i)
+            i = self.convertNode(node, False, index=i)
 
         # end of main
         with open(self.file_name, 'a') as f:
             f.write("\tret i32 0\n}")
 
     def execute(self):
-        subprocess.run(["lli" , "-opaque-pointers", self.file_name])
+        subprocess.run(["lli", "-opaque-pointers", self.file_name])
