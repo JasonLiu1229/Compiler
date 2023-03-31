@@ -1,15 +1,12 @@
 import queue
+import subprocess
 from array import array
-
 from AST import *
 from struct import *
 from decimal import *
 
 
 class LLVM:
-
-    # TODO: var_node
-    # TODO: AST
 
     def __init__(self, input_ast: AST = None, symbol_table=None, file_name: str = "../Output/Output.ll") -> None:
         """
@@ -45,7 +42,7 @@ class LLVM:
             elif node.type == "char":
                 var_type = "i8"
             elif node.type == "float":
-                var_type = "float"  # We had problems getting the exact decimal representation of our floats, so we're using doubles now
+                var_type = "float"
             ll_string += var_type
             if node.ptr:
                 ll_string += "*" * node.total_deref
@@ -69,6 +66,7 @@ class LLVM:
                     ll_string += "\tstore " + var_type + " "
                     if isinstance(node.value, float):
                         val = array('f', [node.value])
+                        node.value = val[0]
                         ll_string += str(val[0])
                     elif isinstance(node.value , str):
                         ll_string += str(ord(node.value))
@@ -78,6 +76,7 @@ class LLVM:
                 else:
                     if isinstance(node.value , float):
                         val = array('f', [node.value])
+                        node.value = val[0]
                         ll_string += str(val[0]) + "\n"
                     elif isinstance(node.value , str):
                         ll_string += str(ord(node.value))
@@ -254,8 +253,7 @@ class LLVM:
                     # Get the function parameters
                     print_val = func.value["par0"]
                     # Define our string
-
-                    std_decl = "@.str" + str(index) + " = private unnamed_addr constant ["
+                    std_decl = "@.str" + str(index_global) + " = private unnamed_addr constant ["
                     std_decl += '4'
                     std_decl += " x i8] c" + "\""
                     if isinstance(print_val , VarNode):
@@ -273,8 +271,9 @@ class LLVM:
                         elif print_val.type == "char":
                             std_decl += "%c\\0A\\00\""
 
-                    ll_out += std_decl + "align 1\n\n"
+                    ll_out += std_decl + " align 1\n\n"
                 f.write(ll_out)
+                return index_global
         if defn:
             if func.body is not None:
                 pass
@@ -307,18 +306,18 @@ class LLVM:
             ll_out += "\tcall i32 (i8*, ...) @printf(i8* %ptr" + str(index) + " , i8* %ptr" + str(index) + ")\n"
             """
             if isinstance(print_val.value , float):
-                ret = self.printf_float(print_val.value , index)
+                ret = self.printf_float(print_val.value, index_local)
                 ll_out += ret[0]
-                index = ret[1]
+                index_local = ret[1]
             elif isinstance(print_val.value , int):
-                ret = self.printf_int(print_val.value , index)
+                ret = self.printf_int(print_val.value, index_local)
                 ll_out += ret[0]
-                index = ret[1]
+                index_local = ret[1]
             elif isinstance(print_val.value , str):
-                ret = self.printf_char(print_val.value , index)
+                ret = self.printf_char(print_val.value, index_local)
                 ll_out += ret[0]
-                index = ret[1]
-            return ll_out , index
+                index_local = ret[1]
+            return ll_out , index_local
 
     def ast_convert(self, ast: AST):
         list1 = [self.ast]
@@ -345,20 +344,23 @@ class LLVM:
     def type_checker(self):
         pass
 
-    def convertNode(self, input_node : Node , global_scope : bool = False , index: int = 1):
+    def convertNode(self, input_node : Node , global_scope : bool = False , index: int = 1) -> int:
         with open(self.file_name , 'a') as f:
             # if isinstance(input_node , VarNode):
             #     f.write(self.var_node_convert(input_node , global_scope))
             if isinstance(input_node , FunctionNode):
-                ret = self.functionNodeConvert(input_node , index=index)
+                if len(self.index_queue) == 0:
+                    self.index_queue.append(index)
+                ret = self.functionNodeConvert(input_node, index_local=index)
                 f.write(ret[0])
-                self.index_queue.insert(0, ret[1])
-                index = ret[1] + 1
+                # self.index_queue.insert(0, ret[1])
+                index = ret[1]
         return index
 
     def convert(self):
         # clear file
         f = open(self.file_name, 'w')
+        glob_index = []
         for val in self.symbol_table.values():
             if isinstance(val , VarNode):
                 self.var_node_convert(val, True)
@@ -368,8 +370,8 @@ class LLVM:
                 declr = True
                 for entry in val:
                     if isinstance(entry , FunctionNode):
-                        self.functionNodeConvert(entry , declr=declr , defn=defn , glob_decl=True , index=i)
-                        i += 1
+                        self.index_queue.append(i)
+                        i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
                         defn = False
                         declr = False
         # begin of main function
@@ -386,4 +388,4 @@ class LLVM:
             f.write("\tret i32 0\n}")
 
     def execute(self):
-        pass
+        subprocess.run(["lli" , "-opaque-pointers", self.file_name])
