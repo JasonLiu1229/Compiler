@@ -55,8 +55,8 @@ class LLVM:
             # allocate the value
             if not scope_toggle:
                 ll_string += "\n"
-            while isinstance(node.value, Node):
-                node = node.value
+            # while isinstance(node.value, Node):
+            #     node = node.value
             else:
                 # match type
                 if node.value is None:
@@ -84,6 +84,8 @@ class LLVM:
                         ll_string += str(val[0]) + "\n"
                     elif isinstance(node.value, str):
                         ll_string += str(ord(node.value))
+                    elif isinstance(node.value , VarNode):
+                        ll_string += f"@{node.value.key} , align 8"
                     else:
                         ll_string += str(node.value) + "\n"
             ll_string += "\n"
@@ -104,7 +106,7 @@ class LLVM:
         index += 1
         out += '\t%' + str(index + 1) + "= call i32 (ptr, ...) @printf(ptr noundef @.str" + str(self.index_queue[0]) + \
                ", i32 noundef %" + str(index) + ')\n'
-        index += 1
+        index += 2
         self.index_queue.remove(self.index_queue[0])
         return out, index
 
