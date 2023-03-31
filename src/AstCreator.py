@@ -667,6 +667,30 @@ class AstCreator (MathVisitor):
                 elif self.symbol_table[new_el.key].ptr and not self.symbol_table[second.key].ptr:
                     entry = self.symbol_table[new_el.key]
                     raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +"’ from type ‘float’")
+                elif second.key in self.symbol_table.keys() and \
+                        self.symbol_table[second.key].type != self.symbol_table[new_el.key].type:
+                    second_type = self.symbol_table[second.key].type
+                    # Check for any valid conversions
+                    # Promoting conversions are good
+                    if (second_type , self.symbol_table[new_el.key].type) in conv_promotions:
+                        new_el.value = self.convert(second.value , self.symbol_table[new_el.key].type)
+                    # Implicit demoting conversions
+                    elif (self.symbol_table[new_el.key].type, second_type) in conversions:
+                        self.warnings.append(
+                            Fore.YELLOW + "Implicit conversion from " + second_type + " to " + self.symbol_table[
+                                new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                        # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
+                        #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
+                        new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
+                    # No conversions
+
+                    elif second.key not in self.symbol_table.keys():
+                        raise AttributeError("Variable " + second.key + " was not declared in this scope")
+                    else:
+                        raise TypeError("Assign value of invalid type. Should be " +
+                                        self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
+                                                                                                         "No valid conversion from " +
+                                        self.symbol_table[new_el.key].type + " to " + second.key)
                 else:
                     new_el.value = second.value
                 self.symbol_table[new_el.key].value = new_el.value
