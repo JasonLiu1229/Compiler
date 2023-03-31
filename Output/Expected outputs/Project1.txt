@@ -1,0 +1,4 @@
+define dso_local i32 @main () {
+	ret i32 0
+}
+% Output should only be the main function, returning 0, because the project1 input only has constant literals.

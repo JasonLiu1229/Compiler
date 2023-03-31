@@ -26,7 +26,7 @@ def run(directory: str , file_type: str , filenames: list , verbose: bool = Fals
         ast.dot_language(filename, visitor.symbol_table)
         generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
         generator.convert()
-        # generator.execute()
+        generator.execute()
 
 def main(argv):
     try:
