@@ -10,16 +10,21 @@ from decimal import *
 
 class AstCreator (MathVisitor):
 
-    # TODO: Finetune the error listener
-    # TODO: Add a semantics error check
-
     def __init__(self) -> None:
+        """
+        Initializer function
+        """
         super().__init__()
         self.base_ast : AST = AST()
         self.symbol_table : dict = dict()
         self.warnings : list = []
 
     def visit_child(self, ctx):
+        """
+        visit the right visit function for the give context
+        :param ctx: the context to know what to visit
+        :return: the given output given by every visit function (AST or Node)
+        """
         if isinstance(ctx, MathParser.MathContext):
             return self.visitMath(ctx)
         elif isinstance(ctx, MathParser.InstrContext):
@@ -65,6 +70,11 @@ class AstCreator (MathVisitor):
 
 
     def visitMath(self, ctx: MathParser.MathContext):
+        """
+        Math visit function
+        :param ctx: context
+        :return: AST
+        """
         math_ast = AST()
         math_ast.root = Node("math", None)
         for c in ctx.getChildren():
@@ -74,6 +84,11 @@ class AstCreator (MathVisitor):
         return math_ast
 
     def visitInstr(self, ctx: MathParser.InstrContext):
+        """
+        Instruction visit
+        :param ctx: context
+        :return: AST
+        """
         instr_ast = AST()
         instr_ast.root = Node("instr", None)
         for c in ctx.getChildren():
@@ -82,6 +97,11 @@ class AstCreator (MathVisitor):
         return instr_ast
 
     def visitPrintf(self, ctx: MathParser.PrintfContext):
+        """
+        Creates the node for printf function
+        :param ctx: context
+        :return: Node
+        """
         out = FunctionNode(ctx.children[0].getText() ,
                            {"par0" : self.visit_child(ctx.children[2])}
                            )
@@ -93,18 +113,9 @@ class AstCreator (MathVisitor):
 
     def visitExpr(self, ctx: MathParser.ExprContext):
         """
-        '(' expr ')'
-            |   expr binary_op expr
-            |   expr unary_op expr
-            |   expr comp_op expr
-            |   expr comp_eq expr
-            |   expr log_op expr
-            |   unary_op expr
-            |   int
-            |   id
-            |   id assign id
-            |   id assign int
-            |   id assign expr
+        Expression visit function
+        :param ctx: context
+        :return: AST
         """
         expr_ast = AST()
         expr_ast.root = Node("expr" , None)
@@ -120,22 +131,47 @@ class AstCreator (MathVisitor):
         return expr_ast
 
     def visitCast(self, ctx: MathParser.CastContext):
+        """
+        Cast visit function
+        :param ctx:
+        :return: Node
+        """
         out = Node("cast" , ctx.children[0].getText()[1:-1])
         return out
 
     def visitIncr(self, ctx: MathParser.IncrContext):
+        """
+        Increment visit function
+        :param ctx: context
+        :return: Node
+        """
         out = Node("incr" , None)
         return out
 
     def visitDecr(self, ctx: MathParser.DecrContext):
+        """
+        Decrement visit function
+        :param ctx: context
+        :return: Node
+        """
         out = Node("decr", None)
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):
+        """
+        Right hand side variable visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[0], ctx.children[0].getText())
         return root
 
     def visitRtype(self, ctx: MathParser.RtypeContext):
+        """
+        Right hand side type visit function
+        :param ctx: context
+        :return: Node
+        """
         if ctx.children[0].getText().isdigit():
             return Node(keywords_datatype[0], int(ctx.children[0].getText()))
         elif self.isfloat(ctx.children[0].getText()):
@@ -144,35 +180,75 @@ class AstCreator (MathVisitor):
             return Node(keywords_datatype[2], ctx.children[0].getText()[1:-1])
 
     def visitBinary_op(self, ctx: MathParser.Binary_opContext):
+        """
+        Binary operator visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[2], ctx.children[0].getText())
         return root
 
     def visitUnary_op(self, ctx: MathParser.Unary_opContext):
+        """
+        Unary operand visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[3], ctx.children[0].getText())
         return root
 
     def visitComp_op(self, ctx: MathParser.Comp_opContext):
+        """
+        Compare operand visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[4], ctx.children[0].getText())
         return root
 
     def visitComp_eq(self, ctx: MathParser.Comp_eqContext):
+        """
+        Compare equal visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[5], ctx.children[0].getText())
         return root
 
     def visitBin_log_op(self, ctx: MathParser.Bin_log_opContext):
+        """
+        Binary logical operand visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[6], ctx.children[0].getText())
         return root
 
     def visitUn_log_op(self, ctx: MathParser.Un_log_opContext):
+        """
+        Unary logical operand visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[7], ctx.children[0].getText())
         return root
 
     def visitAssign(self, ctx: MathParser.AssignContext):
+        """
+        Assign operand visit function
+        :param ctx: context
+        :return: Node
+        """
         root = Node(keywords[8], ctx.children[0].getText())
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
         # CONST? TYPE (var_decl ',')* var_decl
+        """
+        Declaration visit function
+        :param ctx: context
+        :return: AST
+        """
         out = AST()
         out.root = Node("declr" , None)
         const = False
@@ -210,6 +286,11 @@ class AstCreator (MathVisitor):
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
         # TYPE VAR_NAME
         # int x
+        """
+        Variable declaration visit function
+        :param ctx: context
+        :return: VarNode || AST
+        """
         out = VarNode("" , None , "")
         if len(ctx.children) == 1:
             out = self.visit_child(ctx.children[0])
@@ -222,6 +303,11 @@ class AstCreator (MathVisitor):
         return out
 
     def visitLvar(self, ctx: MathParser.LvarContext):
+        """
+        Left hand side variable
+        :param ctx: context
+        :return: VarNode
+        """
         if ctx.children[-1].getText() in self.symbol_table.keys():
             raise AttributeError("Redeclaration of variable " + ctx.children[-1].getText())
         if len(ctx.children) == 1:
@@ -243,6 +329,11 @@ class AstCreator (MathVisitor):
         return root
 
     def visitAddr_op(self, ctx: MathParser.Addr_opContext):
+        """
+        Address operand visit function
+        :param ctx: context
+        :return: AST || Node
+        """
         # resolve second child (rvar)
         r_var = self.visit_child(ctx.children[1])
         r_var = self.resolve_variables(r_var)
@@ -254,6 +345,11 @@ class AstCreator (MathVisitor):
     # Helper functions
 
     def visitDeref(self, ctx: MathParser.DerefContext):
+        """
+        Dereference visit function
+        :param ctx: context
+        :return: VarNode
+        """
         # STR rvar
         # STR deref
         inp = ctx
@@ -282,6 +378,11 @@ class AstCreator (MathVisitor):
     # Tree reduction methods
 
     def isfloat(self, string):
+        """
+        Checks if inout is a float
+        :param string: input variable
+        :return: bool
+        """
         try:
             float(string)
             return True
@@ -289,6 +390,12 @@ class AstCreator (MathVisitor):
             return False
 
     def resolve_binary(self, expr_ast) -> AST | Node:
+        """
+        resolves binary operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if isinstance(expr_ast, Node):
             return expr_ast
         for i in range(len(expr_ast.children)):
@@ -315,6 +422,12 @@ class AstCreator (MathVisitor):
         return expr_ast
 
     def resolve_unary(self, expr_ast: AST | Node) -> AST | Node:
+        """
+        resolves unary operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if isinstance(expr_ast, Node):
             return expr_ast
         for i in range(len(expr_ast.children)):
@@ -356,6 +469,12 @@ class AstCreator (MathVisitor):
         return expr_ast
 
     def resolve_assign(self, expr_ast: AST | Node) -> AST | Node:
+        """
+        resolves assign operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if isinstance(expr_ast , Node):
             return expr_ast
         if len(expr_ast.children) < 3:
@@ -375,6 +494,12 @@ class AstCreator (MathVisitor):
                 return expr_ast
 
     def resolve_datatype(self , expr_ast: AST | Node) -> AST | Node:
+        """
+        resolves datatype operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if not isinstance(expr_ast , AST) or expr_ast.root.value is not None :
             return expr_ast
         if len(expr_ast.children) == 1:
@@ -400,6 +525,12 @@ class AstCreator (MathVisitor):
         return expr_ast
 
     def resolve_variables(self , input_ast : AST | Node) -> AST | Node:
+        """
+        resolves variable operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if not isinstance(input_ast , Node):
             return input_ast
         if input_ast.key == "var":
@@ -413,6 +544,12 @@ class AstCreator (MathVisitor):
         return input_ast
 
     def resolve_empty(self, expr_ast):
+        """
+        resolves empty operation,
+        promotes operations to root and operands to their children
+        :param expr_ast: input AST
+        :return: AST | Node
+        """
         if isinstance(expr_ast , Node):
             return expr_ast
         for child in expr_ast.children:
@@ -422,6 +559,11 @@ class AstCreator (MathVisitor):
                 self.resolve_empty(child)
 
     def unnest(self, input_ast: AST | Node):
+        """
+        unnest the operations
+        :param input_ast: input AST or Node
+        :return: AST
+        """
         if isinstance(input_ast , Node):
             return input_ast
         if len(input_ast.children) == 1:
@@ -433,6 +575,12 @@ class AstCreator (MathVisitor):
 
     # Optimising tree by reducing operations with literals to their result
     def optimise_unary(self, input_ast: AST) -> AST | Node:
+        """
+        unary constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         # check if they are both literals
         if len(input_ast.children) == 1:
@@ -466,6 +614,12 @@ class AstCreator (MathVisitor):
             return new_el
 
     def optimise_binary(self, input_ast: AST) -> AST | Node:
+        """
+        binary constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         first = input_ast.children[0]
         second = input_ast.children[1]
@@ -497,6 +651,12 @@ class AstCreator (MathVisitor):
         return new_el
 
     def optimise_comp_op(self, input_ast: AST) -> AST | Node:
+        """
+        compare operation constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         first = input_ast.children[0]
         second = input_ast.children[1]
@@ -517,6 +677,12 @@ class AstCreator (MathVisitor):
         return new_el
 
     def optimise_comp_eq(self, input_ast: AST) -> AST | Node:
+        """
+        compare equal constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         first = input_ast.children[0]
         second = input_ast.children[1]
@@ -537,6 +703,12 @@ class AstCreator (MathVisitor):
         return new_el
 
     def optimise_bin_log(self, input_ast: AST) -> AST | Node:
+        """
+        binary logic constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         first = input_ast.children[0]
         second = input_ast.children[1]
@@ -555,6 +727,12 @@ class AstCreator (MathVisitor):
         return new_el
 
     def optimise_un_log(self, input_ast: AST) -> AST | Node:
+        """
+        unary logic constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("", None)
         first = input_ast.children[0]
         # Check if condition is a literal
@@ -568,6 +746,12 @@ class AstCreator (MathVisitor):
         return new_el
 
     def optimise_assign(self, input_ast: AST) -> AST | Node:
+        """
+        assign constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: AST || Node
+        """
         new_el = Node("" , None)
         # Get the ID
         first = input_ast.children[0]
@@ -698,6 +882,12 @@ class AstCreator (MathVisitor):
 
     @staticmethod
     def convert(value, d_type):
+        """
+        help function for casting
+        :param value: input_value
+        :param d_type: cast type
+        :return: casted value
+        """
         try:
             if d_type == "int":
                 if isinstance(value , int):
@@ -721,6 +911,12 @@ class AstCreator (MathVisitor):
             raise RuntimeError("Bad Cast")
 
     def optimise_variables(self, input_node : Node) -> Node :
+        """
+        variables constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input Node
+        :return: Node
+        """
         # Search for the variable name in the symbols table
         if input_node.key in self.symbol_table:
             if self.symbol_table[input_node.key] is None:
@@ -741,7 +937,13 @@ class AstCreator (MathVisitor):
                     input_node.value = self.symbol_table[input_node.key].value
         return input_node
 
-    def optimise_functions(self, input_node):
+    def optimise_functions(self, input_node: Node) -> Node:
+        """
+        function constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input Node
+        :return: Node
+        """
         if isinstance(input_node, FunctionNode) and input_node.key in keywords_functions:
             for i in range(len(input_node.value)):
                 if input_node.value["par" + str(i)].key in keywords_datatype:
@@ -755,6 +957,12 @@ class AstCreator (MathVisitor):
         return input_node
 
     def optimise_cast(self, input_node: AST) -> Node:
+        """
+        cast constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: Node
+        """
         # Check type of cast
         input_node.children[0].value = self.convert(input_node.children[0].value , input_node.root.value)
         input_node.children[0].key = input_node.root.value
@@ -767,6 +975,12 @@ class AstCreator (MathVisitor):
         return input_node.children[0]
 
     def optimise_incr_decr(self, input_node: AST) -> Node:
+        """
+        increment or decrement constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST
+        :return: Node
+        """
         # Check which operation to perform
         if input_node.root.key == "incr":
             input_node.children[0].value += 1
@@ -777,6 +991,12 @@ class AstCreator (MathVisitor):
         return input_node.children[0]
 
     def optimise(self, input_ast : AST | Node) -> AST | Node:
+        """
+        constant folding,
+        replaces the AST --> Node with the result of the operation
+        :param input_ast: Input AST or Node
+        :return: AST || Node
+        """
         if isinstance(input_ast , AST):
             for i in range(len(input_ast.children)):
                 input_ast.children[i] = self.optimise(input_ast.children[i])
@@ -811,8 +1031,10 @@ class AstCreator (MathVisitor):
             return self.optimise_variables(input_ast)
         # Unary operation node replacements
 
-
-
     def warn(self):
+        """
+        print all warnings on console
+        :return: None
+        """
         for warn in self.warnings:
             print(warn)
