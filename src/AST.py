@@ -69,7 +69,7 @@ class AST:
     def save(self):
         """
         saves the ast in a dictionary
-        :return: dictionary
+        :return: the dictionary
         """
         out = {self.root.key: self.root.value}
         if out[self.root.key] is None:
