@@ -53,7 +53,11 @@ Example code with only the input directory and file extension
 
  
 ##### Script
-> **Warning** The LLVM class function _**execute()**_ does not work on windows.
+> **Warning** The LLVM class function _**execute()**_ does not work on windows. Disable it when testing on windows.
+
+> How to disable?
+> > comment out line 29 on run.py
+
 ```shell
 cd src || exit &
 python3 run.py -d ../input_files/ -t .c -i
