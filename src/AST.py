@@ -182,12 +182,16 @@ class AST:
                         for fk, fv in v.items():
                             string += fk + '\n'
                             string += f"subgraph {fk}" + '{\n'
+                            mini_dict = {}
                             for i in range(len(fv)):
                                 sub_string = ""
                                 for j in fv[i]:
                                     sub_string += j
-                                string += '\t' + f"{fk}" + "\t->\t{" + sub_string + '}\n'
+                                string += '\t' + f"{fk};"
+                                mini_dict[fk + str(i)] = sub_string
                             string += "}\n"
+                            for mk, mv in mini_dict.items():
+                                string += f"\"{mk[:-1]}\"" + "\t->\t" + f"\"{mv}\"" + "\n"
                     else:
                         string += "\t" + str(v) + "\n"
                 f.write(string)
