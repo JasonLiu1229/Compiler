@@ -53,6 +53,8 @@ Example code with only the input directory and file extension
 
  
 #### Script
+> **Warning** The LLVM class function _**execute()**_ does not work on windows.
+> 
 ```shell
 cd src || exit &
 python3 run.py -d ../input_files/ -t .c -i
