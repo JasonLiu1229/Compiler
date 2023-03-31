@@ -35,7 +35,7 @@ If you do it in the terminal, match the parameters option of pycharm with the pa
 #### Jetbrains Pycharm
 <img src="Pictures/config.png" alt="drawing" style="width:600px;"></img>
 
-### Terminal
+#### Terminal
 There are two ways to run it via terminal
 Common parameter settings:
 - -d : <path\>  : directory of the input files
@@ -52,7 +52,7 @@ Example code with only the input directory and file extension
     python3 -d ../input_files/ -t .c -i
 
  
-#### Script
+##### Script
 ```shell
 cd src || exit &
 python3 run.py -d ../input_files/ -t .c -i
