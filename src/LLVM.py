@@ -49,7 +49,7 @@ class LLVM:
                 var_type = "float"
             ll_string += var_type
             if node.ptr:
-                ll_string += "*" * node.total_deref
+                ll_string += "*" * node.total_deref + " "
             else:
                 ll_string += " "
             # allocate the value
