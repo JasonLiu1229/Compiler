@@ -237,7 +237,7 @@ class LLVM:
         return f"store {type} {value}, {type}* {ptr}"
 
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
-                            glob_decl : bool = False , index: int = 0):
+                            glob_decl : bool = False , index_local: int = 1, index_global: int = 1):
         # Output string , declared as empty
         ll_out = ""
         # Write the llvm code
