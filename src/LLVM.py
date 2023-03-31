@@ -165,57 +165,78 @@ class LLVM:
         self.index_queue.remove(self.index_queue[0])
         return ll_out, index
 
-    def mult(self):
-        pass
+    @staticmethod
+    def sub(type: str, op1: str, op2: str):
+        return f"sub nsw {type} {op1}, {op2}"
 
-    def add(self):
-        pass
+    @staticmethod
+    def mul(type, op1, op2):
+        return f"mul nsw {type} {op1}, {op2}"
 
-    def diff(self):
-        pass
+    @staticmethod
+    def add(type: str, op1: str, op2: str):
+        return f"add nsw {type} {op1}, {op2}"
 
-    def div(self):
-        pass
+    @staticmethod
+    def sdiv(type: str, op1: str, op2: str):
+        return f"sdiv {type} {op1}, {op2}"
 
-    def mod(self):
-        pass
+    @staticmethod
+    def udiv(type: str, op1: str, op2: str):
+        return f"udiv {type} {op1}, {op2}"
 
-    def incr(self):
-        pass
+    @staticmethod
+    def mod(type: str, op1: str, op2: str):
+        return f"urem {type} {op1}, {op2}"
 
-    def decr(self):
-        pass
+    @staticmethod
+    def incr(type: str, op: str):
+        return LLVM.add(type, op, "1")
 
-    def comp_gt(self):
-        pass
+    @staticmethod
+    def decr(type: str, op: str):
+        return LLVM.sub(type, op, "1")
 
-    def comp_lt(self):
-        pass
+    @staticmethod
+    def comp_gt(type: str, op1: str, op2: str):
+        return f'icmp sgt {type} {op1}, {op2}'
 
-    def comp_eq(self):
-        pass
+    @staticmethod
+    def comp_lt(type: str, op1: str, op2: str):
+        return f'icmp slt {type} {op1}, {op2}'
 
-    def comp_leq(self):
-        pass
+    @staticmethod
+    def comp_eq(type: str, op1: str, op2: str):
+        return f'icmp eq {type} {op1}, {op2}'
 
-    def comp_geq(self):
-        pass
+    @staticmethod
+    def comp_leq(type: str, op1: str, op2: str):
+        return f'icmp sle {type} {op1}, {op2}'
 
-    def comp_neq(self):
-        pass
+    @staticmethod
+    def comp_geq(type: str, op1: str, op2: str):
+        return f'icmp sge {type} {op1}, {op2}'
 
-    def bin_log_and_op(self):
-        pass
+    @staticmethod
+    def comp_neq(type: str, op1: str, op2: str):
+        return f'icmp ne {type} {op1}, {op2}'
 
-    def bin_log_or_op(self):
-        pass
+    @staticmethod
+    def and_op(type: str, op1: str, op2: str):
+        return f"and {type} {op1}, {op2}"
 
-    def un_log_not_op(self):
-        pass
+    @staticmethod
+    def or_op(type: str, op1: str, op2: str):
+        return f"or {type} {op1}, {op2}"
 
-    def assign(self):
-        pass
-    
+    @staticmethod
+    def not_op(type: str, op: str):
+        return f"not {type} {op}"
+
+    @staticmethod
+    def assign(type: str, value, ptr):
+        return f"store {type} {value}, {type}* {ptr}"
+
     def functionNodeConvert(self, func: FunctionNode , declr : bool = False , defn: bool = False ,
                             glob_decl : bool = False , index: int = 0):
         # Output string , declared as empty
