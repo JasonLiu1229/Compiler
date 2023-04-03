@@ -47,7 +47,7 @@ def main(argv):
                     filenames.append(file[:len(file) - len(file_type)])
             run(directory= directory , file_type= file_type , filenames= filenames)
     except Exception as e:
-        print(str(e))
+        print(f'Excepted with error {e}')
     # print(parse_tree.toStringTree(recog=parser))
 
 if __name__ == '__main__':
