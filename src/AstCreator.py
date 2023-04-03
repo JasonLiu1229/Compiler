@@ -948,10 +948,15 @@ class AstCreator (MathVisitor):
             for i in range(len(input_node.value)):
                 if input_node.value["par" + str(i)].key in keywords_datatype:
                     return input_node
-                elif self.symbol_table[input_node.value["par" + str(i)].value] is None:
-                    raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
-                elif input_node.value["par" + str(i)].value in self.symbol_table.keys():
+                elif isinstance(input_node.value["par" + str(i)] , Node) and input_node.value["par" + str(i)].value in self.symbol_table.keys():
                     input_node.value["par" + str(i)]= copy.copy(self.symbol_table[input_node.value["par" + str(i)].value])
+                elif isinstance(input_node.value["par" + str(i)] , VarNode):
+                    if self.symbol_table[input_node.value["par" + str(i)].key] is None:
+                        raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
+                    elif input_node.value["par" + str(i)].value is None:
+                        raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
+                    else:
+                        input_node.value["par" + str(i)] = copy.copy(self.symbol_table[input_node.value["par" + str(i)].key])
                 else:
                     pass
         return input_node
