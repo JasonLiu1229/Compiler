@@ -1,0 +1,11 @@
+@x = constant i32 0
+@y = global float 16.0
+@z = global i8 0
+@flt_ptr = global float* @y , align 8
+@ch = global i8 120
+
+define dso_local i32 @main () {
+	ret i32 0
+}
+% Output should only contain the main function and global variable declarations for all the variables in the symbol table
+% as well as a main function which only returns 0

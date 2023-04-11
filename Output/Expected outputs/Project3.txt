@@ -1,0 +1,20 @@
+@x = global i32 6
+@y = global float 17.0
+@result = global float 23.0
+
+declare i32 @printf(ptr noundef, ...)
+
+@.str1 = private unnamed_addr constant [4 x i8] c"%f\0A\00" align 1
+
+define dso_local i32 @main () {
+	%1 = alloca float, align 4
+	store float 23.0, ptr %1, align 4
+	%2 = load float, ptr %1, align 4
+	%3 = fpext float %2 to double
+	%4 = call i32 (ptr, ...) @printf(ptr noundef @.str1, double noundef %3)
+	ret i32 0
+}
+% Output should contain global declarations for variables in the symbol table, declarations for the functions(in our case, only printf)
+% and declarations for all variables that the functions need ( our global .str variables).
+% Output should also contain a main function with code generated for the local variables needed by the printf function
+% and its function call as well as the usual return 0 statement

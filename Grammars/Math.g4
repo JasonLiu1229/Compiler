@@ -5,11 +5,29 @@ math        :   instr* EOF
 instr       :   declr ';'
             |   expr ';'
             |   printf ';'
+//            |   scope
+//            |   if_cond
+//            |   else_cond
+//            |   while_loop
+//            |   for_loop
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
 
-printf      :   'printf' '(' (rvar | rtype) ')';
+printf      :   PRINTF '(' (rvar | rtype | deref) ')';
+
+// TODO: scopes (unnamed)
+//scope       :   '{' instr* '}';
+
+// TODO: if , else
+//if_cond     :   IF expr scope;
+//else_cond   :   ELSE scope;
+//while_loop  :   WHILE expr scope;
+//for_loop    :   FOR (expr ';' expr ';' (incr | decr) ) scope;
+
+// TODO: for , while , break and continue -> translate while to for
+
+// TODO: switch(case, break, default) -> translate switch to if
 
 // Right-hand side variable use
 var_decl    :   lvar assign addr_op
@@ -73,6 +91,16 @@ assign      :   ASSIGN;
 // Keywords
 CAST        :   '(' TYPE ')';
 CONST       :   'const';
+IF          :   'if';
+ELSE        :   'else';
+FOR         :   'for';
+WHILE       :   'while';
+BREAK       :   'break';
+CONTINUE    :   'continue';
+SWITCH      :   'switch';
+CASE        :   'case';
+DEFAULT     :   'default';
+PRINTF      :   'printf';
 // Identifiers and data types
 TYPE        :   'char'
             |   'float'
