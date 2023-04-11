@@ -1,6 +1,5 @@
 import decimal
 import struct
-import pydot
 from colorama import Fore
 import copy
 
@@ -51,6 +50,12 @@ class AstCreator (MathVisitor):
             return Node("var_declr", None)
         elif isinstance(ctx , MathParser.DeclrContext):
             return Node("declr", None)
+        elif isinstance(ctx, MathParser.TermContext):
+            return self.visitTerm(ctx)
+        elif isinstance(ctx, MathParser.FactorContext):
+            return self.visitFactor(ctx)
+        elif isinstance(ctx, MathParser.PrimaryContext):
+            return self.visitPrimary(ctx)
 
     def resolveTree(self, base: AST):
         """
@@ -130,8 +135,6 @@ class AstCreator (MathVisitor):
         # self.resolve_empty(math_ast)
         # self.base_ast = math_ast
         return math_ast
-
-
 
     def visitInstr(self, ctx: MathParser.InstrContext):
         """
@@ -329,8 +332,16 @@ class AstCreator (MathVisitor):
                 inp = inp.children[1]
                 deref_count += 1
 
-    # Tree reduction methods
+    def visitTerm(self, ctx: MathParser.TermContext):
+        pass
 
+    def visitFactor(self, ctx: MathParser.FactorContext):
+        pass
+
+    def visitPrimary(self, ctx: MathParser.PrimaryContext):
+        pass
+
+    # Tree reduction methods
     def isfloat(self, string):
         """
         Checks if inout is a float
