@@ -23,6 +23,7 @@ class Node:
     def __repr__(self) -> str:
         return f'{self.key} : {self.value}'
 
+
     def print(self):
         """
         print function of node

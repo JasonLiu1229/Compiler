@@ -27,13 +27,13 @@ class AstCreator (MathVisitor):
         :return: the given output given by every visit function (AST or Node)
         """
         # Terminals processing
-        # if isinstance(ctx, MathParser.InstrContext):
-        #     return AST(Node("instr", None))
-        # elif isinstance(ctx, MathParser.ExprContext):
-        #     return AST(Node("expr", None))
+        if isinstance(ctx, MathParser.InstrContext):
+            return self.visitInstr(ctx)
+        elif isinstance(ctx, MathParser.ExprContext):
+            return self.visitExpr(ctx)
         # elif isinstance(ctx, MathParser.MathContext):
-        #     return AST(Node("math", None))
-        if isinstance(ctx, MathParser.RvarContext):
+        #     return self.visitMath(ctx)
+        elif isinstance(ctx, MathParser.RvarContext):
             return self.visitRvar(ctx)
         elif isinstance(ctx, MathParser.RtypeContext):
             return self.visitRtype(ctx)
@@ -57,6 +57,7 @@ class AstCreator (MathVisitor):
         elif isinstance(ctx, MathParser.PrimaryContext):
             return self.visitPrimary(ctx)
 
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -65,21 +66,20 @@ class AstCreator (MathVisitor):
         """
         # Terminals processing
         index = 0
-        s = list()
-        resolved = list()
-        for child in base.children:
-            # binary operation
-            if isinstance(child, Node) and child.key in keywords_binary and len(base.children) > index + 1:
-                # Promote operation
-                child = AST(child, [base.children[index-1], base.children[index+1]])
-                base.children[index] = child
-                base.children.remove(base.children[index-1])
-                base.children.remove(base.children[index])
-                index -= 1
-            elif isinstance(child, Node) and child.key == "cast" and len(base.children) > index + 1:
-                base.children[index] = AST(child, [base.children[index+1]])
-                base.children.remove(base.children[index+1])
+        for child in base.children[:]:
+            if isinstance(child, AST):
+                pass
+            elif isinstance(child, Node):
+                if child.key == "primary" and child.value is None:
+                    base.children.remove(child)
+                if child.key == "factor" and child.value is None:
+                    base.children.remove(child)
+                if child.key == "term" and child.value is None:
+                    child.value = base.children[index-1].value
+
+
             index += 1
+
         return base
 
     def DFS(self, visited, ctx):
@@ -108,11 +108,12 @@ class AstCreator (MathVisitor):
                 # print(f'Processing {v} with type {type(v)}')
                 # process leaf nodes
                 v = self.visit_child(v)
+                if v is None:
+                    continue
                 # print(f'Processed node. Now it is {v} with type {type(v)}')
-                # if v is None:
-                #     continue
                 # v = self.visit_child(v)
                 a.add_child(v)
+        a = self.resolveTree(a)
         return a
 
 
@@ -125,7 +126,7 @@ class AstCreator (MathVisitor):
         # stack for visited nodes
         s = []
         # create math node
-        math_ast = AST()
+        # math_ast = AST()
         math_ast = self.DFS(None, ctx)
         # math_ast = Node("math", None)
         # s.append(math_ast)
@@ -144,9 +145,9 @@ class AstCreator (MathVisitor):
         """
         instr_ast = AST()
         instr_ast.root = Node("instr", None)
-        for c in ctx.getChildren():
-            instr_ast.add_child(self.visit_child(c))
-        self.resolve_empty(instr_ast)
+        # for c in ctx.getChildren():
+        #     instr_ast.add_child(self.visit_child(c))
+        # self.resolve_empty(instr_ast)
         return instr_ast
 
     def visitPrintf(self, ctx: MathParser.PrintfContext):
@@ -172,15 +173,10 @@ class AstCreator (MathVisitor):
         """
         expr_ast = AST()
         expr_ast.root = Node("expr" , None)
-        for c in ctx.getChildren():
-            expr_ast.add_child(self.visit_child(c))
-        self.resolve_empty(expr_ast)
-        # Resolve the operations order
-        expr_ast = self.resolve_datatype(expr_ast)
-        self.resolve_unary(expr_ast)
-        self.resolve_binary(expr_ast)
-        self.resolve_assign(expr_ast)
-        # expr_ast = self.unnest(expr_ast)
+        if len(ctx.children) == 3:
+            expr_ast.root.value = ctx.children[1].getText()
+        else:
+            return None
         return expr_ast
 
     def visitRvar(self, ctx: MathParser.RvarContext):
@@ -342,7 +338,7 @@ class AstCreator (MathVisitor):
             else:
                 ast.root = Node("term", ctx.children[1].getText())
         else:
-            ast.root = Node("term", None)
+            return None
         return ast
 
     def visitFactor(self, ctx: MathParser.FactorContext):
@@ -350,7 +346,7 @@ class AstCreator (MathVisitor):
         if len(ctx.children) == 2:
             ast.root = Node("factor", ctx.children[0].getText())
         else:
-            ast.root = Node("factor", None)
+            return None
         return ast
 
     def visitPrimary(self, ctx: MathParser.PrimaryContext):
@@ -358,7 +354,7 @@ class AstCreator (MathVisitor):
         if len(ctx.children) == 2:
             ast.root = Node("primary", ctx.children[0].getText())
         else:
-            ast.root = Node("primary", None)
+            return None
         return ast
 
     # Tree reduction methods

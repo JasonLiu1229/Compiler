@@ -71,6 +71,10 @@ class AST:
     def __sizeof__(self) -> int:
         return len(self.children)
 
+    def __getattr__(self, item):
+        pass
+
+
     def add_child(self, child):
         """
         Adds a child to the ast
@@ -84,7 +88,7 @@ class AST:
                 raise TypeError("child must be set to an AST")
             if not isinstance(child, Node):
                 raise TypeError("child must be set to a Node")
-        self.children.insert(len(self.children), child)
+        self.children.append(child)
 
     def save(self):
         """
