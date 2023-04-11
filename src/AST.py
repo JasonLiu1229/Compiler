@@ -1,5 +1,9 @@
-# External libraries
-from Node import *
+from pprint import pprint
+from typing import Any
+
+import visualisedictionary as vd
+
+from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
 
@@ -41,7 +45,7 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
 
 
 class AST:
-    def __init__(self, root: Node = None, children: list[Node] = None) -> None:
+    def __init__(self, root: Node = None, children: list[Node] = None, parent = None) -> None:
         """
         Initializer function
         :param root: assign root node
@@ -52,7 +56,20 @@ class AST:
             children = []
         self.root: Node | None = root
         self.children: list[Node] | [] = children
+        self.parent: AST | None = parent
         self.dic_count = {"instr": 0, "expr": 0}
+
+    def __eq__(self, o: object) -> bool:
+        return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
+
+    def __ne__(self, o: object) -> bool:
+        return not self.__eq__(o)
+
+    def __repr__(self) -> str:
+        return f"root: {{ {self.root} }} , children: {self.children}"
+
+    def __sizeof__(self) -> int:
+        return len(self.children)
 
     def add_child(self, child):
         """

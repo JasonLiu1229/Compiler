@@ -1,5 +1,9 @@
+from pprint import pprint
+import pydot
+
+
 class Node:
-    def __init__(self, key: str, value) -> None:
+    def __init__(self, key: str, value, parent= None) -> None:
         """
         Initializer function
         :param key: key value of the node
@@ -8,6 +12,16 @@ class Node:
         super().__init__()
         self.key = key
         self.value = value
+        self.parent  = parent
+
+    def __eq__(self, o: object) -> bool:
+        return (self.key == o.key) and (self.value == o.value)
+
+    def __ne__(self, o: object) -> bool:
+        return not self.__eq__(o)
+
+    def __repr__(self) -> str:
+        return f'{self.key} : {self.value}'
 
     def print(self):
         """

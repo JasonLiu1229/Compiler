@@ -1,8 +1,10 @@
 import decimal
 import struct
-
+import pydot
 from colorama import Fore
 import copy
+
+import antlr4.tree.Tree
 from AST import *
 from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
@@ -25,16 +27,18 @@ class AstCreator (MathVisitor):
         :param ctx: the context to know what to visit
         :return: the given output given by every visit function (AST or Node)
         """
-        if isinstance(ctx, MathParser.MathContext):
-            return self.visitMath(ctx)
-        elif isinstance(ctx, MathParser.InstrContext):
-            return self.visitInstr(ctx)
+        # Terminals processing
+        if isinstance(ctx, MathParser.InstrContext):
+            return AST(Node("instr", None))
         elif isinstance(ctx, MathParser.ExprContext):
-            return self.visitExpr(ctx)
+            return AST(Node("expr", None))
+        elif isinstance(ctx, MathParser.MathContext):
+            return AST(Node("math", None))
         elif isinstance(ctx, MathParser.RvarContext):
             return self.visitRvar(ctx)
         elif isinstance(ctx, MathParser.RtypeContext):
             return self.visitRtype(ctx)
+        # Operations processing
         elif isinstance(ctx, MathParser.Binary_opContext):
             return self.visitBinary_op(ctx)
         elif isinstance(ctx, MathParser.Unary_opContext):
@@ -49,24 +53,103 @@ class AstCreator (MathVisitor):
             return self.visitUn_log_op(ctx)
         elif isinstance(ctx, MathParser.AssignContext):
             return self.visitAssign(ctx)
-        elif isinstance(ctx, MathParser.Var_declContext):
-            return self.visitVar_decl(ctx)
-        elif isinstance(ctx , MathParser.LvarContext):
+        elif isinstance(ctx, MathParser.LvarContext):
             return self.visitLvar(ctx)
-        elif isinstance(ctx , MathParser.DeclrContext):
-            return self.visitDeclr(ctx)
-        elif isinstance(ctx , MathParser.DerefContext):
-            return self.visitDeref(ctx)
-        elif isinstance(ctx , MathParser.Addr_opContext):
-            return self.visitAddr_op(ctx)
-        elif isinstance(ctx , MathParser.PrintfContext):
-            return self.visitPrintf(ctx)
-        elif isinstance(ctx , MathParser.IncrContext):
+        elif isinstance(ctx, MathParser.IncrContext):
             return self.visitIncr(ctx)
-        elif isinstance(ctx , MathParser.DecrContext):
+        elif isinstance(ctx, MathParser.DecrContext):
             return self.visitDecr(ctx)
-        elif isinstance(ctx , MathParser.CastContext):
+        elif isinstance(ctx, MathParser.CastContext):
             return self.visitCast(ctx)
+        elif isinstance(ctx, MathParser.DerefContext):
+            return Node("deref", None)
+        elif isinstance(ctx, MathParser.PrintfContext):
+            return Node("printf", None)
+        elif isinstance(ctx , MathParser.Addr_opContext):
+            return Node("addr", None)
+        elif isinstance(ctx, MathParser.Var_declContext):
+            return Node("var_declr", None)
+        elif isinstance(ctx , MathParser.DeclrContext):
+            return Node("declr", None)
+
+    def resolveTree(self, base: AST):
+        """
+        visit the right visit function for the give context
+        :param base: The base AST given to resolve
+        :return: the given output given by every visit function (AST or Node)
+        """
+        # Terminals processing
+        index = 0
+        s = list()
+        resolved = list()
+        for child in base.children:
+            # binary operation
+            if isinstance(child, Node) and child.key in keywords_binary and len(base.children) > index + 1:
+                # Promote operation
+                child = AST(child, [base.children[index-1], base.children[index+1]])
+                base.children[index] = child
+                base.children.remove(base.children[index-1])
+                base.children.remove(base.children[index])
+                index -= 1
+            elif isinstance(child, Node) and child.key == "cast" and len(base.children) > index + 1:
+                base.children[index] = AST(child, [base.children[index+1]])
+                base.children.remove(base.children[index+1])
+            index += 1
+        return base
+
+
+
+
+    def DPS(self, visited , ctx):
+        if visited is None:
+            visited = []
+        s = list()
+        a = AST(root=Node("math", None))
+        s.append(ctx)
+        rev = False
+        # while there are still nodes to visit in the tree
+        while len(s) > 0:
+            v = s.pop()
+            if isinstance(v , antlr4.tree.Tree.TerminalNodeImpl):
+                continue
+            if isinstance(v, Node) or isinstance(v, AST):
+                continue
+            else:
+                # # directly process parent
+                new_el = self.visit_child(v)
+                if len(visited) == 0:
+                    visited.append(new_el)
+                # add children
+                for child in v.getChildren():
+                    # Skip nodes where we've gone too far
+                    if isinstance(child, antlr4.tree.Tree.TerminalNodeImpl):
+                        continue
+                    # Add node to stack
+                    s.append(child)
+                    # convert child and add it to visited as a Node or empty AST
+                    child = self.visit_child(child)
+                    # add parent node as parent to this new node
+                    child.parent = new_el
+                    visited.append(child)
+
+        for v in visited:
+            # Reverse the tree for processing
+            # if not rev:
+            #     s.append(v)
+            #     s.reverse()
+            #     v = s.pop()
+            #     rev = True
+            # print(f'Processing {v} with type {type(v)}')
+            # process leaf nodes
+            # v = self.visit_child(v)
+            # print(f'Processed node. Now it is {v} with type {type(v)}')
+            if v is None:
+                continue
+            a.add_child(v)
+            v.print()
+        a.children.reverse()
+        # a = self.resolveTree(a)
+        return a
 
 
     def visitMath(self, ctx: MathParser.MathContext):
@@ -75,13 +158,21 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
+        # stack for visited nodes
+        s = []
+        # create math node
         math_ast = AST()
-        math_ast.root = Node("math", None)
-        for c in ctx.getChildren():
-            math_ast.add_child(self.visit_child(c))
-        self.resolve_empty(math_ast)
-        self.base_ast = math_ast
+        math_ast = self.DPS(None, ctx)
+        # math_ast = Node("math", None)
+        # s.append(math_ast)
+        # math_ast.root = Node("math", None)
+        # for c in ctx.getChildren():
+        #     math_ast.add_child(self.visit_child(c))
+        # self.resolve_empty(math_ast)
+        # self.base_ast = math_ast
         return math_ast
+
+
 
     def visitInstr(self, ctx: MathParser.InstrContext):
         """

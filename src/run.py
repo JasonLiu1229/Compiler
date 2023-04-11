@@ -20,13 +20,13 @@ def run(directory: str , file_type: str , filenames: list , verbose: bool = Fals
         parse_tree = parser.math()
         visitor = AstCreator()
         ast = visitor.visit(parse_tree)
-        # ast.print()
-        ast = visitor.optimise(ast)
         ast.print()
-        ast.dot_language(filename, visitor.symbol_table)
-        generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
-        generator.convert()
-        generator.execute()
+        # ast = visitor.optimise(ast)
+        # ast.print()
+        # ast.dot_language(filename, visitor.symbol_table)
+        # generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
+        # generator.convert()
+        # generator.execute()
 
 def main(argv):
     try:
@@ -48,7 +48,6 @@ def main(argv):
             run(directory= directory , file_type= file_type , filenames= filenames)
     except Exception as e:
         print(f'Excepted with error {e}')
-    # print(parse_tree.toStringTree(recog=parser))
 
 if __name__ == '__main__':
     main(sys.argv)
