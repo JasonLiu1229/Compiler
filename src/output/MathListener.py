@@ -53,6 +53,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#assign.
+    def enterAssign(self, ctx:MathParser.AssignContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#assign.
+    def exitAssign(self, ctx:MathParser.AssignContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#deref.
     def enterDeref(self, ctx:MathParser.DerefContext):
         pass
@@ -89,12 +98,30 @@ class MathListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathParser#cast.
-    def enterCast(self, ctx:MathParser.CastContext):
+    # Enter a parse tree produced by MathParser#term.
+    def enterTerm(self, ctx:MathParser.TermContext):
         pass
 
-    # Exit a parse tree produced by MathParser#cast.
-    def exitCast(self, ctx:MathParser.CastContext):
+    # Exit a parse tree produced by MathParser#term.
+    def exitTerm(self, ctx:MathParser.TermContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#factor.
+    def enterFactor(self, ctx:MathParser.FactorContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#factor.
+    def exitFactor(self, ctx:MathParser.FactorContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#primary.
+    def enterPrimary(self, ctx:MathParser.PrimaryContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#primary.
+    def exitPrimary(self, ctx:MathParser.PrimaryContext):
         pass
 
 
@@ -104,96 +131,6 @@ class MathListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathParser#rtype.
     def exitRtype(self, ctx:MathParser.RtypeContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#addr_op.
-    def enterAddr_op(self, ctx:MathParser.Addr_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#addr_op.
-    def exitAddr_op(self, ctx:MathParser.Addr_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#binary_op.
-    def enterBinary_op(self, ctx:MathParser.Binary_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#binary_op.
-    def exitBinary_op(self, ctx:MathParser.Binary_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#unary_op.
-    def enterUnary_op(self, ctx:MathParser.Unary_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#unary_op.
-    def exitUnary_op(self, ctx:MathParser.Unary_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#incr.
-    def enterIncr(self, ctx:MathParser.IncrContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#incr.
-    def exitIncr(self, ctx:MathParser.IncrContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#decr.
-    def enterDecr(self, ctx:MathParser.DecrContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#decr.
-    def exitDecr(self, ctx:MathParser.DecrContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#comp_op.
-    def enterComp_op(self, ctx:MathParser.Comp_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#comp_op.
-    def exitComp_op(self, ctx:MathParser.Comp_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#comp_eq.
-    def enterComp_eq(self, ctx:MathParser.Comp_eqContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#comp_eq.
-    def exitComp_eq(self, ctx:MathParser.Comp_eqContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#bin_log_op.
-    def enterBin_log_op(self, ctx:MathParser.Bin_log_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#bin_log_op.
-    def exitBin_log_op(self, ctx:MathParser.Bin_log_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#un_log_op.
-    def enterUn_log_op(self, ctx:MathParser.Un_log_opContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#un_log_op.
-    def exitUn_log_op(self, ctx:MathParser.Un_log_opContext):
-        pass
-
-
-    # Enter a parse tree produced by MathParser#assign.
-    def enterAssign(self, ctx:MathParser.AssignContext):
-        pass
-
-    # Exit a parse tree produced by MathParser#assign.
-    def exitAssign(self, ctx:MathParser.AssignContext):
         pass
 
 

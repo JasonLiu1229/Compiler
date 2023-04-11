@@ -5,6 +5,7 @@ math        :   instr* EOF
 instr       :   declr ';'
             |   expr ';'
             |   printf ';'
+            |   assign ';'
 //            |   scope
 //            |   if_cond
 //            |   else_cond
@@ -30,9 +31,12 @@ printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 // TODO: switch(case, break, default) -> translate switch to if
 
 // Right-hand side variable use
-var_decl    :   lvar assign addr_op
-            |   lvar assign expr
+var_decl    :   lvar ASSIGN expr
             |   lvar
+            ;
+
+assign      :   rvar ASSIGN expr
+            |   deref ASSIGN expr
             ;
 
 deref       :   STR deref
@@ -42,51 +46,41 @@ deref       :   STR deref
 lvar        :   STR* VAR_NAME;
 rvar        :   VAR_NAME;
 
-expr        :   '(' expr ')'
-            |   cast expr
-            |   expr binary_op expr
-            |   expr unary_op expr
-            |   expr comp_op expr
-            |   expr comp_eq expr
-            |   expr bin_log_op expr
-            |   un_log_op expr
-            |   unary_op expr
-            |   decr rvar
-            |   incr rvar
-            |   rvar decr
-            |   rvar incr
-            |   rvar assign expr
-            |   rvar assign rvar
-            |   rvar assign rtype
-            |   rvar assign addr_op
-            |   rvar assign deref
-            |   deref assign expr
-            |   deref assign rvar
-            |   deref assign rtype
-            |   deref assign deref
-            |   deref assign addr_op
-            |   deref
-            |   rtype
-            |   rvar
+expr        : term
+            | expr SUM term
+            | expr DIF term
             ;
 
-cast        :   CAST;
+term        : factor
+            | term (STR | DIV | MOD) factor
+            | term (GT | LT | EQ) factor
+            | term (GEQ | LEQ | NEQ) factor
+            | term (AND_OP | OR_OP) factor
+            | term (AND_OP | OR_OP) factor
+            | (NOT_OP) factor
+            | term (INCR | DECR)
+            ;
+
+factor      : primary
+            | DIF factor
+            | SUM factor
+            | (INCR | DECR) factor
+            ;
+
+primary     : rvar
+            | rtype
+            | ADDR rvar
+            | deref
+            | '(' expr ')'
+            | CAST primary
+            ;
 
 rtype       :   INT
             |   FLOAT
             |   CHAR
             |   STRING
             ;
-addr_op     :   ADDR rvar;
-binary_op   :   (STR  | DIV | MOD);
-unary_op    :   (SUM | DIF);
-incr        :   INCR;
-decr        :   DECR;
-comp_op     :   (GT | LT | EQ);
-comp_eq     :   (GEQ | LEQ | NEQ);
-bin_log_op  :   (AND_OP | OR_OP);
-un_log_op   :   (NOT_OP);
-assign      :   ASSIGN;
+
 
 // Keywords
 CAST        :   '(' TYPE ')';
