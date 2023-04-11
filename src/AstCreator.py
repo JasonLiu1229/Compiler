@@ -348,17 +348,17 @@ class AstCreator (MathVisitor):
     def visitFactor(self, ctx: MathParser.FactorContext):
         ast = AST()
         if len(ctx.children) == 2:
-            ast.root = Node("term", ctx.children[0].getText())
+            ast.root = Node("factor", ctx.children[0].getText())
         else:
-            ast.root = Node("term", None)
+            ast.root = Node("factor", None)
         return ast
 
     def visitPrimary(self, ctx: MathParser.PrimaryContext):
         ast = AST()
         if len(ctx.children) == 2:
-            ast.root = Node("term", ctx.children[0].getText())
+            ast.root = Node("primary", ctx.children[0].getText())
         else:
-            ast.root = Node("term", None)
+            ast.root = Node("primary", None)
         return ast
 
     # Tree reduction methods
