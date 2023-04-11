@@ -333,13 +333,33 @@ class AstCreator (MathVisitor):
                 deref_count += 1
 
     def visitTerm(self, ctx: MathParser.TermContext):
-        pass
+        ast = AST()
+        if len(ctx.children) == 3:
+            ast.root = Node("term", ctx.children[1].getText())
+        elif len(ctx.children) == 2:
+            if ctx.children[0].getText() == '!':
+                ast.root = Node("term", ctx.children[0].getText())
+            else:
+                ast.root = Node("term", ctx.children[1].getText())
+        else:
+            ast.root = Node("term", None)
+        return ast
 
     def visitFactor(self, ctx: MathParser.FactorContext):
-        pass
+        ast = AST()
+        if len(ctx.children) == 2:
+            ast.root = Node("term", ctx.children[0].getText())
+        else:
+            ast.root = Node("term", None)
+        return ast
 
     def visitPrimary(self, ctx: MathParser.PrimaryContext):
-        pass
+        ast = AST()
+        if len(ctx.children) == 2:
+            ast.root = Node("term", ctx.children[0].getText())
+        else:
+            ast.root = Node("term", None)
+        return ast
 
     # Tree reduction methods
     def isfloat(self, string):
