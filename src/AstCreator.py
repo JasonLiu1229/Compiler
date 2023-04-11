@@ -28,45 +28,25 @@ class AstCreator (MathVisitor):
         :return: the given output given by every visit function (AST or Node)
         """
         # Terminals processing
-        if isinstance(ctx, MathParser.InstrContext):
-            return AST(Node("instr", None))
-        elif isinstance(ctx, MathParser.ExprContext):
-            return AST(Node("expr", None))
-        elif isinstance(ctx, MathParser.MathContext):
-            return AST(Node("math", None))
-        elif isinstance(ctx, MathParser.RvarContext):
+        # if isinstance(ctx, MathParser.InstrContext):
+        #     return AST(Node("instr", None))
+        # elif isinstance(ctx, MathParser.ExprContext):
+        #     return AST(Node("expr", None))
+        # elif isinstance(ctx, MathParser.MathContext):
+        #     return AST(Node("math", None))
+        if isinstance(ctx, MathParser.RvarContext):
             return self.visitRvar(ctx)
         elif isinstance(ctx, MathParser.RtypeContext):
             return self.visitRtype(ctx)
         # Operations processing
-        elif isinstance(ctx, MathParser.Binary_opContext):
-            return self.visitBinary_op(ctx)
-        elif isinstance(ctx, MathParser.Unary_opContext):
-            return self.visitUnary_op(ctx)
-        elif isinstance(ctx, MathParser.Comp_eqContext):
-            return self.visitComp_eq(ctx)
-        elif isinstance(ctx, MathParser.Comp_opContext):
-            return self.visitComp_op(ctx)
-        elif isinstance(ctx, MathParser.Bin_log_opContext):
-            return self.visitBin_log_op(ctx)
-        elif isinstance(ctx, MathParser.Un_log_opContext):
-            return self.visitUn_log_op(ctx)
         elif isinstance(ctx, MathParser.AssignContext):
             return self.visitAssign(ctx)
         elif isinstance(ctx, MathParser.LvarContext):
             return self.visitLvar(ctx)
-        elif isinstance(ctx, MathParser.IncrContext):
-            return self.visitIncr(ctx)
-        elif isinstance(ctx, MathParser.DecrContext):
-            return self.visitDecr(ctx)
-        elif isinstance(ctx, MathParser.CastContext):
-            return self.visitCast(ctx)
         elif isinstance(ctx, MathParser.DerefContext):
             return Node("deref", None)
         elif isinstance(ctx, MathParser.PrintfContext):
             return Node("printf", None)
-        elif isinstance(ctx , MathParser.Addr_opContext):
-            return Node("addr", None)
         elif isinstance(ctx, MathParser.Var_declContext):
             return Node("var_declr", None)
         elif isinstance(ctx , MathParser.DeclrContext):
@@ -97,58 +77,37 @@ class AstCreator (MathVisitor):
             index += 1
         return base
 
-
-
-
-    def DPS(self, visited , ctx):
+    def DFS(self, visited, ctx):
         if visited is None:
             visited = []
         s = list()
         a = AST(root=Node("math", None))
         s.append(ctx)
-        rev = False
         # while there are still nodes to visit in the tree
         while len(s) > 0:
             v = s.pop()
-            if isinstance(v , antlr4.tree.Tree.TerminalNodeImpl):
-                continue
-            if isinstance(v, Node) or isinstance(v, AST):
-                continue
-            else:
-                # # directly process parent
-                new_el = self.visit_child(v)
-                if len(visited) == 0:
-                    visited.append(new_el)
-                # add children
+            if v not in visited:
+                visited.append(v)
+                s.append(v)
+                if isinstance(v , antlr4.tree.Tree.TerminalNodeImpl):
+                    continue
                 for child in v.getChildren():
-                    # Skip nodes where we've gone too far
-                    if isinstance(child, antlr4.tree.Tree.TerminalNodeImpl):
-                        continue
-                    # Add node to stack
                     s.append(child)
-                    # convert child and add it to visited as a Node or empty AST
-                    child = self.visit_child(child)
-                    # add parent node as parent to this new node
-                    child.parent = new_el
-                    visited.append(child)
-
-        for v in visited:
-            # Reverse the tree for processing
-            # if not rev:
-            #     s.append(v)
-            #     s.reverse()
-            #     v = s.pop()
-            #     rev = True
-            # print(f'Processing {v} with type {type(v)}')
-            # process leaf nodes
-            # v = self.visit_child(v)
-            # print(f'Processed node. Now it is {v} with type {type(v)}')
-            if v is None:
-                continue
-            a.add_child(v)
-            v.print()
-        a.children.reverse()
-        # a = self.resolveTree(a)
+            else:
+                # Reverse the tree for processing
+                # if not rev:
+                #     s.append(v)
+                #     s.reverse()
+                #     v = s.pop()
+                #     rev = True
+                # print(f'Processing {v} with type {type(v)}')
+                # process leaf nodes
+                v = self.visit_child(v)
+                # print(f'Processed node. Now it is {v} with type {type(v)}')
+                # if v is None:
+                #     continue
+                # v = self.visit_child(v)
+                a.add_child(v)
         return a
 
 
@@ -162,7 +121,7 @@ class AstCreator (MathVisitor):
         s = []
         # create math node
         math_ast = AST()
-        math_ast = self.DPS(None, ctx)
+        math_ast = self.DFS(None, ctx)
         # math_ast = Node("math", None)
         # s.append(math_ast)
         # math_ast.root = Node("math", None)
@@ -221,33 +180,6 @@ class AstCreator (MathVisitor):
         # expr_ast = self.unnest(expr_ast)
         return expr_ast
 
-    def visitCast(self, ctx: MathParser.CastContext):
-        """
-        Cast visit function
-        :param ctx:
-        :return: Node
-        """
-        out = Node("cast" , ctx.children[0].getText()[1:-1])
-        return out
-
-    def visitIncr(self, ctx: MathParser.IncrContext):
-        """
-        Increment visit function
-        :param ctx: context
-        :return: Node
-        """
-        out = Node("incr" , None)
-        return out
-
-    def visitDecr(self, ctx: MathParser.DecrContext):
-        """
-        Decrement visit function
-        :param ctx: context
-        :return: Node
-        """
-        out = Node("decr", None)
-        return out
-
     def visitRvar(self, ctx: MathParser.RvarContext):
         """
         Right hand side variable visit function
@@ -269,60 +201,6 @@ class AstCreator (MathVisitor):
             return Node(keywords_datatype[1], Decimal(ctx.children[0].getText()).__float__())
         else:
             return Node(keywords_datatype[2], ctx.children[0].getText()[1:-1])
-
-    def visitBinary_op(self, ctx: MathParser.Binary_opContext):
-        """
-        Binary operator visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[2], ctx.children[0].getText())
-        return root
-
-    def visitUnary_op(self, ctx: MathParser.Unary_opContext):
-        """
-        Unary operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[3], ctx.children[0].getText())
-        return root
-
-    def visitComp_op(self, ctx: MathParser.Comp_opContext):
-        """
-        Compare operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[4], ctx.children[0].getText())
-        return root
-
-    def visitComp_eq(self, ctx: MathParser.Comp_eqContext):
-        """
-        Compare equal visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[5], ctx.children[0].getText())
-        return root
-
-    def visitBin_log_op(self, ctx: MathParser.Bin_log_opContext):
-        """
-        Binary logical operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[6], ctx.children[0].getText())
-        return root
-
-    def visitUn_log_op(self, ctx: MathParser.Un_log_opContext):
-        """
-        Unary logical operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[7], ctx.children[0].getText())
-        return root
 
     def visitAssign(self, ctx: MathParser.AssignContext):
         """
@@ -416,21 +294,6 @@ class AstCreator (MathVisitor):
                 root.ptr = True
             current_node.value = VarNode(current_node.key , None , current_node.type , current_node.const , current_node.total_deref > 1 , i + 1 , current_node.total_deref - 1)
             current_node = current_node.value
-
-        return root
-
-    def visitAddr_op(self, ctx: MathParser.Addr_opContext):
-        """
-        Address operand visit function
-        :param ctx: context
-        :return: AST || Node
-        """
-        # resolve second child (rvar)
-        r_var = self.visit_child(ctx.children[1])
-        r_var = self.resolve_variables(r_var)
-        # Search for variable in the symbol table
-
-        root = r_var
         return root
 
     # Helper functions
