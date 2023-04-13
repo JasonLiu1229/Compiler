@@ -1,5 +1,4 @@
 from pprint import pprint
-import pydot
 
 
 class Node:
@@ -22,7 +21,6 @@ class Node:
 
     def __repr__(self) -> str:
         return f'{self.key} : {self.value}'
-
 
     def print(self):
         """

@@ -1,4 +1,5 @@
 import decimal
+import socket
 import struct
 from colorama import Fore
 import copy
@@ -122,9 +123,27 @@ class AstCreator (MathVisitor):
                 # v = self.visit_child(v)
                 a.add_child(v)
         a = self.resolveTree(a)
+        self.resolve(a)
         return a
 
+    def resolve(self, ast_in):
+        visited = list()
+        not_visited = list()
 
+        not_visited.append(ast_in)
+        while len(not_visited) > 0:
+            temp = not_visited.pop()
+            if temp not in visited:
+                visited.append(temp)
+                for i in temp.children:
+                    if isinstance(i, AST):
+                        not_visited.append(i)
+
+        return ast_in
+
+    def handle(self, list_ast):
+
+        pass
     def visitMath(self, ctx: MathParser.MathContext):
         """
         Math visit function

@@ -1,8 +1,6 @@
 from pprint import pprint
 from typing import Any
 
-import visualisedictionary as vd
-
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
