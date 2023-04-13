@@ -66,20 +66,28 @@ class AstCreator (MathVisitor):
         """
         # Terminals processing
         index = 0
+        last_instr = 0
         for child in base.children[:]:
             if isinstance(child, AST):
-                pass
+                if child.root.key in ["expr" , "term"] and child.root.value is not None:
+                    child.children = base.children[index-2 : index]
+                    child.children.reverse()
+                    base.children[index - 2: index] = []
+                    index -= 2
+                if child.root.key == "instr":
+                    child.children = base.children[last_instr : index]
+                    child.children.reverse()
+                    base.children[last_instr : index] = []
+                    index = base.children.index(child)
+                    last_instr = index + 1
+
             elif isinstance(child, Node):
-                if child.key == "primary" and child.value is None:
-                    base.children.remove(child)
-                if child.key == "factor" and child.value is None:
-                    base.children.remove(child)
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index-1].value
 
 
             index += 1
-
+        base.children.reverse()
         return base
 
     def DFS(self, visited, ctx):

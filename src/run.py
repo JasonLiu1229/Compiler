@@ -20,7 +20,7 @@ def run(directory: str , file_type: str , filenames: list , verbose: bool = Fals
         parse_tree = parser.math()
         visitor = AstCreator()
         ast = visitor.visit(parse_tree)
-        ast.print()
+        ast.print(4)
         # ast = visitor.optimise(ast)
         # ast.print()
         # ast.dot_language(filename, visitor.symbol_table)
