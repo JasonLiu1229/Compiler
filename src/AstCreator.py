@@ -138,7 +138,7 @@ class AstCreator (MathVisitor):
                 for i in temp.children:
                     if isinstance(i, AST):
                         not_visited.append(i)
-
+        self.handle(visited)
         return ast_in
 
     def handle(self, list_ast):

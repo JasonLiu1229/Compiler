@@ -13,11 +13,11 @@ class Node:
         self.value = value
         self.parent  = parent
 
-    def __eq__(self, o: object) -> bool:
-        return (self.key == o.key) and (self.value == o.value)
-
-    def __ne__(self, o: object) -> bool:
-        return not self.__eq__(o)
+    # def __eq__(self, o: object) -> bool:
+    #     return (self.key == o.key) and (self.value == o.value)
+    #
+    # def __ne__(self, o: object) -> bool:
+    #     return not self.__eq__(o)
 
     def __repr__(self) -> str:
         return f'{self.key} : {self.value}'

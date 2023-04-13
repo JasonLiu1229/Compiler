@@ -57,11 +57,11 @@ class AST:
         self.parent: AST | None = parent
         self.dic_count = {"instr": 0, "expr": 0}
 
-    def __eq__(self, o: object) -> bool:
-        return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
-
-    def __ne__(self, o: object) -> bool:
-        return not self.__eq__(o)
+    # def __eq__(self, o: object) -> bool:
+    #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
+    #
+    # def __ne__(self, o: object) -> bool:
+    #     return not self.__eq__(o)
 
     def __repr__(self) -> str:
         return f"root: {{ {self.root} }} , children: {self.children}"
@@ -70,7 +70,7 @@ class AST:
         return len(self.children)
 
     def __getattr__(self, item):
-        pass
+        return
 
 
     def add_child(self, child):
