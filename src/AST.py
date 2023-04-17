@@ -1,6 +1,5 @@
 from pprint import pprint
 from typing import Any
-
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
@@ -43,7 +42,7 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
 
 
 class AST:
-    def __init__(self, root: Node = None, children: list[Node] = None, parent = None) -> None:
+    def __init__(self, root: Node = None, children: list = None, parent = None):
         """
         Initializer function
         :param root: assign root node
@@ -53,7 +52,7 @@ class AST:
         if children is None:
             children = []
         self.root: Node | None = root
-        self.children: list[Node] | [] = children
+        self.children: list[Node] | list[AST] | [] = children
         self.parent: AST | None = parent
         self.dic_count = {"instr": 0, "expr": 0}
 
@@ -139,8 +138,8 @@ class AST:
                             count += 1
                         function_dict[val[0].key].append(parameter_array)
                 out[name].append(function_dict)
-        except:
-            pass
+        except Exception as e:
+            raise e
 
         # The rest
         for i in range(len(self.children)):
@@ -162,6 +161,7 @@ class AST:
         """
         Create dot language format file
 
+        :param symbol_table:
         :param file_name: string that determines the file name
         :return: None
         """
@@ -229,3 +229,28 @@ class AST:
         :return: str
         """
         return '\"' + self.root.key + '\"' + '\t' + '->' + '\t' + str(self.root.value)
+
+class ExprAST(AST):
+    pass
+
+class InstrAST(AST):
+    pass
+
+class PrintfAST(AST):
+    pass
+
+class DeclrAST(AST):
+    pass
+
+class VarDeclrAST(AST):
+    pass
+
+class TermAST(AST):
+    pass
+
+class FactorAST(AST):
+    pass
+
+class PrimaryAST(AST):
+    pass
+

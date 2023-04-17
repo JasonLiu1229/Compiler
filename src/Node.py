@@ -44,7 +44,7 @@ class Node:
         converts Node in a string format
         :return:
         """
-        return self.key + '\t' + ':' + '\t' + str(self.value)
+        return f"{self.key}\t:\t{str(self.value)}"
 
     def save_dot(self):
         """
@@ -91,6 +91,13 @@ class VarNode(Node):
         self.deref_level = deref_level
         self.total_deref = total_deref
 
+    def __repr__(self) -> str:
+        rep = f""
+        if self.const:
+            rep = f"const "
+        rep = f"{self.type} {'*'*self.total_deref} {self.key} : {self.value}"
+        return rep
+
     def print(self):
         """
         print function for VarNode
@@ -103,14 +110,7 @@ class VarNode(Node):
         Converts VarNode in a json / dictionary format
         :return: dictionary
         """
-        out_key = ""
-        if self.type != "":
-            out_key += self.type
-            if self.type != "":
-                out_key += " "
-        out_key += str('*' * self.deref_level) + self.key
-        if self.const:
-            out_key = "const " + out_key
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*'*(self.total_deref - self.deref_level)} {self.key}"
         if isinstance(self.value, VarNode):
             # out_key = str('*'*(self.deref_level+1)) + out_key
             out = {out_key: self.value.save()}
@@ -133,7 +133,7 @@ class VarNode(Node):
         string format of VarNode
         :return: string
         """
-        return self.type + ' ' + self.key + '\t' + ':' + '\t' + str(self.value)
+        return f"{'const ' if self.const else ''}{self.type}{'*'*(self.total_deref - self.deref_level)} {self.key} : {self.value}"
 
     def save_dot(self):
         """
