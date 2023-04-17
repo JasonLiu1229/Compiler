@@ -1,6 +1,8 @@
 import decimal
 import socket
 import struct
+from math import floor
+
 from colorama import Fore
 import copy
 
@@ -119,7 +121,6 @@ class AstCreator (MathVisitor):
     def resolve(self, ast_in : AST):
         visited = list()
         not_visited = list()
-
         not_visited.append(ast_in)
         while len(not_visited) > 0:
             temp = not_visited.pop()
@@ -128,11 +129,42 @@ class AstCreator (MathVisitor):
                 for i in temp.children:
                     if isinstance(i, AST):
                         not_visited.append(i)
+        visited.reverse()
         self.handle(visited)
         return ast_in
 
-    def handle(self, list_ast : list):
-        pass
+    def handle(self, list_ast: list):
+        for ast in list_ast:
+            if ast.root.value == '/':
+                # Create node
+                node = ast.children[0] / ast.children[1]
+                if ast.children[0].key != "float" and ast.children[1].key != "float":
+                    node.value = floor(node.value)
+            elif ast.root.value == '+':
+                # Create node
+                node = ast.children[0] + ast.children[1]
+                node_type = self.checkType(str(node.value))
+                node.key = node_type
+            elif ast.root.value == '-':
+                # Create node
+                node = ast.children[0] - ast.children[1]
+                node_type = self.checkType(str(node.value))
+                node.key = node_type
+            elif ast.root.value == '*':
+                # Create node
+                node = ast.children[0] * ast.children[1]
+                node_type = self.checkType(str(node.value))
+                node.key = node_type
+            elif ast.root.value == '%':
+                # Create node
+                node = ast.children[0] % ast.children[1]
+                node_type = self.checkType(str(node.value))
+                node.key = node_type
+            else:
+                continue
+            # Replace node
+            index = ast.parent.children.index(ast)
+            ast.parent.children[index] = node
 
     def visitMath(self, ctx: MathParser.MathContext):
         """
@@ -340,6 +372,13 @@ class AstCreator (MathVisitor):
         except ValueError:
             return False
 
+    def checkType(self, input: str):
+        if input.isdigit():
+            return "int"
+        elif self.isfloat(input):
+            return "float"
+        else:
+            return "char"
     @staticmethod
     def convert(value, d_type):
         """

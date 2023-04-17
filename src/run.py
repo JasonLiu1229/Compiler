@@ -1,7 +1,7 @@
 import sys
 from antlr4 import *
 from output.MathLexer import MathLexer
-from AstCreator import  *
+from AstCreator import *
 from LLVM import *
 import os
 def run(directory: str , file_type: str , filenames: list , verbose: bool = False , no_warning: bool = False):

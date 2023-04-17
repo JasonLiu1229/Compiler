@@ -1,3 +1,4 @@
+from math import floor
 from pprint import pprint
 
 
@@ -28,6 +29,31 @@ class Node:
         :return: None
         """
         print(self.get_str())
+
+    def __mul__(self, other):
+        return Node("", self.value * other.value)
+
+    def __floordiv__(self, other):
+        if other.value != 0:
+            return Node("int", floor(self.value / other.value))
+        else:
+            raise ZeroDivisionError
+
+    def __truediv__(self, other):
+        if other.value != 0:
+            return Node("float", self.value / other.value)
+        else:
+            raise ZeroDivisionError
+
+    def __add__(self, other):
+        return Node("", self.value + other.value)
+
+    def __sub__(self, other):
+        return Node("", self.value - other.value)
+
+    def __mod__(self, other):
+        return Node("", self.value % other.value)
+
 
     def save(self):
         """
