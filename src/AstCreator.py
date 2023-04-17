@@ -46,9 +46,9 @@ class AstCreator (MathVisitor):
         elif isinstance(ctx, MathParser.PrintfContext):
             return Node("printf", None)
         elif isinstance(ctx, MathParser.Var_declContext):
-            return Node("var_declr", None)
+            return self.visitVar_decl(ctx)
         elif isinstance(ctx , MathParser.DeclrContext):
-            return Node("declr", None)
+            return self.visitDeclr(ctx)
         elif isinstance(ctx, MathParser.TermContext):
             return self.visitTerm(ctx)
         elif isinstance(ctx, MathParser.FactorContext):
@@ -65,7 +65,7 @@ class AstCreator (MathVisitor):
         """
         # Terminals processing
         index = 0
-        last_instr = 0
+        indexes = {"last_instr": 0 , "last_declr": 0}
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr" , "term"] and child.root.value is not None:
@@ -73,18 +73,34 @@ class AstCreator (MathVisitor):
                     child.children.reverse()
                     base.children[index - 2: index] = []
                     index -= 2
-                if child.root.key == "instr":
+                elif child.root.key == "instr":
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[last_instr : index]
+                    child.children = base.children[indexes["last_instr"] : index]
                     child.children.reverse()
-                    base.children[last_instr : index] = []
+                    base.children[indexes["last_instr"] : index] = []
                     index = base.children.index(child)
-                    last_instr = index + 1
+                    indexes["last_instr"] += 1
+                elif child.root.key == "declr":
+                    child.children = base.children[indexes["last_declr"]: index]
+                    child.children.reverse()
+                    base.children[indexes["last_declr"]: index] = []
+                    index = base.children.index(child)
+                    indexes["last_declr"] += 1
+                elif child.root.key == "assign":
+                    child.children = base.children[index - 2: index]
+                    child.children.reverse()
+                    base.children[index - 2: index] = []
+                    index -= 2
                 # connect children to this node
                 for n in child.children:
                     n.parent = child
+                    if child.root.key == "declr" and child.root.value is not None:
+                        if isinstance(n , AST):
+                            n.root.value = child.root.value
+                        elif isinstance(n, VarNode):
+                            n.type = child.root.value
             elif isinstance(child, Node):
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index-1].value
@@ -246,34 +262,41 @@ class AstCreator (MathVisitor):
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
-        # CONST? TYPE (var_decl ',')* var_decl
         """
         Declaration visit function
         :param ctx: context
         :return: AST
         """
-        out = AST()
-        out.root = Node("declr" , None)
+        out = AST(Node("declr", []))
+        index = 0
+        if ctx.children[index].getText() == "const":
+            out.root.value.append(ctx.children[index].getText())
+            index += 1
+        if ctx.children[index].getText() in keywords_datatype:
+            out.root.value.append(ctx.children[index].getText())
+        else:
+            raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
         return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
-        # TYPE VAR_NAME
-        # int x
         """
         Variable declaration visit function
         :param ctx: context
         :return: VarNode || AST
         """
-        out = VarNode("" , None , "")
-        if len(ctx.children) == 1:
-            out = self.visit_child(ctx.children[0])
+        # out = VarNode("" , None , "")
+        # if len(ctx.children) == 1:
+        #     out = self.visit_child(ctx.children[0])
+        # else:
+        #     out = AST()
+        #     for c in ctx.children:
+        #         out.add_child(self.visit_child(c))
+        #     # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
+        #     out.root = Node("expr" , None)
+        if len(ctx.children) == 3:
+            return AST(Node("assign", None))
         else:
-            out = AST()
-            for c in ctx.children:
-                out.add_child(self.visit_child(c))
-            # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
-            out.root = Node("expr" , None)
-        return out
+            return None
 
     def visitLvar(self, ctx: MathParser.LvarContext):
         """
