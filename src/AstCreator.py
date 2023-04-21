@@ -332,7 +332,7 @@ class AstCreator (MathVisitor):
         out = AST(Node("declr", None))
         index = 0
         if ctx.children[index].getText() == "const":
-            out.root.value.append(ctx.children[index].getText())
+            out.root.value = ctx.children[index].getText()
             index += 1
         if ctx.children[index].getText() in keywords_datatype:
             out.root.value = ctx.children[index].getText()
