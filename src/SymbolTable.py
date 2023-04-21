@@ -24,7 +24,7 @@ class SymbolTable:
         """
         self.table.insert(index, in_object)
 
-    def remove(self, in_object: SymbolEntry):
+    def remove(self, in_object: SymbolEntry) -> None:
         """
         Remove object from the table
         :param in_object: object that needs to be removed
