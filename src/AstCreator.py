@@ -98,12 +98,12 @@ class AstCreator (MathVisitor):
                     child.children.reverse()
                     base.children[index - 2: index] = []
                     # Add first child to symbol table if it isn't already in
-                    if not self.symbol_table.exists(base.children[0]):
+                    if not self.symbol_table.exists(child.children[0].key):
                         # make one
                         new_object = child.children[0]
                         self.symbol_table.insert(SymbolEntry(new_object))
                     else:
-                        pass
+                        raise AttributeError(f"Redeclaration of variable {new_object.key}")
                     index -= 2
                 # connect children to this node
                 for n in child.children:
@@ -182,7 +182,7 @@ class AstCreator (MathVisitor):
                     raise ReferenceError(f"Variable {ast.children[0]} does was not declared in this scope")
                 matches = self.symbol_table.lookup(ast.children[0])
                 if len(matches) > 1:
-                    raise ReferenceError(f"Multiple matches for variable {ast.children[0]}")
+                    raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
                 # assign the value to the variable if it is not constant
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
