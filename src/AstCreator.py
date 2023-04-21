@@ -73,6 +73,10 @@ class AstCreator (MathVisitor):
                     child.children.reverse()
                     base.children[index - 2: index] = []
                     index -= 2
+                elif child.root.key == "primary" and child.root.value is not None:
+                    child.children = base.children[index-1 : index]
+                    base.children[index - 1: index] = []
+                    index -= 1
                 elif child.root.key == "instr":
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
@@ -151,13 +155,25 @@ class AstCreator (MathVisitor):
 
     def handle(self, list_ast: list):
         for ast in list_ast:
+            if len(ast.children) == 0:
+                continue
+            if len(ast.children) > 0:
+                handle = True
+                for child in ast.children:
+                    if isinstance(child, AST):
+                        handle = False
+                        break
+                if not handle:
+                    continue
             if ast.root.value == '/':
                 # Create node
                 node = ast.children[0] / ast.children[1]
                 if ast.children[0].key != "float" and ast.children[1].key != "float":
                     node.value = floor(node.value)
             elif ast.root.value == '+':
-                # Create node
+                # Check if one of the nodes is an unresolved variable
+                if isinstance(ast.children[0].value , str) or isinstance(ast.children[1].value, str):
+                    continue
                 node = ast.children[0] + ast.children[1]
                 node_type = self.checkType(str(node.value))
                 node.key = node_type
