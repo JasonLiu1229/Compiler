@@ -1,11 +1,21 @@
 from Parameter import *
 
+
 class SymbolEntry:
-    def __init__(self, in_object: object, in_name: str, in_type: str, in_const: bool) -> None:
+    def __init__(self, in_object, in_name: str = None, in_type: str = None, in_const: bool = None) -> None:
         self.object = in_object
-        self.name = in_name
-        self.type = in_type
-        self.const = in_const
+        if in_name is None:
+            self.name = self.object.key
+        else:
+            self.name = in_name
+        if in_const is None:
+            self.const = self.object.const
+        else:
+            self.const = in_const
+        if in_type is None:
+            self.type = self.object.type
+        else:
+            self.type = in_type
 
     def __repr__(self):
         return f"{'const ' if self.const else ''}{self.type} {self.name}"
