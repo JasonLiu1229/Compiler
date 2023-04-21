@@ -4,7 +4,10 @@ from output.MathLexer import MathLexer
 from AstCreator import *
 from LLVM import *
 import os
-def run(directory: str , file_type: str , filenames: list , verbose: bool = False , no_warning: bool = False):
+import argparse
+
+
+def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
     for filename in filenames:
         input_stream = FileStream(directory + filename + file_type)
         # Create error listener
@@ -28,26 +31,28 @@ def run(directory: str , file_type: str , filenames: list , verbose: bool = Fals
         # generator.convert()
         # generator.execute()
 
+
 def main(argv):
+    parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
+    parser.add_argument('-d', '--directory', help='directory of the file that needs to be parsed', required=True)
+    parser.add_argument('-t', '--fType', help='file type that needs to be checked', required=True)
+    parser.add_argument('-a', '--all', help='this flag defines that all files will be checked')
+    parser.add_argument('-f', '--files', nargs='+', help='this flag will define which specific files we want to test')
+
     try:
-        # argv = -d ../input_files/ -t .c -f Project3 Project2 ...
-        # argv = -d ../input_files/ -t .c -i
-        directory = ""
-        file_type = ""
+        args = parser.parse_args()
         filenames = []
-        if argv[1] == "-d":
-            directory = argv[2]
-        if argv[3] == "-t":
-            file_type = argv[4]
-        if argv[5] == "-f":
-            run(directory= directory , file_type= file_type , filenames=argv[6:])
-        elif argv[5] == "-i":
-            for file in os.listdir(directory):
-                if file.endswith(file_type):
-                    filenames.append(file[:len(file) - len(file_type)])
-            run(directory= directory , file_type= file_type , filenames= filenames)
+        if args.files is not None:
+            run(directory=args.directory, file_type=args.fType, filenames=args.files)
+        else:
+            for file in os.listdir(args.directory):
+                if file.endswith(args.fType):
+                    filenames.append(file[:len(file) - len(args.fType)])
+            run(directory=args.directory, file_type=args.fType, filenames=filenames)
     except Exception as e:
         print(f'Excepted with error {e}')
+
+
 
 if __name__ == '__main__':
     main(sys.argv)
