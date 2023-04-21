@@ -46,13 +46,22 @@ class Node:
             raise ZeroDivisionError
 
     def __add__(self, other):
+        if isinstance(other, int) or isinstance(other, float):
+            return Node("", self.value + other)
         return Node("", self.value + other.value)
 
     def __sub__(self, other):
+        if isinstance(other, int) or isinstance(other, float):
+            return Node("", self.value - other)
         return Node("", self.value - other.value)
 
     def __mod__(self, other):
         return Node("", self.value % other.value)
+
+    def __neg__(self):
+        if self.key == 'char':
+            return Node("char", -ord(self.value))
+        return Node("", -self.value)
 
 
     def save(self):

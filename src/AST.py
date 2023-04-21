@@ -1,3 +1,4 @@
+from math import floor
 from pprint import pprint
 from typing import Any
 from Node import Node, VarNode, FunctionNode
@@ -42,7 +43,7 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
 
 
 class AST:
-    def __init__(self, root: Node = None, children: list = None, parent = None):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
         """
         Initializer function
         :param root: assign root node
@@ -70,7 +71,6 @@ class AST:
 
     def __getattr__(self, item):
         return
-
 
     def add_child(self, child):
         """
@@ -143,7 +143,8 @@ class AST:
 
         # The rest
         for i in range(len(self.children)):
-            if self.children[i] is not None and self.root.value is None and not isinstance(self.children[i], FunctionNode):
+            if self.children[i] is not None and self.root.value is None and not isinstance(self.children[i],
+                                                                                           FunctionNode):
                 out[name].append(self.children[i].save_dot())
             elif self.children[i] is not None and not isinstance(self.children[i], FunctionNode):
                 out["children"].insert(len(out["children"]), self.children[i].save_dot())
@@ -230,27 +231,93 @@ class AST:
         """
         return '\"' + self.root.key + '\"' + '\t' + '->' + '\t' + str(self.root.value)
 
+    def handle(self):
+        return self
+
+
 class ExprAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        node = None
+        if self.root.value == '+':
+            node = self.children[0] + self.children[1]
+            node_type = self.checkType(str(node.value))
+            node.key = node_type
+        elif self.root.value == '-':
+            node = self.children[0] - self.children[1]
+            node_type = self.checkType(str(node.value))
+            node.key = node_type
+        return node
+
 
 class InstrAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
 
 class PrintfAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
 
 class DeclrAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
 
 class VarDeclrAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
 
 class TermAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        node = None
+        if self.root.value == '*':
+            node = self.children[0] * self.children[1]
+            node_type = self.checkType(str(node.value))
+            node.key = node_type
+        elif self.root.value == '%':
+            node = self.children[0] % self.children[1]
+            node_type = self.checkType(str(node.value))
+            node.key = node_type
+        elif self.root.value == '/':
+            node = self.children[0] / self.children[1]
+            if self.children[0].key != "float" and self.children[1].key != "float":
+                node.value = floor(node.value)
+        return node
+
 
 class FactorAST(AST):
-    pass
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        if self.root.value == '-':
+            return -self.children[0]
+        elif self.root.value == '+':
+            return self.children[0]
+        elif self.children == '++':
+            return self.children[0] + 1
+        elif self.children == '--':
+            return self.children[0] - 1
 
 class PrimaryAST(AST):
-    pass
 
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        pass
