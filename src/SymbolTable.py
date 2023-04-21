@@ -3,16 +3,16 @@ from SymbolEntry import *
 
 class SymbolTable:
     def __init__(self) -> None:
-        self.table = []
+        self.table: list[SymbolEntry] = []
 
-    def lookup(self, in_name):
+    def lookup(self, in_object: object):
         """
         Search for the object in the table
-        :param in_name: name of the object
+        :param in_object: name of the object
         :return: SymbolEntry or None
         """
         for entry in self.table:
-            if entry.name == in_name:
+            if entry.object == in_object:
                 return entry
         return None
 
