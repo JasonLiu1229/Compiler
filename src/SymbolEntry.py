@@ -1,3 +1,5 @@
+from Parameter import *
+
 class SymbolEntry:
     def __init__(self, in_object: object, in_name: str, in_type: str, in_const: bool) -> None:
         self.object = in_object
@@ -16,22 +18,10 @@ class SymbolEntry:
     def __ne__(self, o: object):
         return self.__eq__(o)
 
-class FunctionParameter:
-    def __init__(self, in_type: str, in_default , in_name):
-        self.type = in_type
-        self.name = in_name
-        self.default_value = in_default
-
-    def __eq__(self, o: object):
-        if not isinstance(o, FunctionParameter):
-            return False
-        return self.type == o.type and self.name == o.name and self.default_value == o.default_value
-
-    def __ne__(self, o: object):
-        return not self.__eq__(o)
 
 class FuncSymbolEntry(SymbolEntry):
-    def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False, in_parameters: list[FunctionParameter] = None) -> None:
+    def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False,
+                 in_parameters: list[FunctionParameter] = None) -> None:
         super().__init__(in_object, in_name, in_type, in_const)
         self.parameters = in_parameters
 
@@ -71,8 +61,8 @@ class VarSymbolEntry(SymbolEntry):
 
 class PtrVarEntry(VarSymbolEntry):
     def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False, in_ptr: bool = False,
-                 prev_level = None, next_level = None) -> None:
-        super().__init__(in_object, in_name, in_type, in_const , in_ptr)
+                 prev_level=None, next_level=None) -> None:
+        super().__init__(in_object, in_name, in_type, in_const, in_ptr)
         self.prev_level = prev_level
         self.next_level = next_level
 
@@ -83,4 +73,3 @@ class PtrVarEntry(VarSymbolEntry):
 
     def __ne__(self, o):
         return not self.__ne__(o)
-
