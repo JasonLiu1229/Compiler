@@ -32,7 +32,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
         # generator.execute()
 
 
-def main(argv):
+def main():
     parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
     parser.add_argument('-d', '--directory', help='directory of the file that needs to be parsed', required=True)
     parser.add_argument('-t', '--fType', help='file type that needs to be checked', required=True)
@@ -55,4 +55,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()

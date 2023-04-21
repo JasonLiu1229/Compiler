@@ -8,6 +8,7 @@ import copy
 
 import antlr4.tree.Tree
 from AST import *
+from SymbolTable import *
 from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
 from decimal import *
@@ -20,7 +21,7 @@ class AstCreator (MathVisitor):
         """
         super().__init__()
         self.base_ast : AST = AST()
-        self.symbol_table : dict = dict()
+        self.symbol_table : SymbolTable = SymbolTable()
         self.warnings : list = []
 
     def visit_child(self, ctx):
@@ -96,6 +97,13 @@ class AstCreator (MathVisitor):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
                     base.children[index - 2: index] = []
+                    # Add first child to symbol table if it isn't already in
+                    if not self.symbol_table.exists(base.children[0]):
+                        # make one
+                        new_object = child.children[0]
+                        self.symbol_table.insert(SymbolEntry(new_object))
+                    else:
+                        pass
                     index -= 2
                 # connect children to this node
                 for n in child.children:
@@ -165,7 +173,34 @@ class AstCreator (MathVisitor):
                         break
                 if not handle:
                     continue
-            if ast.root.value == '/':
+            # Variable assignment handling
+            if ast.root.key == "assign" and ast.root.value is not None:
+                if not isinstance(ast.children[0], VarNode):
+                    raise AttributeError("Attempting to assign to a non variable type object")
+                # check if variable is not in the symbol table
+                if not self.symbol_table.exists(ast.children[0]):
+                    raise ReferenceError(f"Variable {ast.children[0]} does was not declared in this scope")
+                matches = self.symbol_table.lookup(ast.children[0])
+                if len(matches) > 1:
+                    raise ReferenceError(f"Multiple matches for variable {ast.children[0]}")
+                # assign the value to the variable if it is not constant
+                if not ast.children[0].const:
+                    ast.children[0].value = ast.children[1].value
+                    # get type
+                    if isinstance(ast.children[1].value , int):
+                        ast.children[0].type = "int"
+                    elif isinstance(ast.children[1].value , float):
+                        ast.children[0].type = "float"
+                    elif isinstance(ast.children[1].value , str) and len(ast.children[1].value) == 1:
+                        ast.children[0].type = "char"
+                    else:
+                        raise TypeError(f"Wrong type assigned to {ast.children[0]}")
+                    self.symbol_table.update(ast.children[0])
+                    # for i in range(len(ast.parent.children)):
+                    #     if ast.parent.children[i] is ast:
+                    node = ast.children[0]
+            # Operations handling
+            elif ast.root.value == '/':
                 # Create node
                 node = ast.children[0] / ast.children[1]
                 if ast.children[0].key != "float" and ast.children[1].key != "float":
@@ -192,6 +227,17 @@ class AstCreator (MathVisitor):
                 node = ast.children[0] % ast.children[1]
                 node_type = self.checkType(str(node.value))
                 node.key = node_type
+            # declaration handling
+            elif ast.root.key == "declr":
+                if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
+                    raise RuntimeError("Faulty declaration")
+                if ast.root.value != ast.children[0].type:
+                    if (ast.root.value , ast.children[0].type) not in conversions:
+                        raise AttributeError("Variable assigned to wrong type")
+                    elif (ast.root.value , ast.children[0].type) not in conv_promotions:
+                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
+                node = ast.children[0]
+
             else:
                 continue
             # Replace node
@@ -240,10 +286,10 @@ class AstCreator (MathVisitor):
         out = FunctionNode(ctx.children[0].getText() ,
                            {"par0" : self.visit_child(ctx.children[2])}
                            )
-        if not out.key in self.symbol_table.keys():
-            self.symbol_table[out.key] = [copy.copy(out)]
-        else:
-            self.symbol_table[out.key].append(copy.copy(out))
+        # if not out.key in self.symbol_table.keys():
+        #     self.symbol_table[out.key] = [copy.copy(out)]
+        # else:
+        #     self.symbol_table[out.key].append(copy.copy(out))
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):
@@ -283,13 +329,13 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        out = AST(Node("declr", []))
+        out = AST(Node("declr", None))
         index = 0
         if ctx.children[index].getText() == "const":
             out.root.value.append(ctx.children[index].getText())
             index += 1
         if ctx.children[index].getText() in keywords_datatype:
-            out.root.value.append(ctx.children[index].getText())
+            out.root.value = ctx.children[index].getText()
         else:
             raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
         return out
@@ -320,13 +366,12 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: VarNode
         """
-        if ctx.children[-1].getText() in self.symbol_table.keys():
-            raise AttributeError("Redeclaration of variable " + ctx.children[-1].getText())
         if len(ctx.children) == 1:
             root = VarNode(ctx.children[-1].getText() , None , "")
             return root
         # If more than 1 element: it's a pointer
         root = VarNode(ctx.children[-1].getText(), None , "" , ptr= (len(ctx.children) - 1 > 0), total_deref= len(ctx.children) - 1)
+
         # Make a length-1 chain on the symbol table for the pointer
         # current_node = root
         # for i in range(len(ctx.children) - 1):

@@ -127,11 +127,16 @@ class VarNode(Node):
         self.total_deref = total_deref
 
     def __repr__(self) -> str:
-        rep = f""
-        if self.const:
-            rep = f"const "
         rep = f"{self.type} {'*'*self.total_deref} {self.key} : {self.value}"
         return rep
+
+    def __eq__(self, o):
+        if not isinstance(o, VarNode):
+            return False
+        return self.key == o.key and self.const == o.const and self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
 
     def print(self):
         """
@@ -187,13 +192,14 @@ class VarNode(Node):
 
 class FunctionNode(Node):
 
-    def __init__(self, key: str, value: dict, ret_type: str = None) -> None:
+    def __init__(self, key: str, value: dict, ret_type: str = None, in_const: bool = False) -> None:
         """
         Initializer
         """
         super().__init__(key, value)
         self.body = None
-        self.ret_type = ret_type
+        self.type = ret_type
+        self.const = in_const
 
     def print(self):
         """
