@@ -168,9 +168,22 @@ class AstCreator (MathVisitor):
             if len(ast.children) > 0:
                 handle = True
                 for child in ast.children:
+                    # unhandled trees
                     if isinstance(child, AST):
                         handle = False
                         break
+                    # unreplaced rvars
+                    elif isinstance(child, Node) and child.key == "var":
+                        # search in symbol table
+                        if not self.symbol_table.exists(child.value):
+                            raise ReferenceError(f"Variable {child.value} does was not declared in this scope")
+                        else:
+                            index = ast.children.index(child)
+                            matches = self.symbol_table.lookup(child.value)
+                            if len(matches) > 1:
+                                raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
+                            ast.children[index] = matches[0].object
+
                 if not handle:
                     continue
             # Variable assignment handling

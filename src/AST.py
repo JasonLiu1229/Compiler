@@ -308,6 +308,7 @@ class TermAST(AST):
 
     def handle(self):
         node = Node("",None)
+
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
             node_type = checkType(str(node.value))
@@ -345,4 +346,4 @@ class PrimaryAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        pass
+        return self
