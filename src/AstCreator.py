@@ -164,6 +164,8 @@ class AstCreator (MathVisitor):
 
     def handle(self, list_ast: list):
         for ast in list_ast:
+            # refresh symbol table
+            self.symbol_table.refresh()
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -247,7 +249,7 @@ class AstCreator (MathVisitor):
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
-                if ast.type != ast.children[0].type:
+                if ast.type != ast.children[0].type and ast.children[0].value is not None:
                     if (ast.type , ast.children[0].type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
                     elif (ast.type , ast.children[0].type) not in conv_promotions:
