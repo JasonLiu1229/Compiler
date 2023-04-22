@@ -49,6 +49,13 @@ class SymbolTable:
                 entry.const = in_object.const
                 return True
 
+    def refresh(self):
+        for entry in self.table:
+            if entry.object is not None:
+                entry.type = entry.object.type
+                entry.const = entry.object.const
+                entry.name = entry.object.key
+
     def remove(self, in_object: SymbolEntry) -> None:
         """
         Remove an object from the table
