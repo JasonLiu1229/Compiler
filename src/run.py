@@ -9,6 +9,7 @@ import argparse
 
 def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
     for filename in filenames:
+        print(f">>> Parsing {directory}{filename}{file_type}\n")
         input_stream = FileStream(directory + filename + file_type)
         # Create error listener
         error_listener = ErrorListener()
