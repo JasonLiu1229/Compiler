@@ -92,8 +92,8 @@ class AST:
     def __sizeof__(self) -> int:
         return len(self.children)
 
-    def __getattr__(self, item):
-        return
+    # def __getattr__(self, item):
+    #     return
 
     def add_child(self, child):
         """
@@ -115,29 +115,31 @@ class AST:
         saves the ast in a dictionary
         :return: the dictionary
         """
-        out = {self.root.key: self.root.value}
-        if out[self.root.key] is None:
-            out[self.root.key] = []
+        out , name = self.getDict()
+        if out[name] is None:
+            out[name] = []
         else:
             out["children"] = []
         for i in range(len(self.children)):
             if self.children[i] is not None and self.root.value is None:
-                out[self.root.key].insert(len(out[self.root.key]), self.children[i].save())
+                out[name].insert(len(out[name]), self.children[i].save())
             elif self.children[i] is not None:
                 out["children"].insert(len(out["children"]), self.children[i].save())
         return out
+
+    def getDict(self):
+        return {self.root.key: self.root.value} , self.root.key
 
     def save_dot(self, dictionary_function: dict = None):
         """
         saves the ast in a dot format in a dictionary
         :return: dot format dictionary
         """
-        name = ""
         if self.root.key in self.dic_count:
-            name = '\"' + self.root.key + self.dic_count[self.root.key] + '\"'
+            name = f"\"{self.root.key} {self.dic_count[self.root.key]}\""
             self.dic_count[self.root.key] += 1
         else:
-            name = '\"' + self.root.key + '\"'
+            name = f"\"{self.root.key}\""
 
         out = {name: self.root.value}
         if out[name] is None:
@@ -173,13 +175,19 @@ class AST:
                 out["children"].insert(len(out["children"]), self.children[i].save_dot())
         return out
 
-    def print(self, indent: int = 4):
+    def print(self, indent: int = 4, save: bool = False, filename: str = ""):
         """
-        prints json format of ast
-        :param indent:
+        prints a json format of ast
+        :param filename: file to be saved into
+        :param save: if True, it is saved to file
+        :param indent: indent for json file
         :return:
         """
-        print(json.dumps(self.save(), indent=indent))
+        output = self.save()
+        if save:
+            with open(f"../Output/{filename}.json", "w") as outfile:
+                json.dump(output, outfile, indent=indent)
+        print(json.dumps(output, indent=indent))
 
     def dot_language(self, file_name, symbol_table: dict = None):
         """
@@ -291,14 +299,28 @@ class PrintfAST(AST):
 
 class DeclrAST(AST):
 
-    def __init__(self, root: Node = None, children: list = None, parent=None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, in_const: bool = False,
+                 var_type: str = None):
         super().__init__(root, children, parent)
+        self.const = in_const
+        self.type = var_type
+
+    def handle(self):
+        return self
+
+    def __repr__(self) -> str:
+        return f"{super().__repr__()} {'const' if self.const else ''} {self.type} "
+
+    def getDict(self):
+        return {self.root.key : [f"{'const ' if self.const else ''}{self.type}"]} , self.root.key
 
 
 class VarDeclrAST(AST):
-
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+    def handle(self):
+        return self
 
 
 class TermAST(AST):

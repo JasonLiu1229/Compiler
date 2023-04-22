@@ -88,11 +88,12 @@ class AstCreator (MathVisitor):
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
                 elif child.root.key == "declr":
-                    child.children = base.children[indexes["last_declr"]: index]
+                    child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
                     child.children.reverse()
-                    base.children[indexes["last_declr"]: index] = []
+                    base.children[max(indexes["last_declr"], indexes["last_instr"]): index] = []
                     index = base.children.index(child)
-                    indexes["last_declr"] += 1
+                    update_index = max(indexes["last_declr"], indexes["last_instr"])
+                    update_index += 1
                 elif child.root.key == "assign":
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
@@ -176,7 +177,7 @@ class AstCreator (MathVisitor):
                     elif isinstance(child, Node) and child.key == "var":
                         # search in symbol table
                         if not self.symbol_table.exists(child.value):
-                            raise ReferenceError(f"Variable {child.value} does was not declared in this scope")
+                            raise ReferenceError(f"\'Variable {child.value} does was not declared in this scope\'")
                         else:
                             index = ast.children.index(child)
                             matches = self.symbol_table.lookup(child.value)
@@ -189,13 +190,13 @@ class AstCreator (MathVisitor):
             # Variable assignment handling
             if ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
-                    raise AttributeError("Attempting to assign to a non variable type object")
-                # check if variable is not in the symbol table
-                if not self.symbol_table.exists(ast.children[0]):
-                    raise ReferenceError(f"Variable {ast.children[0]} does was not declared in this scope")
-                matches = self.symbol_table.lookup(ast.children[0])
-                if len(matches) > 1:
-                    raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
+                    raise AttributeError(f"\'Attempting to assign to a non variable type object\'")
+                # # check if variable is not in the symbol table
+                # if not self.symbol_table.exists(ast.children[0]):
+                #     raise ReferenceError(f"Variable {ast.children[0]} does was not declared in this scope")
+                # matches = self.symbol_table.lookup(ast.children[0])
+                # if len(matches) > 1:
+                #     raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
                 # assign the value to the variable if it is not constant
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
@@ -212,6 +213,8 @@ class AstCreator (MathVisitor):
                     # for i in range(len(ast.parent.children)):
                     #     if ast.parent.children[i] is ast:
                     node = ast.children[0]
+                else:
+                    raise AttributeError(f"\'Attempting to modify a const variable {ast.children[0]}\'")
             # # Operations handling
             # elif ast.root.value == '/':
             #     # Create node
@@ -323,7 +326,7 @@ class AstCreator (MathVisitor):
         """
         if ctx.children[0].getText().isdigit():
             return Node(keywords_datatype[0], int(ctx.children[0].getText()))
-        elif self.isfloat(ctx.children[0].getText()):
+        elif isfloat(ctx.children[0].getText()):
             return Node(keywords_datatype[1], Decimal(ctx.children[0].getText()).__float__())
         else:
             return Node(keywords_datatype[2], ctx.children[0].getText()[1:-1])
@@ -346,10 +349,10 @@ class AstCreator (MathVisitor):
         out = DeclrAST(Node("declr", None))
         index = 0
         if ctx.children[index].getText() == "const":
-            out.root.value = ctx.children[index].getText()
+            out.const = True
             index += 1
         if ctx.children[index].getText() in keywords_datatype:
-            out.root.value = ctx.children[index].getText()
+            out.type = ctx.children[index].getText()
         else:
             raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
         return out
