@@ -104,7 +104,7 @@ class AstCreator (MathVisitor):
                         new_object = child.children[0]
                         self.symbol_table.insert(SymbolEntry(new_object))
                     else:
-                        raise AttributeError(f"Redeclaration of variable {new_object.key}")
+                        raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
                 # connect children to this node
                 for n in child.children:
@@ -117,7 +117,12 @@ class AstCreator (MathVisitor):
             elif isinstance(child, Node):
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index-1].value
-
+                if child.key == "assign_op":
+                    base.children[index] = AssignAST(Node("assign",None))
+                    base.children[index].children = base.children[index-2:index]
+                    base.children[index].children.reverse()
+                    base.children[index-2:index] = []
+                    index -= 2
             index += 1
         base.children.reverse()
         return base
@@ -255,6 +260,28 @@ class AstCreator (MathVisitor):
                     elif (ast.type , ast.children[0].type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 node = ast.children[0]
+            elif isinstance(ast, AssignAST):
+                # check if assign value is of a valid type
+                if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode)):
+                    raise RuntimeError(f"\'Invalid assignment for variable {ast.children[0].key}\'")
+                if isinstance(ast.children[1], VarNode):
+                    rtype = ast.children[1].type
+                else:
+                    rtype = ast.children[1].key
+                assignee = ast.children[0]
+                if not isinstance(assignee, VarNode):
+                    raise AttributeError(f"\'Attempting to assign to a non-variable type\'")
+                if rtype is None:
+                    raise AttributeError(f"Type {rtype} does not exist")
+                if rtype != assignee.type:
+                    if (rtype, assignee.type) not in conversions:
+                        raise AttributeError("Variable assigned to wrong type")
+                    elif (rtype, assignee.type) not in conv_promotions:
+                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
+                assignee.value = ast.children[1].value
+                self.symbol_table.update(assignee)
+                node = assignee
+
             elif ast is not None:
                 node = ast.handle()
             else:
@@ -313,7 +340,7 @@ class AstCreator (MathVisitor):
 
     def visitRvar(self, ctx: MathParser.RvarContext):
         """
-        Right hand side variable visit function
+        Right-hand side variable visit function
         :param ctx: context
         :return: Node
         """
@@ -322,7 +349,7 @@ class AstCreator (MathVisitor):
 
     def visitRtype(self, ctx: MathParser.RtypeContext):
         """
-        Right hand side type visit function
+        Right-hand side type visit function
         :param ctx: context
         :return: Node
         """
@@ -365,15 +392,6 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: VarNode || AST
         """
-        # out = VarNode("" , None , "")
-        # if len(ctx.children) == 1:
-        #     out = self.visit_child(ctx.children[0])
-        # else:
-        #     out = AST()
-        #     for c in ctx.children:
-        #         out.add_child(self.visit_child(c))
-        #     # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
-        #     out.root = Node("expr" , None)
         if len(ctx.children) == 3:
             return VarDeclrAST(Node("assign", None))
         else:
@@ -390,16 +408,6 @@ class AstCreator (MathVisitor):
             return root
         # If more than 1 element: it's a pointer
         root = VarNode(ctx.children[-1].getText(), None , "" , ptr= (len(ctx.children) - 1 > 0), total_deref= len(ctx.children) - 1)
-
-        # Make a length-1 chain on the symbol table for the pointer
-        # current_node = root
-        # for i in range(len(ctx.children) - 1):
-        #     if current_node.key not in self.symbol_table.keys():
-        #         self.symbol_table[current_node.key] = root
-        #         root.value = current_node
-        #         root.ptr = True
-        #     current_node.value = VarNode(current_node.key , None , current_node.type , current_node.const , current_node.total_deref > 1 , i + 1 , current_node.total_deref - 1)
-        #     current_node = current_node.value
         return root
 
     def visitDeref(self, ctx: MathParser.DerefContext):
@@ -411,14 +419,13 @@ class AstCreator (MathVisitor):
         # STR rvar
         # STR deref
         inp = ctx
-        key = ""
         deref_count = 1
         # Get deref level
         while True:
             if isinstance(inp.children[1], MathParser.RvarContext):
                 key = inp.children[1].getText()
                 if self.symbol_table[key] is not None:
-                    # Get pointer from symbol table
+                    # Get a pointer from symbol table
                     pointer = self.symbol_table[key]
                     if not isinstance(pointer , VarNode):
                         raise AttributeError("Variable " + key + " is not a pointer")

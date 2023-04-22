@@ -347,7 +347,13 @@ class VarDeclrAST(AST):
         else:
             return self.children[0]
 
+class AssignAST(AST):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
 
+    def handle(self):
+        # check if there are conversions needed
+        return self.children[0]
 class TermAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
