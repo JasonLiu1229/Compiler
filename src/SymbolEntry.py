@@ -28,6 +28,19 @@ class SymbolEntry:
     def __ne__(self, o: object):
         return self.__eq__(o)
 
+    def print(self):
+        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}".format('|', 'const', '|', 'type', '|',  'name', '|', 'value', '|'))
+        if self.const:
+            const = 'const'
+        else:
+            const = 'None'
+        if self.object.value is None:
+            value = "None"
+        else:
+            value = self.object.value
+        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}".format('|', const, '|', self.type, '|', self.name, '|',
+                                                                       value, '|'))
+
 
 class FuncSymbolEntry(SymbolEntry):
     def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False,

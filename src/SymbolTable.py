@@ -63,4 +63,17 @@ class SymbolTable:
         """
         self.table.remove(in_object)
 
+    def print(self):
+        print("{:<2}{:<15}{:<2}{:<10}{:<2}".format('|', 'Name', '|',  'Value', '|'))
+        under = ""
+        for i in range(31):
+            under += '-'
+        print(under)
+        for item in self.table:
+            Object = item.object
+            name = item.name
+            value = Object.value
+            if value is None:
+                value = 'None'
+            print("{:<2}{:<15}{:<2}{:<10}{:<2}".format('|', name, '|', value, '|'))
 

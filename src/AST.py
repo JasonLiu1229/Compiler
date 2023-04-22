@@ -4,6 +4,7 @@ from typing import Any
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
+
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
             "const_var"]
@@ -16,8 +17,9 @@ keywords_functions = ["printf"]
 conversions = [("float", "int"), ("int", "char"), ("float", "char")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
 
-#TODO: Make specific types of AST in the visit functions
-#TODO: Replace code in the handle function of AstCreator with the handle functions
+
+# TODO: Make specific types of AST in the visit functions
+# TODO: Replace code in the handle function of AstCreator with the handle functions
 
 
 class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
@@ -65,6 +67,7 @@ def checkType(inputStr: str):
     else:
         return "char"
 
+
 def getType(inputValue):
     if isinstance(inputValue, int):
         return "int"
@@ -74,6 +77,7 @@ def getType(inputValue):
         return "char"
     else:
         return None
+
 
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -125,7 +129,7 @@ class AST:
         saves the ast in a dictionary
         :return: the dictionary
         """
-        out , name = self.getDict()
+        out, name = self.getDict()
         if out[name] is None:
             out[name] = []
         else:
@@ -138,7 +142,7 @@ class AST:
         return out
 
     def getDict(self):
-        return {self.root.key: self.root.value} , self.root.key
+        return {self.root.key: self.root.value}, self.root.key
 
     def save_dot(self, dictionary_function: dict = None):
         """
@@ -301,7 +305,6 @@ class InstrAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-
         return self
 
 
@@ -326,7 +329,7 @@ class DeclrAST(AST):
         return f"{super().__repr__()} {'const' if self.const else ''} {self.type} "
 
     def getDict(self):
-        return {self.root.key : [f"{'const ' if self.const else ''}{self.type}"]} , self.root.key
+        return {self.root.key: [f"{'const ' if self.const else ''}{self.type}"]}, self.root.key
 
 
 class VarDeclrAST(AST):
@@ -351,7 +354,7 @@ class TermAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        node = Node("",None)
+        node = Node("", None)
 
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
@@ -383,6 +386,7 @@ class FactorAST(AST):
             return self.children[0] + 1
         elif self.children == '--':
             return self.children[0] - 1
+
 
 class PrimaryAST(AST):
 

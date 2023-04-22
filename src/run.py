@@ -25,6 +25,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
         visitor = AstCreator()
         ast = visitor.visit(parse_tree)
         ast.print(4, True, filename)
+        visitor.symbol_table.print()
         # ast = visitor.optimise(ast)
         # ast.print()
         # ast.dot_language(filename, visitor.symbol_table)
