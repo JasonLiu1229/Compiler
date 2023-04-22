@@ -247,10 +247,10 @@ class AstCreator (MathVisitor):
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
-                if ast.root.value != ast.children[0].type:
-                    if (ast.root.value , ast.children[0].type) not in conversions:
+                if ast.type != ast.children[0].type:
+                    if (ast.type , ast.children[0].type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.root.value , ast.children[0].type) not in conv_promotions:
+                    elif (ast.type , ast.children[0].type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 node = ast.children[0]
             elif ast is not None:

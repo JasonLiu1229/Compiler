@@ -18,7 +18,7 @@ class SymbolEntry:
             self.type = in_type
 
     def __repr__(self):
-        return f"{'const ' if self.const else ''}{self.type} {self.name}"
+        return f"{'const ' if self.const else ''}{self.type} {self.name} : {self.object.value if self.object is not None else None}"
 
     def __eq__(self, o: object):
         if not isinstance(o, SymbolEntry):

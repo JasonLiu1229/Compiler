@@ -4,6 +4,12 @@ class SymbolTable:
     def __init__(self) -> None:
         self.table: list[SymbolEntry] = []
 
+    def __repr__(self):
+        out = f""
+        for entry in self.table:
+            out += f"| {entry.__repr__()} "
+        return out + "|"
+
     def lookup(self, in_object: object | str):
         """
         Search for the object in the table

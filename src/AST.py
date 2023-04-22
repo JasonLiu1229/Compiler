@@ -65,6 +65,16 @@ def checkType(inputStr: str):
     else:
         return "char"
 
+def getType(inputValue):
+    if isinstance(inputValue, int):
+        return "int"
+    if isinstance(inputValue, float):
+        return "float"
+    if isinstance(inputValue, str):
+        return "char"
+    else:
+        return None
+
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None):
         """
@@ -290,6 +300,10 @@ class InstrAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+    def handle(self):
+
+        return self
+
 
 class PrintfAST(AST):
 
@@ -320,7 +334,15 @@ class VarDeclrAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        return self
+        if self.root.key == "assign":
+            if not isinstance(self.children[0], VarNode):
+                raise AttributeError(f"\'Attempting to assign to a non-variable type\'")
+            # assign value
+            self.children[0].value = self.children[1].value
+            self.children[0].type = getType(self.children[0].value)
+            return self.children[0]
+        else:
+            return self.children[0]
 
 
 class TermAST(AST):
