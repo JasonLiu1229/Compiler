@@ -4,7 +4,6 @@ from typing import Any
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
-
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
             "const_var"]
@@ -16,6 +15,9 @@ keywords_assign = ["assign_op"]
 keywords_functions = ["printf"]
 conversions = [("float", "int"), ("int", "char"), ("float", "char")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
+
+#TODO: Make specific types of AST in the visit functions
+#TODO: Replace code in the handle function of AstCreator with the handle functions
 
 
 class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
@@ -41,6 +43,27 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         # raise Exception("Ambiguity")
         super().reportAmbiguity(recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs)
 
+
+def isfloat(string):
+    """
+    Checks if inout is a float
+    :param string: input variable
+    :return: bool
+    """
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
+def checkType(inputStr: str):
+    if inputStr.isdigit():
+        return "int"
+    elif isfloat(inputStr):
+        return "float"
+    else:
+        return "char"
 
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -163,7 +186,7 @@ class AST:
         Create dot language format file
 
         :param symbol_table:
-        :param file_name: string that determines the file name
+        :param file_name: String that determines the file name
         :return: None
         """
         # Create file
@@ -241,15 +264,16 @@ class ExprAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        node = None
+        node = Node("", None, self.parent)
         if self.root.value == '+':
             node = self.children[0] + self.children[1]
-            node_type = self.checkType(str(node.value))
+            node_type = checkType(str(node.value))
             node.key = node_type
         elif self.root.value == '-':
             node = self.children[0] - self.children[1]
-            node_type = self.checkType(str(node.value))
+            node_type = checkType(str(node.value))
             node.key = node_type
+        node.parent = self.parent
         return node
 
 
@@ -283,19 +307,20 @@ class TermAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        node = None
+        node = Node("",None)
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
-            node_type = self.checkType(str(node.value))
+            node_type = checkType(str(node.value))
             node.key = node_type
         elif self.root.value == '%':
             node = self.children[0] % self.children[1]
-            node_type = self.checkType(str(node.value))
+            node_type = checkType(str(node.value))
             node.key = node_type
         elif self.root.value == '/':
             node = self.children[0] / self.children[1]
             if self.children[0].key != "float" and self.children[1].key != "float":
                 node.value = floor(node.value)
+        node.parent = self.parent
         return node
 
 

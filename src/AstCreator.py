@@ -199,34 +199,34 @@ class AstCreator (MathVisitor):
                     # for i in range(len(ast.parent.children)):
                     #     if ast.parent.children[i] is ast:
                     node = ast.children[0]
-            # Operations handling
-            elif ast.root.value == '/':
-                # Create node
-                node = ast.children[0] / ast.children[1]
-                if ast.children[0].key != "float" and ast.children[1].key != "float":
-                    node.value = floor(node.value)
-            elif ast.root.value == '+':
-                # Check if one of the nodes is an unresolved variable
-                if isinstance(ast.children[0].value , str) or isinstance(ast.children[1].value, str):
-                    continue
-                node = ast.children[0] + ast.children[1]
-                node_type = self.checkType(str(node.value))
-                node.key = node_type
-            elif ast.root.value == '-':
-                # Create node
-                node = ast.children[0] - ast.children[1]
-                node_type = self.checkType(str(node.value))
-                node.key = node_type
-            elif ast.root.value == '*':
-                # Create node
-                node = ast.children[0] * ast.children[1]
-                node_type = self.checkType(str(node.value))
-                node.key = node_type
-            elif ast.root.value == '%':
-                # Create node
-                node = ast.children[0] % ast.children[1]
-                node_type = self.checkType(str(node.value))
-                node.key = node_type
+            # # Operations handling
+            # elif ast.root.value == '/':
+            #     # Create node
+            #     node = ast.children[0] / ast.children[1]
+            #     if ast.children[0].key != "float" and ast.children[1].key != "float":
+            #         node.value = floor(node.value)
+            # elif ast.root.value == '+':
+            #     # Check if one of the nodes is an unresolved variable
+            #     if isinstance(ast.children[0].value , str) or isinstance(ast.children[1].value, str):
+            #         continue
+            #     node = ast.children[0] + ast.children[1]
+            #     node_type = self.checkType(str(node.value))
+            #     node.key = node_type
+            # elif ast.root.value == '-':
+            #     # Create node
+            #     node = ast.children[0] - ast.children[1]
+            #     node_type = self.checkType(str(node.value))
+            #     node.key = node_type
+            # elif ast.root.value == '*':
+            #     # Create node
+            #     node = ast.children[0] * ast.children[1]
+            #     node_type = self.checkType(str(node.value))
+            #     node.key = node_type
+            # elif ast.root.value == '%':
+            #     # Create node
+            #     node = ast.children[0] % ast.children[1]
+            #     node_type = self.checkType(str(node.value))
+            #     node.key = node_type
             # declaration handling
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
@@ -237,7 +237,8 @@ class AstCreator (MathVisitor):
                     elif (ast.root.value , ast.children[0].type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 node = ast.children[0]
-
+            elif ast is not None:
+                node = ast.handle()
             else:
                 continue
             # Replace node
@@ -259,7 +260,7 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        instr_ast = AST()
+        instr_ast = InstrAST()
         instr_ast.root = Node("instr", None)
         return instr_ast
 
@@ -269,7 +270,7 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        expr_ast = AST()
+        expr_ast = ExprAST()
         expr_ast.root = Node("expr" , None)
         if len(ctx.children) == 3:
             expr_ast.root.value = ctx.children[1].getText()
@@ -329,7 +330,7 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        out = AST(Node("declr", None))
+        out = DeclrAST(Node("declr", None))
         index = 0
         if ctx.children[index].getText() == "const":
             out.root.value = ctx.children[index].getText()
@@ -356,7 +357,7 @@ class AstCreator (MathVisitor):
         #     # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
         #     out.root = Node("expr" , None)
         if len(ctx.children) == 3:
-            return AST(Node("assign", None))
+            return VarDeclrAST(Node("assign", None))
         else:
             return None
 
@@ -415,7 +416,7 @@ class AstCreator (MathVisitor):
                 deref_count += 1
 
     def visitTerm(self, ctx: MathParser.TermContext):
-        ast = AST()
+        ast = TermAST()
         if len(ctx.children) == 3:
             ast.root = Node("term", ctx.children[1].getText())
         elif len(ctx.children) == 2:
@@ -428,7 +429,7 @@ class AstCreator (MathVisitor):
         return ast
 
     def visitFactor(self, ctx: MathParser.FactorContext):
-        ast = AST()
+        ast = FactorAST()
         if len(ctx.children) == 2:
             ast.root = Node("factor", ctx.children[0].getText())
         else:
@@ -436,33 +437,13 @@ class AstCreator (MathVisitor):
         return ast
 
     def visitPrimary(self, ctx: MathParser.PrimaryContext):
-        ast = AST()
+        ast = PrimaryAST()
         if len(ctx.children) == 2:
             ast.root = Node("primary", ctx.children[0].getText())
         else:
             return None
         return ast
 
-    # Tree reduction methods
-    def isfloat(self, string):
-        """
-        Checks if inout is a float
-        :param string: input variable
-        :return: bool
-        """
-        try:
-            float(string)
-            return True
-        except ValueError:
-            return False
-
-    def checkType(self, input: str):
-        if input.isdigit():
-            return "int"
-        elif self.isfloat(input):
-            return "float"
-        else:
-            return "char"
     @staticmethod
     def convert(value, d_type):
         """
