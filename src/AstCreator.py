@@ -254,7 +254,7 @@ class AstCreator (MathVisitor):
                     rtype = ast.children[1].type
                 else:
                     rtype = ast.children[1].key
-                assignee = ast.children[0]
+                assignee = copy.copy(ast.children[0])
                 if not isinstance(assignee, VarNode):
                     raise AttributeError(f"\'Attempting to assign to a non-variable type\'")
                 if rtype is None:

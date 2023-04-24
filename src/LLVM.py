@@ -488,16 +488,16 @@ class LLVM:
                     indexes["printf"] = i
             if isinstance(node, VarNode):
                 self.var_node_convert(node, True)
-            elif isinstance(node, list):
-                i = 1
-                defn = True
-                declr = True
-                for val in node:
-                    if isinstance(entry, FunctionNode):
-                        self.index_queue.append(i)
-                        i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
-                        defn = False
-                        declr = False
+            # elif isinstance(node, list):
+            #     i = 1
+            #     defn = True
+            #     declr = True
+            #     for val in node:
+            #         if isinstance(entry, FunctionNode):
+            #             self.index_queue.append(i)
+            #             i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
+            #             defn = False
+            #             declr = False
         # begin of the main function
         with open(self.file_name, 'a') as f:
             f.write("define dso_local i32 @main () {\n")
