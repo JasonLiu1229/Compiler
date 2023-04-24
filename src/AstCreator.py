@@ -213,12 +213,6 @@ class AstCreator (MathVisitor):
             if ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
                     raise AttributeError(f"\'Attempting to assign to a non variable type object\'")
-                # # check if variable is not in the symbol table
-                # if not self.symbol_table.exists(ast.children[0]):
-                #     raise ReferenceError(f"Variable {ast.children[0]} does was not declared in this scope")
-                # matches = self.symbol_table.lookup(ast.children[0])
-                # if len(matches) > 1:
-                #     raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
                 # assign the value to the variable if it is not constant
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
@@ -277,8 +271,14 @@ class AstCreator (MathVisitor):
                 node = assignee
             elif isinstance(ast, PrintfAST):
                 # insert function into symbol table
-                new_entry = FuncSymbolEntry(ast.root, in_parameters=ast.children)
+                # hard code the parameters for this particular function
+                if not isinstance(ast.children[0], VarNode):
+                    continue
+                new_param = FunctionParameter(getType(ast.children[0].value), None, "print_val")
+                new_entry = FuncSymbolEntry(ast.root, in_parameters=[new_param])
+                ast.root.type = new_param.type
                 self.symbol_table.insert(new_entry)
+                self.symbol_table.refresh()
                 node = ast
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
@@ -332,6 +332,8 @@ class AstCreator (MathVisitor):
         """
 
         out = PrintfAST(FunctionNode(key= "printf"))
+        # PrintfAST root is the definition of the function
+        # PrintfAST children are the parameters given to the function
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):

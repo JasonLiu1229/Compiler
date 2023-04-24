@@ -30,7 +30,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             # ast.dot_language(filename, visitor.symbol_table)
             generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
             generator.convert()
-            # generator.execute()
+            generator.execute()
             print(">>> Finished execution with exit code 0\n")
         except Exception as e:
             print(f'Excepted with error \"{e}\"\n')
