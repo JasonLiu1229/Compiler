@@ -313,6 +313,8 @@ class PrintfAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+    def handle(self):
+        return self
 
 class DeclrAST(AST):
 
@@ -364,7 +366,9 @@ class TermAST(AST):
 
     def handle(self):
         node = Node("", None)
-
+        for child in self.children:
+            if isinstance(child, AST):
+                return self
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
             node_type = checkType(str(node.value))
@@ -377,6 +381,24 @@ class TermAST(AST):
             node = self.children[0] / self.children[1]
             if self.children[0].key != "float" and self.children[1].key != "float":
                 node.value = floor(node.value)
+        elif self.root.value == "++":
+            if len(self.children) != 1:
+                raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
+            if not isinstance(self.children[0], VarNode):
+                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+            node = self.children[0]
+            if node.const:
+                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            node.value += 1
+        elif self.root.value == "--":
+            if len(self.children) != 1:
+                raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
+            if not isinstance(self.children[0], VarNode):
+                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+            node = self.children[0]
+            if node.const:
+                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            node.value -= 1
         elif self.root.value == '<=':
             node = self.children[0] <= self.children[1]
         elif self.root.value == '<':
@@ -386,7 +408,8 @@ class TermAST(AST):
         elif self.root.value == '>':
             node = self.children[0] > self.children[1]
         elif self.root.value == '==':
-            node = self.children[0] == self.children[1]
+            node.value = self.children[0] == self.children[1]
+            node.key = "int"
         elif self.root.value == '!=':
             node = self.children[0] != self.children[1]
         elif self.root.value == '&&':
@@ -399,8 +422,9 @@ class TermAST(AST):
             node = Node("int", self.children[0].value or self.children[1].value)
         elif self.root.value == '!':
             if self.children[0].key == 'char':
-                return Node("int", not ord(self.children[0].value))
-            node = Node("int", not self.children[0].value)
+                node.value = int(not ord(self.children[0].value))
+            node.value = int(not self.children[0].value)
+            node.key = "int"
         node.parent = self.parent
         return node
 
@@ -412,13 +436,30 @@ class FactorAST(AST):
 
     def handle(self):
         if self.root.value == '-':
-            return -self.children[0]
+            self.children[0].value = -self.children[0].value
+            return self.children[0]
         elif self.root.value == '+':
             return self.children[0]
-        elif self.children == '++':
-            return self.children[0] + 1
-        elif self.children == '--':
-            return self.children[0] - 1
+        elif self.root.value == "++":
+            if len(self.children) != 1:
+                raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
+            if not isinstance(self.children[0], VarNode):
+                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+            node = self.children[0]
+            if node.const:
+                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            node.value += 1
+            return node
+        elif self.root.value == "--":
+            if len(self.children) != 1:
+                raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
+            if not isinstance(self.children[0], VarNode):
+                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+            node = self.children[0]
+            if node.const:
+                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            node.value -= 1
+            return node
 
 
 class PrimaryAST(AST):

@@ -1,3 +1,5 @@
+import copy
+
 from SymbolEntry import *
 from Node import VarNode, FunctionNode
 class SymbolTable:
@@ -44,9 +46,7 @@ class SymbolTable:
             return False
         for entry in self.table:
             if entry.object == in_object:
-                entry.object = in_object
-                entry.type = in_object.type
-                entry.const = in_object.const
+                entry.object = copy.deepcopy(in_object)
                 return True
 
     def refresh(self):
@@ -54,7 +54,8 @@ class SymbolTable:
             if entry.object is not None:
                 entry.type = entry.object.type
                 entry.const = entry.object.const
-                entry.name = entry.object.key
+                if not isinstance(entry, FuncSymbolEntry):
+                    entry.name = entry.object.key
 
     def remove(self, in_object: SymbolEntry) -> None:
         """

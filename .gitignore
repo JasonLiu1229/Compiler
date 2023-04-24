@@ -137,3 +137,4 @@ dmypy.json
 /dataSources/
 /dataSources.local.xml
 /.idea/
+/Output/

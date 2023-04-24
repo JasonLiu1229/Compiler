@@ -45,7 +45,7 @@ class AstCreator (MathVisitor):
         elif isinstance(ctx, MathParser.DerefContext):
             return Node("deref", None)
         elif isinstance(ctx, MathParser.PrintfContext):
-            return Node("printf", None)
+            return self.visitPrintf(ctx)
         elif isinstance(ctx, MathParser.Var_declContext):
             return self.visitVar_decl(ctx)
         elif isinstance(ctx , MathParser.DeclrContext):
@@ -70,10 +70,21 @@ class AstCreator (MathVisitor):
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr" , "term"] and child.root.value is not None:
-                    child.children = base.children[index-2 : index]
+                    if child.root.value in ["++" , "--" , "!"]:
+                        child.children = base.children[index-1 : index]
+                        base.children[index - 1: index] = []
+                        index -= 1
+                    else:
+                        child.children = base.children[index-2 : index]
+                        base.children[index - 2: index] = []
+                        index -= 2
                     child.children.reverse()
-                    base.children[index - 2: index] = []
-                    index -= 2
+                elif child.root.key == "factor" and child.root.value is not None:
+                    if child.root.value in ["++" , "+" , "--" , "-"]:
+                        child.children = base.children[index-1 : index]
+                        base.children[index - 1: index] = []
+                        index -= 1
+                    child.children.reverse()
                 elif child.root.key == "primary" and child.root.value is not None:
                     child.children = base.children[index-1 : index]
                     base.children[index - 1: index] = []
@@ -106,6 +117,11 @@ class AstCreator (MathVisitor):
                     else:
                         raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
+                elif child.root.key == "printf":
+                    child.children = base.children[index-1 : index]
+                    base.children[index - 1: index] = []
+                    index -= 1
+
                 # connect children to this node
                 for n in child.children:
                     n.parent = child
@@ -184,12 +200,14 @@ class AstCreator (MathVisitor):
                     elif isinstance(child, Node) and child.key == "var":
                         # search in symbol table
                         if not self.symbol_table.exists(child.value):
-                            raise ReferenceError(f"\'Variable {child.value} does was not declared in this scope\'")
+                            raise ReferenceError(f"Variable {child.value} does was not declared in this scope")
                         else:
                             index = ast.children.index(child)
                             matches = self.symbol_table.lookup(child.value)
                             if len(matches) > 1:
-                                raise ReferenceError(f"\'Multiple matches for variable {ast.children[0].key}\'")
+                                raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                            if matches[0].const:
+                                raise AttributeError(f"Attempting to modify a const variable {matches[0].name}")
                             ast.children[index] = matches[0].object
 
                 if not handle:
@@ -260,6 +278,10 @@ class AstCreator (MathVisitor):
                     elif (ast.type , ast.children[0].type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 node = ast.children[0]
+                if ast.const:
+                    node.const = True
+                self.symbol_table.update(node)
+
             elif isinstance(ast, AssignAST):
                 # check if assign value is of a valid type
                 if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode)):
@@ -274,13 +296,18 @@ class AstCreator (MathVisitor):
                 if rtype is None:
                     raise AttributeError(f"Type {rtype} does not exist")
                 if rtype != assignee.type:
-                    if (rtype, assignee.type) not in conversions:
+                    if (assignee.type , rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
                     elif (rtype, assignee.type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 assignee.value = ast.children[1].value
                 self.symbol_table.update(assignee)
                 node = assignee
+
+            elif isinstance(ast, PrintfAST):
+                # insert function into symbol table
+                new_entry = FuncSymbolEntry(ast.children[0], "printf")
+                self.symbol_table.insert(new_entry)
 
             elif ast is not None:
                 node = ast.handle()
@@ -329,13 +356,8 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: Node
         """
-        out = FunctionNode(ctx.children[0].getText() ,
-                           {"par0" : self.visit_child(ctx.children[2])}
-                           )
-        # if not out.key in self.symbol_table.keys():
-        #     self.symbol_table[out.key] = [copy.copy(out)]
-        # else:
-        #     self.symbol_table[out.key].append(copy.copy(out))
+
+        out = PrintfAST(Node("printf", None))
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):

@@ -2,10 +2,10 @@ grammar Math;
 
 math        :   instr* EOF
             ;
-instr       :   declr ';'
-            |   expr ';'
-            |   printf ';'
-            |   assign ';'
+instr       :   declr DELIM
+            |   expr DELIM
+            |   printf DELIM
+            |   assign DELIM
 //            |   scope
 //            |   if_cond
 //            |   else_cond
@@ -100,9 +100,10 @@ TYPE        :   'char'
             |   'int'
             ;
 VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
-INT         :   [0-9]+;
+INT         :   ([1-9][0-9]*) | [0];
 FLOAT       :   INT '.' INT;
-CHAR        :   '\'' . '\'';
+CHAR        :   ('\'' . '\'')
+            |   ('\'\\' . '\'');
 STRING      :   '"' (.)*? '"';
 // Operations
 STR         :   '*';
@@ -128,7 +129,7 @@ SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
 WS          :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
-
+DELIM       :   (';')+;
 // Comments
 // Ref : https://stackoverflow.com/a/23414078
 COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);

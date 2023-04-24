@@ -43,7 +43,7 @@ class SymbolEntry:
 
 
 class FuncSymbolEntry(SymbolEntry):
-    def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False,
+    def __init__(self, in_object, in_name: str = None, in_type: str = None, in_const: bool = None,
                  in_parameters: list[FunctionParameter] = None) -> None:
         super().__init__(in_object, in_name, in_type, in_const)
         self.parameters = in_parameters
@@ -69,7 +69,7 @@ class FuncSymbolEntry(SymbolEntry):
 
 
 class VarSymbolEntry(SymbolEntry):
-    def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = False, in_ptr: bool = False) -> None:
+    def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = None, in_ptr: bool = None) -> None:
         super().__init__(in_object, in_name, in_type, in_const)
         self.is_ptr = in_ptr
 

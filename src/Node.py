@@ -74,9 +74,12 @@ class Node:
         return Node("int", self.value <= other.value)
 
     def __eq__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) == ord(other.value))
-        return Node("int", self.value == other.value)
+        if not isinstance(other, Node):
+            return False
+        return self.value == other.value and self.key == other.key
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __gt__(self, other):
         if self.key == 'char':
@@ -87,11 +90,6 @@ class Node:
         if self.key == 'char':
             return Node("int", ord(self.value) >= ord(other.value))
         return Node("int", self.value >= other.value)
-
-    def __ne__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) != ord(other.value))
-        return Node("int", self.value != other.value)
 
     def save(self):
         """
@@ -143,7 +141,7 @@ class Node:
 
 class VarNode(Node):
 
-    def __init__(self, key: str, value, vtype: str, const: bool = False, ptr: bool = False, deref_level: int = 0,
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
                  total_deref: int = 0) -> None:
         """
         Initializer function for VarNode
@@ -162,7 +160,7 @@ class VarNode(Node):
     def __eq__(self, o):
         if not isinstance(o, VarNode):
             return False
-        return self.key == o.key and self.const == o.const and self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref
+        return self.key == o.key and (self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref
 
     def __ne__(self, o):
         return not self.__eq__(o)
@@ -189,7 +187,7 @@ class VarNode(Node):
 
     def assign_type(self, vtype):
         """
-        assign type to VarNode
+        assign a type to VarNode
         :param vtype: variable type
         :return: None
         """

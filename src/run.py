@@ -9,30 +9,34 @@ import argparse
 
 def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
     for filename in filenames:
-        print(f">>> Parsing {directory}{filename}{file_type}\n")
-        input_stream = FileStream(directory + filename + file_type)
-        # Create error listener
-        error_listener = ErrorListener()
-        lexer = MathLexer(input_stream)
-        # Remove previous error listener and add new error listener to lexer
-        lexer.removeErrorListeners()
-        lexer.addErrorListener(error_listener)
-        parser = MathParser(CommonTokenStream(lexer))
-        # Remove previous error listener and add new error listener to parser
-        parser.removeErrorListeners()
-        parser.addErrorListener(error_listener)
-        parse_tree = parser.math()
-        visitor = AstCreator()
-        ast = visitor.visit(parse_tree)
-        ast.print(4, True, filename)
-        visitor.symbol_table.print()
-        # ast = visitor.optimise(ast)
-        # ast.print()
-        # ast.dot_language(filename, visitor.symbol_table)
-        # generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
-        # generator.convert()
-        # generator.execute()
-
+        try:
+            print(f">>> Parsing {directory}{filename}{file_type}\n")
+            input_stream = FileStream(directory + filename + file_type)
+            # Create error listener
+            error_listener = ErrorListener()
+            lexer = MathLexer(input_stream)
+            # Remove previous error listener and add new error listener to lexer
+            lexer.removeErrorListeners()
+            lexer.addErrorListener(error_listener)
+            parser = MathParser(CommonTokenStream(lexer))
+            # Remove previous error listener and add new error listener to parser
+            parser.removeErrorListeners()
+            parser.addErrorListener(error_listener)
+            parse_tree = parser.math()
+            visitor = AstCreator()
+            ast = visitor.visit(parse_tree)
+            ast.print(4, True, filename)
+            visitor.symbol_table.print()
+            # ast = visitor.optimise(ast)
+            # ast.print()
+            # ast.dot_language(filename, visitor.symbol_table)
+            # generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
+            # generator.convert()
+            # generator.execute()
+            print(">>> Finished execution with exit code 0\n")
+        except Exception as e:
+            print(f'Excepted with error \"{e}\"\n')
+            continue
 
 def main():
     parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
@@ -52,7 +56,7 @@ def main():
                     filenames.append(file[:len(file) - len(args.fType)])
             run(directory=args.directory, file_type=args.fType, filenames=filenames)
     except Exception as e:
-        print(f'Excepted with error {e}')
+        print(f'Excepted with error \"{e}\"')
 
 
 
