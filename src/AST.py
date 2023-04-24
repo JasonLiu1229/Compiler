@@ -390,9 +390,17 @@ class TermAST(AST):
         elif self.root.value == '!=':
             node = self.children[0] != self.children[1]
         elif self.root.value == '&&':
-            node = self.children[0] and self.children[1]
+            if self.children[0].key == 'char':
+                return Node("int", ord(self.children[0].value) and ord(self.children[1].value))
+            node = Node("int", self.children[0].value and self.children[1].value)
         elif self.root.value == '||':
-            node = self.children[0] or self.children[1]
+            if self.children[0].key == 'char':
+                return Node("int", ord(self.children[0].value) or ord(self.children[1].value))
+            node = Node("int", self.children[0].value or self.children[1].value)
+        elif self.root.value == '!':
+            if self.children[0].key == 'char':
+                return Node("int", not ord(self.children[0].value))
+            node = Node("int", not self.children[0].value)
         node.parent = self.parent
         return node
 

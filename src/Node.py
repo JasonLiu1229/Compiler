@@ -3,7 +3,7 @@ from pprint import pprint
 
 
 class Node:
-    def __init__(self, key: str, value, parent= None) -> None:
+    def __init__(self, key: str, value, parent=None) -> None:
         """
         Initializer function
         :param key: key value of the node
@@ -12,7 +12,7 @@ class Node:
         super().__init__()
         self.key = key
         self.value = value
-        self.parent  = parent
+        self.parent = parent
 
     # def __eq__(self, o: object) -> bool:
     #     return (self.key == o.key) and (self.value == o.value)
@@ -60,48 +60,38 @@ class Node:
 
     def __neg__(self):
         if self.key == 'char':
-            return Node("char", -ord(self.value))
+            return Node("int", -ord(self.value))
         return Node("", -self.value)
 
     def __lt__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) < ord(other.value))
+            return Node("int", ord(self.value) < ord(other.value))
         return Node("int", self.value < other.value)
 
     def __le__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) <= ord(other.value))
+            return Node("int", ord(self.value) <= ord(other.value))
         return Node("int", self.value <= other.value)
 
     def __eq__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) == ord(other.value))
+            return Node("int", ord(self.value) == ord(other.value))
         return Node("int", self.value == other.value)
 
     def __gt__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) > ord(other.value))
+            return Node("int", ord(self.value) > ord(other.value))
         return Node("int", self.value > other.value)
 
     def __ge__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) >= ord(other.value))
+            return Node("int", ord(self.value) >= ord(other.value))
         return Node("int", self.value >= other.value)
 
     def __ne__(self, other):
         if self.key == 'char':
-            return Node("char", ord(self.value) != ord(other.value))
+            return Node("int", ord(self.value) != ord(other.value))
         return Node("int", self.value != other.value)
-
-    def __and__(self, other):
-        if self.key == 'char':
-            return Node("char", ord(self.value) and ord(other.value))
-        return Node("int", self.value and other.value)
-
-    def __or__(self, other):
-        if self.key == 'char':
-            return Node("char", ord(self.value) or ord(other.value))
-        return Node("int", self.value or other.value)
 
     def save(self):
         """
@@ -166,7 +156,7 @@ class VarNode(Node):
         self.total_deref = total_deref
 
     def __repr__(self) -> str:
-        rep = f"{self.type} {'*'*self.total_deref} {self.key} : {self.value}"
+        rep = f"{self.type} {'*' * self.total_deref} {self.key} : {self.value}"
         return rep
 
     def __eq__(self, o):
@@ -189,7 +179,7 @@ class VarNode(Node):
         Converts VarNode in a json / dictionary format
         :return: dictionary
         """
-        out_key = f"{'const ' if self.const else ''}{self.type}{'*'*(self.total_deref - self.deref_level)} {self.key}"
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
         if isinstance(self.value, VarNode):
             # out_key = str('*'*(self.deref_level+1)) + out_key
             out = {out_key: self.value.save()}
@@ -212,7 +202,7 @@ class VarNode(Node):
         string format of VarNode
         :return: string
         """
-        return f"{'const ' if self.const else ''}{self.type}{'*'*(self.total_deref - self.deref_level)} {self.key} : {self.value}"
+        return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key} : {self.value}"
 
     def save_dot(self):
         """
