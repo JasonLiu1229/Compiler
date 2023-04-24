@@ -39,7 +39,7 @@ class SymbolTable:
         :param index: indicates where to insert the object
         :type in_object: SymbolEntry
         """
-        self.table.insert(index, in_object)
+        self.table.insert(index, copy.deepcopy(in_object))
 
     def update(self, in_object: VarNode | FunctionNode) -> bool:
         if not (isinstance(in_object, VarNode) or isinstance(in_object, FunctionNode)):

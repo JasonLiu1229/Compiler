@@ -185,8 +185,6 @@ class AstCreator (MathVisitor):
 
     def handle(self, list_ast: list):
         for ast in list_ast:
-            # refresh symbol table
-            self.symbol_table.refresh()
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -209,7 +207,6 @@ class AstCreator (MathVisitor):
                             if matches[0].const:
                                 raise AttributeError(f"Attempting to modify a const variable {matches[0].name}")
                             ast.children[index] = matches[0].object
-
                 if not handle:
                     continue
             # Variable assignment handling
@@ -235,39 +232,11 @@ class AstCreator (MathVisitor):
                     else:
                         raise TypeError(f"Wrong type assigned to {ast.children[0]}")
                     self.symbol_table.update(ast.children[0])
-                    # for i in range(len(ast.parent.children)):
-                    #     if ast.parent.children[i] is ast:
                     node = ast.children[0]
+                    # refresh symbol table
+                    self.symbol_table.refresh()
                 else:
                     raise AttributeError(f"\'Attempting to modify a const variable {ast.children[0]}\'")
-            # # Operations handling
-            # elif ast.root.value == '/':
-            #     # Create node
-            #     node = ast.children[0] / ast.children[1]
-            #     if ast.children[0].key != "float" and ast.children[1].key != "float":
-            #         node.value = floor(node.value)
-            # elif ast.root.value == '+':
-            #     # Check if one of the nodes is an unresolved variable
-            #     if isinstance(ast.children[0].value , str) or isinstance(ast.children[1].value, str):
-            #         continue
-            #     node = ast.children[0] + ast.children[1]
-            #     node_type = self.checkType(str(node.value))
-            #     node.key = node_type
-            # elif ast.root.value == '-':
-            #     # Create node
-            #     node = ast.children[0] - ast.children[1]
-            #     node_type = self.checkType(str(node.value))
-            #     node.key = node_type
-            # elif ast.root.value == '*':
-            #     # Create node
-            #     node = ast.children[0] * ast.children[1]
-            #     node_type = self.checkType(str(node.value))
-            #     node.key = node_type
-            # elif ast.root.value == '%':
-            #     # Create node
-            #     node = ast.children[0] % ast.children[1]
-            #     node_type = self.checkType(str(node.value))
-            #     node.key = node_type
             # declaration handling
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
@@ -281,6 +250,7 @@ class AstCreator (MathVisitor):
                 if ast.const:
                     node.const = True
                 self.symbol_table.update(node)
+                self.symbol_table.refresh()
 
             elif isinstance(ast, AssignAST):
                 # check if assign value is of a valid type
@@ -302,13 +272,17 @@ class AstCreator (MathVisitor):
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
                 assignee.value = ast.children[1].value
                 self.symbol_table.update(assignee)
+                # refresh symbol table
+                self.symbol_table.refresh()
                 node = assignee
-
             elif isinstance(ast, PrintfAST):
                 # insert function into symbol table
                 new_entry = FuncSymbolEntry(ast.root, in_parameters=ast.children)
                 self.symbol_table.insert(new_entry)
-
+                node = ast
+            elif isinstance(ast, InstrAST):
+                node = ast.handle()
+                self.symbol_table.refresh()
             elif ast is not None:
                 node = ast.handle()
             else:
