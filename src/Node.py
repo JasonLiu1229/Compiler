@@ -63,6 +63,45 @@ class Node:
             return Node("char", -ord(self.value))
         return Node("", -self.value)
 
+    def __lt__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) < ord(other.value))
+        return Node("int", self.value < other.value)
+
+    def __le__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) <= ord(other.value))
+        return Node("int", self.value <= other.value)
+
+    def __eq__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) == ord(other.value))
+        return Node("int", self.value == other.value)
+
+    def __gt__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) > ord(other.value))
+        return Node("int", self.value > other.value)
+
+    def __ge__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) >= ord(other.value))
+        return Node("int", self.value >= other.value)
+
+    def __ne__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) != ord(other.value))
+        return Node("int", self.value != other.value)
+
+    def __and__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) and ord(other.value))
+        return Node("int", self.value and other.value)
+
+    def __or__(self, other):
+        if self.key == 'char':
+            return Node("char", ord(self.value) or ord(other.value))
+        return Node("int", self.value or other.value)
 
     def save(self):
         """

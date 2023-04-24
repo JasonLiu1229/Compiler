@@ -56,7 +56,6 @@ term        : factor
             | term (GT | LT | EQ) factor
             | term (GEQ | LEQ | NEQ) factor
             | term (AND_OP | OR_OP) factor
-            | term (AND_OP | OR_OP) factor
             | (NOT_OP) factor
             | term (INCR | DECR)
             ;
