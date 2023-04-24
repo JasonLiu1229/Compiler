@@ -12,5 +12,8 @@ class FunctionParameter:
     def __ne__(self, o: object) -> bool:
         return not self.__eq__(o)
 
+    def get_str(self):
+        return f"{self.type} {self.name} = {self.default_value} "
+
     def __repr__(self):
         return f"{self.type} {self.name} has a default value {self.default_value}"

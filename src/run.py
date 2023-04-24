@@ -27,11 +27,9 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             ast = visitor.visit(parse_tree)
             ast.print(4, True, filename)
             visitor.symbol_table.print()
-            # ast = visitor.optimise(ast)
-            # ast.print()
             # ast.dot_language(filename, visitor.symbol_table)
-            # generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
-            # generator.convert()
+            generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
+            generator.convert()
             # generator.execute()
             print(">>> Finished execution with exit code 0\n")
         except Exception as e:

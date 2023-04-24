@@ -52,10 +52,9 @@ class SymbolTable:
     def refresh(self):
         for entry in self.table:
             if entry.object is not None:
+                entry.name = entry.object.key
                 entry.type = entry.object.type
                 entry.const = entry.object.const
-                if not isinstance(entry, FuncSymbolEntry):
-                    entry.name = entry.object.key
 
     def remove(self, in_object: SymbolEntry) -> None:
         """
@@ -65,9 +64,21 @@ class SymbolTable:
         self.table.remove(in_object)
 
     def print(self):
-        print("{:<2}{:<15}{:<2}{:<10}{:<2}".format('|', 'Name', '|',  'Value', '|'))
+
+
+        # get larges entry
+        max_width = 10
+        for entry in self.table:
+            if isinstance(entry, FuncSymbolEntry):
+                new_length = 0
+                for element in entry.parameters:
+                    new_length += len(element.get_str())
+                if new_length > max_width:
+                    max_width = new_length
+        max_width += 1
+        print(f"{'|':<2}{'Name':<15}{'|':<2}{'Value':<{max_width}}{'|':<2}")
         under = ""
-        for i in range(31):
+        for i in range(21+max_width):
             under += '-'
         print(under)
         for item in self.table:
@@ -76,5 +87,9 @@ class SymbolTable:
             value = Object.value
             if value is None:
                 value = 'None'
-            print("{:<2}{:<15}{:<2}{:<10}{:<2}".format('|', name, '|', value, '|'))
+            if isinstance(item, FuncSymbolEntry):
+                value = item.get_str()
+                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
+            else:
+                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
 

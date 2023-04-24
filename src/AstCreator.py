@@ -306,7 +306,7 @@ class AstCreator (MathVisitor):
 
             elif isinstance(ast, PrintfAST):
                 # insert function into symbol table
-                new_entry = FuncSymbolEntry(ast.children[0], "printf")
+                new_entry = FuncSymbolEntry(ast.root, in_parameters=ast.children)
                 self.symbol_table.insert(new_entry)
 
             elif ast is not None:
@@ -357,7 +357,7 @@ class AstCreator (MathVisitor):
         :return: Node
         """
 
-        out = PrintfAST(Node("printf", None))
+        out = PrintfAST(FunctionNode(key= "printf"))
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):

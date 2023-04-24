@@ -219,11 +219,11 @@ class VarNode(Node):
 
 class FunctionNode(Node):
 
-    def __init__(self, key: str, value: dict, ret_type: str = None, in_const: bool = False) -> None:
+    def __init__(self, key: str, ret_type: str = None, in_const: bool = False) -> None:
         """
         Initializer
         """
-        super().__init__(key, value)
+        super().__init__(key, None)
         self.body = None
         self.type = ret_type
         self.const = in_const

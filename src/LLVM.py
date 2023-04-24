@@ -1,10 +1,12 @@
+import copy
 import subprocess
 from array import array
 from AST import *
+from SymbolTable import *
 
 class LLVM:
 
-    def __init__(self, input_ast: AST = None, symbol_table=None, file_name: str = "../Output/Output.ll") -> None:
+    def __init__(self, input_ast: AST = None, symbol_table: SymbolTable = None, file_name: str = "../Output/Output.ll") -> None:
         """
 
         :param input_ast: the AST to be converted
@@ -455,20 +457,23 @@ class LLVM:
         """
         # clear file
         open(self.file_name , 'w')
-        for val in self.symbol_table.values():
-            if isinstance(val, VarNode):
-                self.var_node_convert(val, True)
-            elif isinstance(val, list):
+        for entry in self.symbol_table.table:
+            node = copy.copy(entry.object)
+            if isinstance(entry, FuncSymbolEntry):
+                node.key = entry.name
+            if isinstance(node, VarNode):
+                self.var_node_convert(node, True)
+            elif isinstance(node, list):
                 i = 1
                 defn = True
                 declr = True
-                for entry in val:
+                for val in node:
                     if isinstance(entry, FunctionNode):
                         self.index_queue.append(i)
                         i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
                         defn = False
                         declr = False
-        # begin of main function
+        # begin of the main function
         with open(self.file_name, 'a') as f:
             f.write("define dso_local i32 @main () {\n")
 

@@ -67,6 +67,13 @@ class FuncSymbolEntry(SymbolEntry):
     def __ne__(self, o: object) -> bool:
         return not self.__eq__(o)
 
+    def get_str(self):
+        out = f""
+        for par in self.parameters:
+            out += par.get_str()
+            if self.parameters.index(par) != len(self.parameters) - 1:
+                out += ","
+        return out
 
 class VarSymbolEntry(SymbolEntry):
     def __init__(self, in_object, in_name: str, in_type: str, in_const: bool = None, in_ptr: bool = None) -> None:
