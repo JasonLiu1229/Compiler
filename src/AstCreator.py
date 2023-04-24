@@ -204,15 +204,13 @@ class AstCreator (MathVisitor):
                             matches = self.symbol_table.lookup(child.value)
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                            if matches[0].const:
-                                raise AttributeError(f"Attempting to modify a const variable {matches[0].name}")
                             ast.children[index] = matches[0].object
                 if not handle:
                     continue
             # Variable assignment handling
             if ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
-                    raise AttributeError(f"\'Attempting to assign to a non variable type object\'")
+                    raise AttributeError(f"Attempting to assign to a non variable type object")
                 # assign the value to the variable if it is not constant
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
@@ -230,7 +228,7 @@ class AstCreator (MathVisitor):
                     # refresh symbol table
                     self.symbol_table.refresh()
                 else:
-                    raise AttributeError(f"\'Attempting to modify a const variable {ast.children[0]}\'")
+                    raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
@@ -256,7 +254,9 @@ class AstCreator (MathVisitor):
                     rtype = ast.children[1].key
                 assignee = copy.copy(ast.children[0])
                 if not isinstance(assignee, VarNode):
-                    raise AttributeError(f"\'Attempting to assign to a non-variable type\'")
+                    raise AttributeError(f"Attempting to assign to a non-variable type")
+                if assignee.const:
+                    raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
                 if rtype is None:
                     raise AttributeError(f"Type {rtype} does not exist")
                 if rtype != assignee.type:
