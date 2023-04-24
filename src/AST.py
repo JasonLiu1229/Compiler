@@ -343,8 +343,11 @@ class VarDeclrAST(AST):
             if not isinstance(self.children[0], VarNode):
                 raise AttributeError(f"\'Attempting to assign to a non-variable type\'")
             # assign value
-            self.children[0].value = self.children[1].value
-            self.children[0].type = getType(self.children[0].value)
+            if self.children[0].ptr:
+                self.children[0].value = self.children[1]
+            else:
+                self.children[0].value = self.children[1].value
+            self.children[0].type = getType(self.children[1].value)
             return self.children[0]
         else:
             return self.children[0]
@@ -468,4 +471,6 @@ class PrimaryAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
+        if self.root.value == "&":
+            return self.children[0]
         return self

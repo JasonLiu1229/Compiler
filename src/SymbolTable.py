@@ -87,6 +87,9 @@ class SymbolTable:
             value = Object.value
             if value is None:
                 value = 'None'
+            elif isinstance(Object, VarNode) and Object.ptr:
+                while isinstance(value, VarNode):
+                    value = value.value
             if isinstance(item, FuncSymbolEntry):
                 value = item.get_str()
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
