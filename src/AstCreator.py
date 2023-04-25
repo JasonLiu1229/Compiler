@@ -43,7 +43,7 @@ class AstCreator (MathVisitor):
         elif isinstance(ctx, MathParser.LvarContext):
             return self.visitLvar(ctx)
         elif isinstance(ctx, MathParser.DerefContext):
-            return Node("deref", None)
+            return self.visitDeref(ctx)
         elif isinstance(ctx, MathParser.PrintfContext):
             return self.visitPrintf(ctx)
         elif isinstance(ctx, MathParser.Var_declContext):
@@ -121,7 +121,10 @@ class AstCreator (MathVisitor):
                     child.children = base.children[index-1 : index]
                     base.children[index - 1: index] = []
                     index -= 1
-
+                elif child.root.key == "deref":
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    index -= 1
                 # connect children to this node
                 for n in child.children:
                     n.parent = child
@@ -234,10 +237,10 @@ class AstCreator (MathVisitor):
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
                 if ast.type != ast.children[0].type and ast.children[0].value is not None:
-                    if (ast.type , ast.children[0].type) not in conversions:
+                    if (ast.children[0].type , ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.type , ast.children[0].type) not in conv_promotions:
-                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
+                    elif (ast.children[0].type , ast.type) not in conv_promotions:
+                        self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type}")
                 node = ast.children[0]
                 if ast.const:
                     node.const = True
@@ -416,27 +419,8 @@ class AstCreator (MathVisitor):
         """
         # STR rvar
         # STR deref
-        inp = ctx
-        deref_count = 1
-        # Get deref level
-        while True:
-            if isinstance(inp.children[1], MathParser.RvarContext):
-                key = inp.children[1].getText()
-                if self.symbol_table[key] is not None:
-                    # Get a pointer from symbol table
-                    pointer = self.symbol_table[key]
-                    if not isinstance(pointer , VarNode):
-                        raise AttributeError("Variable " + key + " is not a pointer")
-                    elif pointer.total_deref < deref_count:
-                        raise RuntimeError("Trying to get pointer dereference depth" + str(deref_count)
-                                           +" when pointer only has depth " + pointer.total_deref)
-                    for i in range(deref_count):
-                        pointer = pointer.value
-                    out = copy.copy(pointer)
-                    return out
-            else:
-                inp = inp.children[1]
-                deref_count += 1
+        out =  DerefAST(Node("deref", None))
+        return out
 
     def visitTerm(self, ctx: MathParser.TermContext):
         ast = TermAST()

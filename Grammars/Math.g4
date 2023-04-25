@@ -101,7 +101,7 @@ TYPE        :   'char'
             ;
 VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
 INT         :   ([1-9][0-9]*) | [0];
-FLOAT       :   INT '.' INT;
+FLOAT       :   [0-9]+ '.' [0-9]+;
 CHAR        :   ('\'' . '\'')
             |   ('\'\\' . '\'');
 STRING      :   '"' (.)*? '"';

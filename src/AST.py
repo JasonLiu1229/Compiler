@@ -14,7 +14,8 @@ keywords_unary = ["unary_op"]
 keywords_indecr = ["incr", "decr"]
 keywords_assign = ["assign_op"]
 keywords_functions = ["printf"]
-conversions = [("float", "int"), ("int", "char"), ("float", "char")]
+conversions = [("float", "int"), ("int", "char"), ("float", "char"),
+               ("int", "float"), ("char", "int"), ("char", "float")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
 
 
@@ -347,7 +348,10 @@ class VarDeclrAST(AST):
                 self.children[0].value = self.children[1]
             else:
                 self.children[0].value = self.children[1].value
-            self.children[0].type = getType(self.children[1].value)
+            child = self.children[1].value
+            while isinstance(child, VarNode):
+                child = child.value
+            self.children[0].type = getType(child)
             return self.children[0]
         else:
             return self.children[0]
@@ -474,3 +478,18 @@ class PrimaryAST(AST):
         if self.root.value == "&":
             return self.children[0]
         return self
+
+class DerefAST(AST):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        child = self.children[0]
+        if not isinstance(child, VarNode):
+            raise ReferenceError(f"Attempting to dereference a non-variable type object")
+        if not child.ptr:
+            raise AttributeError(f"Attempting to dereference a non-pointer type variable")
+        if child.deref_level == child.total_deref:
+            raise AttributeError(f"Dereference depth reached for pointer {child.key}")
+        child.deref_level += 1
+        return child

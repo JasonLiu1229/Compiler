@@ -1,5 +1,11 @@
-const int x = 5*(3/10 + 9/10);
-float y = x*2/( 2+1 * 2/3 +x) +8 * (8/4);
-char z;
-float* flt_ptr = &y;
-char ch = 'x';
+//const int x = 5*(3/10 + 9/10);
+//float y = x*2/( 2+1 * 2/3 +x) +8 * (8/4);
+//char z;;
+//float y = 3.14;
+//float* flt_ptr = &y;
+//char ch = 'x';
+int y = 4;
+int* x = &y;
+int** z = &x;
+*x;
+**z;
