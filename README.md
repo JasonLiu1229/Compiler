@@ -41,7 +41,8 @@ Common parameter settings:
 - -d : <path\>  : directory of the input files
 - -t : <str\>   : file extension
 - -f : [str]    : files to parse
-- -i : parse all the files in the directory
+- -a : parse all the files in the directory
+- -h : for help
 
 Example code with specified input files:
 
@@ -49,7 +50,7 @@ Example code with specified input files:
     
 Example code with only the input directory and file extension
     
-    python3 -d ../input_files/ -t .c -i
+    python3 -d ../input_files/ -t .c -a
 
  
 ##### Script
@@ -60,7 +61,7 @@ Example code with only the input directory and file extension
 
 ```shell
 cd src || exit &
-python3 run.py -d ../input_files/ -t .c -i
+python3 run.py -d ../input_files/ -t .c -a
 ```
 
 
