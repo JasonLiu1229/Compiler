@@ -2,6 +2,8 @@ import copy
 
 from SymbolEntry import *
 from Node import VarNode, FunctionNode
+
+
 class SymbolTable:
     def __init__(self) -> None:
         self.table: list[SymbolEntry] = []
@@ -33,6 +35,7 @@ class SymbolTable:
         if len(self.lookup(in_object)) == 0:
             return False
         return True
+
     def insert(self, in_object: SymbolEntry, index: int = 0) -> None:
         """
         Insert symbol table entry with default index 0
@@ -65,7 +68,6 @@ class SymbolTable:
 
     def print(self):
 
-
         # get larges entry
         max_width = 10
         for entry in self.table:
@@ -78,7 +80,7 @@ class SymbolTable:
         max_width += 1
         print(f"{'|':<2}{'Name':<15}{'|':<2}{'Value':<{max_width}}{'|':<2}")
         under = ""
-        for i in range(21+max_width):
+        for i in range(21 + max_width):
             under += '-'
         print(under)
         for item in self.table:
@@ -95,4 +97,3 @@ class SymbolTable:
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
             else:
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
-

@@ -13,16 +13,17 @@ from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
 from decimal import *
 
-class AstCreator (MathVisitor):
+
+class AstCreator(MathVisitor):
 
     def __init__(self) -> None:
         """
         Initializer function
         """
         super().__init__()
-        self.base_ast : AST = AST()
-        self.symbol_table : SymbolTable = SymbolTable()
-        self.warnings : list = []
+        self.base_ast: AST = AST()
+        self.symbol_table: SymbolTable = SymbolTable()
+        self.warnings: list = []
 
     def visit_child(self, ctx):
         """
@@ -48,7 +49,7 @@ class AstCreator (MathVisitor):
             return self.visitPrintf(ctx)
         elif isinstance(ctx, MathParser.Var_declContext):
             return self.visitVar_decl(ctx)
-        elif isinstance(ctx , MathParser.DeclrContext):
+        elif isinstance(ctx, MathParser.DeclrContext):
             return self.visitDeclr(ctx)
         elif isinstance(ctx, MathParser.TermContext):
             return self.visitTerm(ctx)
@@ -56,7 +57,6 @@ class AstCreator (MathVisitor):
             return self.visitFactor(ctx)
         elif isinstance(ctx, MathParser.PrimaryContext):
             return self.visitPrimary(ctx)
-
 
     def resolveTree(self, base: AST):
         """
@@ -66,36 +66,36 @@ class AstCreator (MathVisitor):
         """
         # Terminals processing
         index = 0
-        indexes = {"last_instr": 0 , "last_declr": 0}
+        indexes = {"last_instr": 0, "last_declr": 0}
         for child in base.children[:]:
             if isinstance(child, AST):
-                if child.root.key in ["expr" , "term"] and child.root.value is not None:
-                    if child.root.value in ["++" , "--" , "!"]:
-                        child.children = base.children[index-1 : index]
+                if child.root.key in ["expr", "term"] and child.root.value is not None:
+                    if child.root.value in ["++", "--", "!"]:
+                        child.children = base.children[index - 1: index]
                         base.children[index - 1: index] = []
                         index -= 1
                     else:
-                        child.children = base.children[index-2 : index]
+                        child.children = base.children[index - 2: index]
                         base.children[index - 2: index] = []
                         index -= 2
                     child.children.reverse()
                 elif child.root.key == "factor" and child.root.value is not None:
-                    if child.root.value in ["++" , "+" , "--" , "-"]:
-                        child.children = base.children[index-1 : index]
+                    if child.root.value in ["++", "+", "--", "-"]:
+                        child.children = base.children[index - 1: index]
                         base.children[index - 1: index] = []
                         index -= 1
                     child.children.reverse()
                 elif child.root.key == "primary" and child.root.value is not None:
-                    child.children = base.children[index-1 : index]
+                    child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
                 elif child.root.key == "instr":
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[indexes["last_instr"] : index]
+                    child.children = base.children[indexes["last_instr"]: index]
                     child.children.reverse()
-                    base.children[indexes["last_instr"] : index] = []
+                    base.children[indexes["last_instr"]: index] = []
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
                 elif child.root.key == "declr":
@@ -118,7 +118,7 @@ class AstCreator (MathVisitor):
                         raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
                 elif child.root.key == "printf":
-                    child.children = base.children[index-1 : index]
+                    child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
                 elif child.root.key == "deref":
@@ -126,22 +126,33 @@ class AstCreator (MathVisitor):
                     base.children[index - 1: index] = []
                     index -= 1
                 # connect children to this node
+                child = base.children[index]
                 for n in child.children:
                     n.parent = child
                     if child.root.key == "declr" and child.root.value is not None:
-                        if isinstance(n , AST):
+                        if isinstance(n, AST):
                             n.root.value = child.root.value
                         elif isinstance(n, VarNode):
                             n.type = child.root.value
             elif isinstance(child, Node):
                 if child.key == "term" and child.value is None:
-                    child.value = base.children[index-1].value
+                    child.value = base.children[index - 1].value
                 if child.key == "assign_op":
-                    base.children[index] = AssignAST(Node("assign",None))
-                    base.children[index].children = base.children[index-2:index]
+                    base.children[index] = AssignAST(Node("assign", None))
+                    base.children[index].children = base.children[index - 2:index]
                     base.children[index].children.reverse()
-                    base.children[index-2:index] = []
+                    base.children[index - 2:index] = []
                     index -= 2
+                if isinstance(base.children[index], AST):
+                    child = base.children[index]
+                    # connect children to this node
+                    for n in child.children:
+                        n.parent = child
+                        if child.root.key == "declr" and child.root.value is not None:
+                            if isinstance(n, AST):
+                                n.root.value = child.root.value
+                            elif isinstance(n, VarNode):
+                                n.type = child.root.value
             index += 1
         base.children.reverse()
         return base
@@ -158,7 +169,7 @@ class AstCreator (MathVisitor):
             if v not in visited:
                 visited.append(v)
                 s.append(v)
-                if isinstance(v , antlr4.tree.Tree.TerminalNodeImpl):
+                if isinstance(v, antlr4.tree.Tree.TerminalNodeImpl):
                     continue
                 for child in v.getChildren():
                     s.append(child)
@@ -171,7 +182,7 @@ class AstCreator (MathVisitor):
         self.resolve(a)
         return a
 
-    def resolve(self, ast_in : AST):
+    def resolve(self, ast_in: AST):
         visited = list()
         not_visited = list()
         not_visited.append(ast_in)
@@ -218,11 +229,11 @@ class AstCreator (MathVisitor):
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
                     # get type
-                    if isinstance(ast.children[1].value , int):
+                    if isinstance(ast.children[1].value, int):
                         ast.children[0].type = "int"
-                    elif isinstance(ast.children[1].value , float):
+                    elif isinstance(ast.children[1].value, float):
                         ast.children[0].type = "float"
-                    elif isinstance(ast.children[1].value , str) and len(ast.children[1].value) == 1:
+                    elif isinstance(ast.children[1].value, str) and len(ast.children[1].value) == 1:
                         ast.children[0].type = "char"
                     else:
                         raise TypeError(f"Wrong type assigned to {ast.children[0]}")
@@ -236,14 +247,21 @@ class AstCreator (MathVisitor):
             elif ast.root.key == "declr":
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
+                if self.symbol_table.exists(ast.children[0].key):
+                    matches = self.symbol_table.lookup(ast.children[0].key)
+                    if len(matches) != 1:
+                        raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                    match = matches[0]
+                    if match.initialized():
+                        raise AttributeError(f"Redeclaration of variable {ast.children[0].key}")
+
                 if ast.type != ast.children[0].type and ast.children[0].value is not None:
-                    if (ast.children[0].type , ast.type) not in conversions:
+                    if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.children[0].type , ast.type) not in conv_promotions:
+                    elif (ast.children[0].type, ast.type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type}")
                 node = ast.children[0]
-                if ast.const:
-                    node.const = True
+                node.const = (ast.const is True)
                 self.symbol_table.update(node)
                 self.symbol_table.refresh()
 
@@ -263,7 +281,7 @@ class AstCreator (MathVisitor):
                 if rtype is None:
                     raise AttributeError(f"Type {rtype} does not exist")
                 if rtype != assignee.type:
-                    if (assignee.type , rtype) not in conversions:
+                    if (assignee.type, rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
                     elif (rtype, assignee.type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
@@ -320,7 +338,7 @@ class AstCreator (MathVisitor):
         :return: AST
         """
         expr_ast = ExprAST()
-        expr_ast.root = Node("expr" , None)
+        expr_ast.root = Node("expr", None)
         if len(ctx.children) == 3:
             expr_ast.root.value = ctx.children[1].getText()
         else:
@@ -334,7 +352,7 @@ class AstCreator (MathVisitor):
         :return: Node
         """
 
-        out = PrintfAST(FunctionNode(key= "printf"))
+        out = PrintfAST(FunctionNode(key="printf"))
         # PrintfAST root is the definition of the function
         # PrintfAST children are the parameters given to the function
         return out
@@ -405,10 +423,11 @@ class AstCreator (MathVisitor):
         :return: VarNode
         """
         if len(ctx.children) == 1:
-            root = VarNode(ctx.children[-1].getText() , None , "")
+            root = VarNode(ctx.children[-1].getText(), None, "")
             return root
         # If more than 1 element: it's a pointer
-        root = VarNode(ctx.children[-1].getText(), None , "" , ptr= (len(ctx.children) - 1 > 0), total_deref= len(ctx.children) - 1)
+        root = VarNode(ctx.children[-1].getText(), None, "", ptr=(len(ctx.children) - 1 > 0),
+                       total_deref=len(ctx.children) - 1)
         return root
 
     def visitDeref(self, ctx: MathParser.DerefContext):
@@ -419,7 +438,7 @@ class AstCreator (MathVisitor):
         """
         # STR rvar
         # STR deref
-        out =  DerefAST(Node("deref", None))
+        out = DerefAST(Node("deref", None))
         return out
 
     def visitTerm(self, ctx: MathParser.TermContext):
@@ -461,21 +480,21 @@ class AstCreator (MathVisitor):
         """
         try:
             if d_type == "int":
-                if isinstance(value , int):
+                if isinstance(value, int):
                     return value
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return ord(value)
                 else:
                     return int(value)
             elif d_type == "float":
-                if isinstance(value , float):
+                if isinstance(value, float):
                     return value
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return float(ord(value))
                 else:
                     return float(value)
             elif d_type == "char":
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return value
                 return chr(value)
         except:
