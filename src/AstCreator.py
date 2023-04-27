@@ -237,6 +237,11 @@ class AstCreator(MathVisitor):
                         ast.children[0].type = "char"
                     else:
                         raise TypeError(f"Wrong type assigned to {ast.children[0]}")
+                    # Pointer depth check
+                    if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode):
+                        if ast.children[0].total_deref != ast.children[1].total_deref + 1:
+                            raise AttributeError(
+                                f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                     self.symbol_table.update(ast.children[0])
                     node = ast.children[0]
                     # refresh symbol table
@@ -261,7 +266,11 @@ class AstCreator(MathVisitor):
                     elif (ast.children[0].type, ast.type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type}")
                 node = ast.children[0]
-                node.const = (ast.const is True)
+                # node.const = (ast.const is True)
+                if node.ptr and ast.const:
+                    node.const_ptr = True
+                else:
+                    node.const = (ast.const is True)
                 self.symbol_table.update(node)
                 self.symbol_table.refresh()
 
@@ -285,6 +294,10 @@ class AstCreator(MathVisitor):
                         raise AttributeError("Variable assigned to wrong type")
                     elif (rtype, assignee.type) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
+                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode):
+                    if ast.children[0].total_deref != ast.children[1].total_deref + 1:
+                        raise AttributeError(
+                            f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                 assignee.value = ast.children[1].value
                 self.symbol_table.update(assignee)
                 # refresh symbol table

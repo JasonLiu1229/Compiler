@@ -317,6 +317,7 @@ class PrintfAST(AST):
     def handle(self):
         return self
 
+
 class DeclrAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, in_const: bool = False,
@@ -352,6 +353,9 @@ class VarDeclrAST(AST):
             while isinstance(child, VarNode):
                 child = child.value
             self.children[0].type = getType(child)
+            if isinstance(self.children[0], VarNode) and isinstance(self.children[1], VarNode):
+                if self.children[0].total_deref != self.children[1].total_deref + 1:
+                    raise AttributeError(f"Incompatible types for {self.children[0].key} and {self.children[1].key}.")
             return self.children[0]
         else:
             return self.children[0]
@@ -480,6 +484,7 @@ class PrimaryAST(AST):
             return self.children[0]
         return self
 
+
 class DerefAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
@@ -490,7 +495,7 @@ class DerefAST(AST):
             raise ReferenceError(f"Attempting to dereference a non-variable type object")
         if not child.ptr:
             raise AttributeError(f"Attempting to dereference a non-pointer type variable")
-        if child.deref_level == child.total_deref:
+        if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child.deref_level += 1
         return child
