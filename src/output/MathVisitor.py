@@ -29,6 +29,31 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#scope.
+    def visitScope(self, ctx:MathParser.ScopeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#if_cond.
+    def visitIf_cond(self, ctx:MathParser.If_condContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#else_cond.
+    def visitElse_cond(self, ctx:MathParser.Else_condContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#while_loop.
+    def visitWhile_loop(self, ctx:MathParser.While_loopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#for_loop.
+    def visitFor_loop(self, ctx:MathParser.For_loopContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#var_decl.
     def visitVar_decl(self, ctx:MathParser.Var_declContext):
         return self.visitChildren(ctx)

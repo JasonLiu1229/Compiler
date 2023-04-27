@@ -44,6 +44,51 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#scope.
+    def enterScope(self, ctx:MathParser.ScopeContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#scope.
+    def exitScope(self, ctx:MathParser.ScopeContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#if_cond.
+    def enterIf_cond(self, ctx:MathParser.If_condContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#if_cond.
+    def exitIf_cond(self, ctx:MathParser.If_condContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#else_cond.
+    def enterElse_cond(self, ctx:MathParser.Else_condContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#else_cond.
+    def exitElse_cond(self, ctx:MathParser.Else_condContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#while_loop.
+    def enterWhile_loop(self, ctx:MathParser.While_loopContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#while_loop.
+    def exitWhile_loop(self, ctx:MathParser.While_loopContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#for_loop.
+    def enterFor_loop(self, ctx:MathParser.For_loopContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#for_loop.
+    def exitFor_loop(self, ctx:MathParser.For_loopContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#var_decl.
     def enterVar_decl(self, ctx:MathParser.Var_declContext):
         pass
