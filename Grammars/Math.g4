@@ -2,15 +2,15 @@ grammar Math;
 
 math        :   instr* EOF
             ;
-instr       :   declr DELIM
-            |   expr DELIM
-            |   printf DELIM
-            |   assign DELIM
-//            |   scope
-//            |   if_cond
-//            |   else_cond
-//            |   while_loop
-//            |   for_loop
+instr       :   declr (';')+
+            |   expr (';')+
+            |   printf (';')+
+            |   assign (';')+
+            |   scope
+            |   if_cond
+            |   else_cond
+            |   while_loop
+            |   for_loop
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
@@ -18,13 +18,13 @@ declr       :   CONST? TYPE (var_decl ',')* var_decl
 printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 
 // TODO: scopes (unnamed)
-//scope       :   '{' instr* '}';
+scope       :   '{' instr* '}';
 
 // TODO: if , else
-//if_cond     :   IF expr scope;
-//else_cond   :   ELSE scope;
-//while_loop  :   WHILE expr scope;
-//for_loop    :   FOR (expr ';' expr ';' (incr | decr) ) scope;
+if_cond     :   IF expr scope;
+else_cond   :   ELSE scope;
+while_loop  :   WHILE expr scope;
+for_loop    :   FOR (expr ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DECR) ) scope;
 
 // TODO: for , while , break and continue -> translate while to for
 
