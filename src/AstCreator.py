@@ -57,6 +57,16 @@ class AstCreator(MathVisitor):
             return self.visitFactor(ctx)
         elif isinstance(ctx, MathParser.PrimaryContext):
             return self.visitPrimary(ctx)
+        elif isinstance(ctx, MathParser.ScopeContext):
+            return self.visitScope(ctx)
+        elif isinstance(ctx, MathParser.For_loopContext):
+            return self.visitFor_loop(ctx)
+        elif isinstance(ctx, MathParser.While_loopContext):
+            return self.visitWhile_loop(ctx)
+        elif isinstance(ctx, MathParser.If_condContext):
+            return self.visitIf_cond(ctx)
+        elif isinstance(ctx, MathParser.Else_condContext):
+            return self.visitElse_cond(ctx)
 
     def resolveTree(self, base: AST):
         """
@@ -157,11 +167,11 @@ class AstCreator(MathVisitor):
         base.children.reverse()
         return base
 
-    def DFS(self, visited, ctx):
+    def DFS(self, visited, ctx, root_name: str = "math"):
         if visited is None:
             visited = []
         s = list()
-        a = AST(root=Node("math", None))
+        a = AST(root=Node(root_name, None))
         s.append(ctx)
         # while there are still nodes to visit in the tree
         while len(s) > 0:
@@ -482,6 +492,22 @@ class AstCreator(MathVisitor):
         else:
             return None
         return ast
+
+    def visitScope(self, ctx: MathParser.ScopeContext):
+        scope_ast = self.DFS(None, ctx, "scope")
+        return scope_ast
+
+    def visitIf_cond(self, ctx: MathParser.If_condContext):
+        return super().visitIf_cond(ctx)
+
+    def visitElse_cond(self, ctx: MathParser.Else_condContext):
+        return super().visitElse_cond(ctx)
+
+    def visitWhile_loop(self, ctx: MathParser.While_loopContext):
+        return super().visitWhile_loop(ctx)
+
+    def visitFor_loop(self, ctx: MathParser.For_loopContext):
+        return super().visitFor_loop(ctx)
 
     @staticmethod
     def convert(value, d_type):
