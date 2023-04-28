@@ -9,6 +9,13 @@
 //    int yqf = 2;
 //    int yqzsdqs = 2;
     int yqdsdq = 2;
+    {
+    int y = 9;
+    {
+        int z = 9;
+    }
+
+    }
 //    while (x < 10) {
 //        int result = x * 2;
 //        if ( x > 5) {
