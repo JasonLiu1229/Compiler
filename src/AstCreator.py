@@ -311,10 +311,10 @@ class AstCreator(MathVisitor):
                         raise AttributeError("Variable assigned to wrong type")
                     elif (assignee.type, rtype) not in conv_promotions:
                         self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
-                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[0].ptr and ast.children[1].ptr:
-                    if ast.children[0].total_deref != ast.children[1].total_deref + 1:
-                        raise AttributeError(
-                            f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[
+                    0].ptr and ast.children[1].ptr and ast.children[0].total_deref != ast.children[1].total_deref + 1:
+                    raise AttributeError(
+                        f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                 assignee.value = ast.children[1].value
                 assignee.type = getType(assignee.value)
                 updates_queue.append(assignee)
