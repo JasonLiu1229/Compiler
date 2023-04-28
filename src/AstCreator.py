@@ -208,6 +208,9 @@ class AstCreator(MathVisitor):
         return ast_in
 
     def handle(self, list_ast: list):
+        updates_queue = []
+        incr_queue = []
+        decr_queue = []
         for ast in list_ast:
             if len(ast.children) == 0:
                 continue
@@ -222,13 +225,15 @@ class AstCreator(MathVisitor):
                     elif isinstance(child, Node) and child.key == "var":
                         # search in symbol table
                         if not self.symbol_table.exists(child.value):
-                            raise ReferenceError(f"Variable {child.value} does was not declared in this scope")
+                            raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
                             index = ast.children.index(child)
                             matches = self.symbol_table.lookup(child.value)
+                            if len(matches) == 0:
+                                raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                            ast.children[index] = matches[0].object
+                            ast.children[index] = copy.copy(matches[0].object)
                 if not handle:
                     continue
             # Variable assignment handling
@@ -248,14 +253,15 @@ class AstCreator(MathVisitor):
                     else:
                         raise TypeError(f"Wrong type assigned to {ast.children[0]}")
                     # Pointer depth check
-                    if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode):
+                    if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) \
+                            and ast.children[0].ptr and ast.children[1].ptr:
                         if ast.children[0].total_deref != ast.children[1].total_deref + 1:
                             raise AttributeError(
                                 f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
-                    self.symbol_table.update(ast.children[0])
+                    updates_queue.append(ast.children[0])
                     node = ast.children[0]
                     # refresh symbol table
-                    self.symbol_table.refresh()
+                    # self.symbol_table.refresh()
                 else:
                     raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
@@ -273,16 +279,17 @@ class AstCreator(MathVisitor):
                 if ast.type != ast.children[0].type and ast.children[0].value is not None:
                     if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.children[0].type, ast.type) not in conv_promotions:
-                        self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type}")
+                    elif (ast.type , ast.children[0].type) not in conv_promotions:
+                        self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type} for variable {ast.children[0].key}")
                 node = ast.children[0]
+                node.type = ast.type
                 # node.const = (ast.const is True)
                 if node.ptr and ast.const:
                     node.const_ptr = True
                 else:
                     node.const = (ast.const is True)
-                self.symbol_table.update(node)
-                self.symbol_table.refresh()
+                updates_queue.append(node)
+                # self.symbol_table.refresh()
 
             elif isinstance(ast, AssignAST):
                 # check if assign value is of a valid type
@@ -302,16 +309,17 @@ class AstCreator(MathVisitor):
                 if rtype != assignee.type:
                     if (assignee.type, rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (rtype, assignee.type) not in conv_promotions:
-                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type}")
-                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode):
+                    elif (assignee.type, rtype) not in conv_promotions:
+                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[0].ptr and ast.children[1].ptr:
                     if ast.children[0].total_deref != ast.children[1].total_deref + 1:
                         raise AttributeError(
                             f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                 assignee.value = ast.children[1].value
-                self.symbol_table.update(assignee)
+                assignee.type = getType(assignee.value)
+                updates_queue.append(assignee)
                 # refresh symbol table
-                self.symbol_table.refresh()
+                # self.symbol_table.refresh()
                 node = assignee
             elif isinstance(ast, PrintfAST):
                 # insert function into symbol table
@@ -326,7 +334,29 @@ class AstCreator(MathVisitor):
                 node = ast
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
+                updates_queue.reverse()
+                for instance in incr_queue:
+                    instance = self.symbol_table.lookup(instance)[0].object
+                    instance.value += 1
+                    self.symbol_table.update(instance)
+                for instance in decr_queue:
+                    instance = self.symbol_table.lookup(instance)[0].object
+                    instance.value -= 1
+                    self.symbol_table.update(instance)
+                for instance in updates_queue:
+                    self.symbol_table.update(instance)
+
                 self.symbol_table.refresh()
+                updates_queue = []
+                incr_queue = []
+                decr_queue = []
+            elif isinstance(ast, TermAST) and ast.root.value in ["++" , "--"]:
+                node = ast.children[0]
+                if ast.root.value == "++":
+                    incr_queue.append(node)
+                if ast.root.value == "--":
+                    decr_queue.append(node)
+                pass
             elif ast is not None:
                 node = ast.handle()
             else:
@@ -334,6 +364,9 @@ class AstCreator(MathVisitor):
             # Replace node
             index = ast.parent.children.index(ast)
             ast.parent.children[index] = node
+        for instance in updates_queue:
+            self.symbol_table.update(instance)
+        self.symbol_table.refresh()
 
     def visitMath(self, ctx: MathParser.MathContext):
         """

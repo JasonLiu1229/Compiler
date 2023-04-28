@@ -353,9 +353,9 @@ class VarDeclrAST(AST):
             while isinstance(child, VarNode):
                 child = child.value
             self.children[0].type = getType(child)
-            if isinstance(self.children[0], VarNode) and isinstance(self.children[1], VarNode):
-                if self.children[0].total_deref != self.children[1].total_deref + 1:
-                    raise AttributeError(f"Incompatible types for {self.children[0].key} and {self.children[1].key}.")
+            # if isinstance(self.children[0], VarNode) and isinstance(self.children[1], VarNode):
+            #     if self.children[0].total_deref != self.children[1].total_deref + 1:
+            #         raise AttributeError(f"Incompatible types for {self.children[0].key} and {self.children[1].key}.")
             return self.children[0]
         else:
             return self.children[0]

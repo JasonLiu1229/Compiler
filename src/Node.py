@@ -31,64 +31,100 @@ class Node:
         print(self.get_str())
 
     def __mul__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("", self.value * other.value)
 
     def __floordiv__(self, other):
         if other.value != 0:
+            if isinstance(self.value, str):
+                self.value = ord(self.value)
+            if isinstance(other.value, str):
+                other.value = ord(other.value)
             return Node("int", floor(self.value / other.value))
         else:
             raise ZeroDivisionError
 
     def __truediv__(self, other):
         if other.value != 0:
+            if isinstance(self.value, str):
+                self.value = ord(self.value)
+            if isinstance(other.value, str):
+                other.value = ord(other.value)
             return Node("float", self.value / other.value)
         else:
             raise ZeroDivisionError
 
     def __add__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         if isinstance(other, int) or isinstance(other, float):
             return Node("", self.value + other)
         return Node("", self.value + other.value)
 
     def __sub__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         if isinstance(other, int) or isinstance(other, float):
             return Node("", self.value - other)
         return Node("", self.value - other.value)
 
     def __mod__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("", self.value % other.value)
 
     def __neg__(self):
-        if self.key == 'char':
-            return Node("int", -ord(self.value))
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
         return Node("", -self.value)
 
     def __lt__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) < ord(other.value))
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("int", self.value < other.value)
 
     def __le__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) <= ord(other.value))
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("int", self.value <= other.value)
 
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
+        if isinstance(self.value, str) and self.key != "var":
+            self.value = ord(self.value)
+        if isinstance(other.value, str) and other.key != "var":
+            other.value = ord(other.value)
         return self.value == other.value and self.key == other.key
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __gt__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) > ord(other.value))
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("int", self.value > other.value)
 
     def __ge__(self, other):
-        if self.key == 'char':
-            return Node("int", ord(self.value) >= ord(other.value))
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
         return Node("int", self.value >= other.value)
 
     def save(self):

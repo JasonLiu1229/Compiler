@@ -27,6 +27,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             ast = visitor.visit(parse_tree)
             ast.print(4, False, filename)
             visitor.symbol_table.print()
+            visitor.warn()
             # ast.dot_language(filename, visitor.symbol_table)
             # generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
             # generator.convert()
