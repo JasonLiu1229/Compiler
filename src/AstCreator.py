@@ -113,13 +113,15 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
                     indexes["scope_depth"] += 1
+                    if len(indexes["last_scope"]) < indexes["scope_depth"]:
+                        indexes["last_scope"].append(0)
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[indexes["last_scope"][indexes["scope_depth"]]: index]
+                    child.children = base.children[indexes["last_scope"][indexes["scope_depth"] - 1]: index]
                     child.children.reverse()
-                    base.children[indexes["last_scope"][indexes["scope_depth"]]: index] = []
+                    base.children[indexes["last_scope"][indexes["scope_depth"] - 1]: index] = []
                     index = base.children.index(child)
-                    indexes["last_scope"][indexes["scope_depth"]] += 1
+                    indexes["last_scope"][indexes["scope_depth"] - 1] += 1
                 elif child.root.key == "declr":
                     child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
                     child.children.reverse()
