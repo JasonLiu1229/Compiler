@@ -28,7 +28,7 @@ else_cond   :   ELSE scope;
 while_loop  :   WHILE expr scope;
 for_loop    :   FOR (expr ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DECR) ) scope;
 
-// TODO: for , while , break and continue -> translate while to for
+// TODO: for , while , break and continue -> translate for to while
 
 // TODO: switch(case, break, default) -> translate switch to if
 

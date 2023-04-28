@@ -67,7 +67,16 @@ class AstCreator(MathVisitor):
             return self.visitIf_cond(ctx)
         elif isinstance(ctx, MathParser.Else_condContext):
             return self.visitElse_cond(ctx)
+        elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
+            if ctx.getText() in ["{","}"]:
+                return Node(ctx.getText(), None)
 
+    def searchPrevToken(self, index: int, token: str, in_list):
+        # index = len(in_list)
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], Node) and in_list[i].key == token:
+                return i
+        return -1
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -76,7 +85,7 @@ class AstCreator(MathVisitor):
         """
         # Terminals processing
         index = 0
-        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": [], "scope_depth": 0}
+        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": [0], "last_scope_open": 0, "scope_depth": 0}
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr", "term"] and child.root.value is not None:
@@ -105,23 +114,30 @@ class AstCreator(MathVisitor):
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[indexes["last_instr"]: index]
+                    if self.searchPrevToken(index, "}", base.children) == -1:
+                        child.children = base.children[indexes["last_instr"]: index]
+                        base.children[indexes["last_instr"]: index] = []
+                    else:
+                        child.children = base.children[max(indexes["last_instr"] , indexes["last_scope_open"] + 1): index]
+                        base.children[max(indexes["last_instr"] , indexes["last_scope_open"] + 1): index] = []
                     child.children.reverse()
-                    base.children[indexes["last_instr"]: index] = []
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
                 elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
-                    indexes["scope_depth"] += 1
+                    # indexes["scope_depth"] += 1
                     if len(indexes["last_scope"]) < indexes["scope_depth"]:
                         indexes["last_scope"].append(0)
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[indexes["last_scope"][indexes["scope_depth"] - 1]: index]
+                    new_index = self.searchPrevToken(index, "}", base.children)
+                    base.children[new_index:new_index+1] = []
+                    child.children = base.children[new_index: index - 1]
                     child.children.reverse()
-                    base.children[indexes["last_scope"][indexes["scope_depth"] - 1]: index] = []
+                    base.children[new_index: index - 1] = []
                     index = base.children.index(child)
-                    indexes["last_scope"][indexes["scope_depth"] - 1] += 1
+                    # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
+                    indexes["last_instr"] = 0
                 elif child.root.key == "declr":
                     child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
                     child.children.reverse()
@@ -159,6 +175,15 @@ class AstCreator(MathVisitor):
                         elif isinstance(n, VarNode):
                             n.type = child.root.value
             elif isinstance(child, Node):
+                if child.key == "}":
+                    indexes["scope_depth"] += 1
+                    indexes["last_scope_open"] = index
+                    # base.children[index:index+1] = []
+                    # index -= 1
+                if child.key == "{":
+                    indexes["scope_depth"] -= 1
+                    base.children[index:index+1] = []
+                    index -= 1
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index - 1].value
                 if child.key == "assign_op":
