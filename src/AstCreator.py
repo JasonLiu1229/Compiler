@@ -76,7 +76,7 @@ class AstCreator(MathVisitor):
         """
         # Terminals processing
         index = 0
-        indexes = {"last_instr": 0, "last_declr": 0}
+        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": 0}
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr", "term"] and child.root.value is not None:
@@ -108,6 +108,15 @@ class AstCreator(MathVisitor):
                     base.children[indexes["last_instr"]: index] = []
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
+                elif child.root.key == "scope":
+                    # Parent of scope is base itself, if no parent is already found
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[indexes["last_scope"]: index]
+                    child.children.reverse()
+                    base.children[indexes["last_scope"]: index] = []
+                    index = base.children.index(child)
+                    indexes["last_scope"] += 1
                 elif child.root.key == "declr":
                     child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
                     child.children.reverse()
@@ -527,8 +536,7 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitScope(self, ctx: MathParser.ScopeContext):
-        scope_ast = self.DFS(None, ctx, "scope")
-        return scope_ast
+        return Scope_AST(Node("", None))
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
         return super().visitIf_cond(ctx)

@@ -499,3 +499,25 @@ class DerefAST(AST):
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child.deref_level += 1
         return child
+
+
+class If_CondAST(AST):
+    pass
+
+
+class Scope_AST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+
+class Else_CondAST(AST):
+    pass
+
+
+class For_loopAST(AST):
+    pass
+
+
+class While_loopAST(AST):
+    pass
