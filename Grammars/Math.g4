@@ -11,6 +11,8 @@ instr       :   declr (';')+
             |   else_cond
             |   while_loop
             |   for_loop
+//            |   func_defn
+//            |   func_decl
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
@@ -29,6 +31,12 @@ for_loop    :   FOR (expr ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DEC
 // TODO: for , while , break and continue -> translate while to for
 
 // TODO: switch(case, break, default) -> translate switch to if
+
+// TODO: Function rules
+// Functions
+//func_defn   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')' scope;
+//func_decl   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
+//func_call   :   VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
 
 // Right-hand side variable use
 var_decl    :   lvar ASSIGN expr

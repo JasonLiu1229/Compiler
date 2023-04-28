@@ -26,6 +26,20 @@ This project is made for the course Compilers at the University of Antwerp.
     - Adding comments "//" and multiline comments "/**/"
     - Convert C -> LLVM
 
+#### Project 4
+
+#### Project 5
+
+#### Project 6
+
+#### TODO list
+- [x] Project 1
+- [ ] Project 2
+- [x] Project 3
+- [ ] Project 4
+- [ ] Project 5
+- [ ] Project 6
+
 <a name="Testing"></a>
 ### How to test?
 Guide on how to test our Compiler, the guide is meant for Pycharm users.
