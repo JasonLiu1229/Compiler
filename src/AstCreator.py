@@ -68,7 +68,7 @@ class AstCreator(MathVisitor):
         elif isinstance(ctx, MathParser.Else_condContext):
             return self.visitElse_cond(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
-            if ctx.getText() in ["{","}"]:
+            if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
 
     def searchPrevToken(self, index: int, token: str, in_list):
@@ -77,6 +77,7 @@ class AstCreator(MathVisitor):
             if isinstance(in_list[i], Node) and in_list[i].key == token:
                 return i
         return -1
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -118,8 +119,11 @@ class AstCreator(MathVisitor):
                         child.children = base.children[indexes["last_instr"]: index]
                         base.children[indexes["last_instr"]: index] = []
                     else:
-                        child.children = base.children[max(indexes["last_instr"] , indexes["last_scope_open"] + 1): index]
-                        base.children[max(indexes["last_instr"] , indexes["last_scope_open"] + 1): index] = []
+                        indexes["last_scope_open"] = self.searchPrevToken(index, "}", base.children)
+                        child.children = \
+                            base.children[max(indexes["last_instr"], indexes["last_scope_open"] + 1):
+                                          index]
+                        base.children[max(indexes["last_instr"], indexes["last_scope_open"] + 1): index] = []
                     child.children.reverse()
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
@@ -131,7 +135,7 @@ class AstCreator(MathVisitor):
                     if child.parent is None:
                         child.parent = base
                     new_index = self.searchPrevToken(index, "}", base.children)
-                    base.children[new_index:new_index+1] = []
+                    base.children[new_index:new_index + 1] = []
                     child.children = base.children[new_index: index - 1]
                     child.children.reverse()
                     base.children[new_index: index - 1] = []
@@ -182,7 +186,7 @@ class AstCreator(MathVisitor):
                     # index -= 1
                 if child.key == "{":
                     indexes["scope_depth"] -= 1
-                    base.children[index:index+1] = []
+                    base.children[index:index + 1] = []
                     index -= 1
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index - 1].value
@@ -318,8 +322,9 @@ class AstCreator(MathVisitor):
                 if ast.type != ast.children[0].type and ast.children[0].value is not None:
                     if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.type , ast.children[0].type) not in conv_promotions:
-                        self.warnings.append(f"Implicit conversion from {ast.children[0].type} to {ast.type} for variable {ast.children[0].key}")
+                    elif (ast.type, ast.children[0].type) not in conv_promotions:
+                        self.warnings.append(
+                            f"Implicit conversion from {ast.children[0].type} to {ast.type} for variable {ast.children[0].key}")
                 node = ast.children[0]
                 node.type = ast.type
                 # node.const = (ast.const is True)
@@ -351,7 +356,8 @@ class AstCreator(MathVisitor):
                     if (assignee.type, rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
                     elif (assignee.type, rtype) not in conv_promotions:
-                        self.warnings.append(f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                        self.warnings.append(
+                            f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
                 if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[
                     0].ptr and ast.children[1].ptr and ast.children[0].total_deref != ast.children[1].total_deref + 1:
                     raise AttributeError(
@@ -395,7 +401,7 @@ class AstCreator(MathVisitor):
                 updates_queue = []
                 incr_queue = []
                 decr_queue = []
-            elif isinstance(ast, TermAST) and ast.root.value in ["++" , "--"]:
+            elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"]:
                 node = ast.children[0]
                 if ast.root.value == "++":
                     incr_queue.append(node)
