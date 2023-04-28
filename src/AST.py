@@ -4,6 +4,7 @@ from typing import Any
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
 import json
+from SymbolTable import *
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
@@ -81,7 +82,7 @@ def getType(inputValue):
 
 
 class AST:
-    def __init__(self, root: Node = None, children: list = None, parent=None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         """
         Initializer function
         :param root: assign root node
@@ -94,6 +95,7 @@ class AST:
         self.children: list[Node] | list[AST] | [] = children
         self.parent: AST | None = parent
         self.dic_count = {"instr": 0, "expr": 0}
+        self.symbolTable: SymbolTable | None = symbolTable
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
@@ -501,23 +503,47 @@ class DerefAST(AST):
         return child
 
 
-class If_CondAST(AST):
-    pass
-
-
 class Scope_AST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
+        super().__init__(root, children, parent, symbolTable=SymbolTable())
+        self.condition: AST | None = condition
+
+    def handle(self):
+        return self
+
+
+class If_CondAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
-
-class Else_CondAST(AST):
-    pass
-
-
-class For_loopAST(AST):
-    pass
+    def handle(self):
+        return self
 
 
-class While_loopAST(AST):
-    pass
+class Else_CondAST(Scope_AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        return self
+
+
+class For_loopAST(Scope_AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        return self
+
+
+class While_loopAST(Scope_AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+    def handle(self):
+        return self

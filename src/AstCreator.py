@@ -76,7 +76,7 @@ class AstCreator(MathVisitor):
         """
         # Terminals processing
         index = 0
-        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": 0}
+        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": [], "scope_depth": 0}
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr", "term"] and child.root.value is not None:
@@ -108,15 +108,16 @@ class AstCreator(MathVisitor):
                     base.children[indexes["last_instr"]: index] = []
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
-                elif child.root.key == "scope":
+                elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
+                    indexes["scope_depth"] += 1
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[indexes["last_scope"]: index]
+                    child.children = base.children[indexes["last_scope"][indexes["scope_depth"]]: index]
                     child.children.reverse()
-                    base.children[indexes["last_scope"]: index] = []
+                    base.children[indexes["last_scope"][indexes["scope_depth"]]: index] = []
                     index = base.children.index(child)
-                    indexes["last_scope"] += 1
+                    indexes["last_scope"][indexes["scope_depth"]] += 1
                 elif child.root.key == "declr":
                     child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
                     child.children.reverse()
@@ -539,7 +540,7 @@ class AstCreator(MathVisitor):
         return Scope_AST(Node("", None))
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
-        return super().visitIf_cond(ctx)
+        return If_CondAST(Node("", None))
 
     def visitElse_cond(self, ctx: MathParser.Else_condContext):
         return super().visitElse_cond(ctx)
