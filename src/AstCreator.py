@@ -99,6 +99,8 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
+                # elif isinstance(child, DerefAST):
+                #     pass
                 elif child.root.key == "instr":
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
@@ -298,6 +300,8 @@ class AstCreator(MathVisitor):
                     node.const_ptr = True
                 else:
                     node.const = (ast.const is True)
+                if not self.symbol_table.exists(node):
+                    self.symbol_table.insert(SymbolEntry(node))
                 updates_queue.append(node)
                 # self.symbol_table.refresh()
 
@@ -325,6 +329,10 @@ class AstCreator(MathVisitor):
                     0].ptr and ast.children[1].ptr and ast.children[0].total_deref != ast.children[1].total_deref + 1:
                     raise AttributeError(
                         f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                if isinstance(ast.children[0], VarNode) and not isinstance(ast.children[1], VarNode):
+                    if ast.children[0].total_deref - ast.children[0].deref_level != 0:
+                        raise AttributeError(
+                            f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                 assignee.value = ast.children[1].value
                 assignee.type = getType(assignee.value)
                 updates_queue.append(assignee)
@@ -537,7 +545,7 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitScope(self, ctx: MathParser.ScopeContext):
-        return Scope_AST(Node("", None))
+        return Scope_AST(Node("unnamed", None))
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
         return If_CondAST(Node("", None))

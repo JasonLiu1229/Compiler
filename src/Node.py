@@ -197,7 +197,7 @@ class VarNode(Node):
     def __eq__(self, o):
         if not isinstance(o, VarNode):
             return False
-        return self.key == o.key and (self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref
+        return self.key == o.key and (self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr
 
     def __ne__(self, o):
         return not self.__eq__(o)
