@@ -89,6 +89,33 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#init.
+    def enterInit(self, ctx:MathParser.InitContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#init.
+    def exitInit(self, ctx:MathParser.InitContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#cond.
+    def enterCond(self, ctx:MathParser.CondContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#cond.
+    def exitCond(self, ctx:MathParser.CondContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#incr.
+    def enterIncr(self, ctx:MathParser.IncrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#incr.
+    def exitIncr(self, ctx:MathParser.IncrContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#var_decl.
     def enterVar_decl(self, ctx:MathParser.Var_declContext):
         pass

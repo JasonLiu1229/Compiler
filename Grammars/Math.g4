@@ -23,10 +23,24 @@ printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 scope       :   '{' instr* '}';
 
 // TODO: if , else
-if_cond     :   IF expr scope;
+if_cond     :   IF '(' cond ')' scope;
 else_cond   :   ELSE scope;
-while_loop  :   WHILE expr scope;
-for_loop    :   FOR '(' (CONST? TYPE lvar ASSIGN expr) ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DECR) ')' scope;
+while_loop  :   WHILE '(' cond ')' scope;
+for_loop    :   FOR '(' init ';' cond ';' incr ')' scope;
+
+init        :   CONST? TYPE lvar ASSIGN expr
+            |   assign;
+
+cond        :   term (GEQ | LEQ | NEQ) factor
+            |   term (GT | LT | EQ) factor
+            |   term (AND_OP | OR_OP) factor
+            ;
+
+incr        :   INCR rvar
+            |   DECR rvar
+            |   rvar INCR
+            |   rvar DECR
+            ;
 
 // TODO: for , while , break and continue -> translate for to while
 
