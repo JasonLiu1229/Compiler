@@ -225,13 +225,13 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
                     base.children[index - 2: index] = []
-                    # Add first child to symbol table if it isn't already in
-                    if not self.symbol_table.exists(child.children[0].key):
-                        # make one
-                        new_object = child.children[0]
-                        self.symbol_table.insert(SymbolEntry(new_object))
-                    else:
-                        raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
+                    # # Add first child to symbol table if it isn't already in
+                    # if not temp_symbol.exists(child.children[0].key):
+                    #     # make one
+                    #     new_object = child.children[0]
+                    #     temp_symbol.insert(SymbolEntry(new_object))
+                    # else:
+                    #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
                 elif child.root.key == "printf":
                     child.children = base.children[index - 1: index]
@@ -328,6 +328,13 @@ class AstCreator(MathVisitor):
         decr_queue = []
         # initialize symbol table from root
         symbol_table = list_ast[-1].symbolTable
+        temp_symbol = symbol_table
+        # temp_parent = list_ast[-1]
+        # while symbol_table is None:
+        #     temp_parent = temp_parent.parent
+        #     symbol_table = temp_parent.symbolTable
+        if symbol_table is None:
+            raise RuntimeError("No symbol table found")
         # handle
         for ast in list_ast:
             if len(ast.children) == 0:
@@ -342,11 +349,19 @@ class AstCreator(MathVisitor):
                     # unreplaced rvars
                     elif isinstance(child, Node) and child.key == "var":
                         # search in symbol table
-                        if not symbol_table.exists(child.value):
+                        exists_state = symbol_table.exists(child.value)
+                        temp_ast = ast
+                        # search in parent scopes if not found
+                        while not exists_state and temp_ast is not None:
+                            temp_symbol = temp_ast.parent.symbolTable
+                            temp_ast = temp_ast.parent
+                            if temp_symbol is not None:
+                                exists_state = temp_symbol.exists(child.value)
+                        if not temp_symbol.exists(child.value):
                             raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
                             index = ast.children.index(child)
-                            matches = symbol_table.lookup(child.value)
+                            matches = temp_symbol.lookup(child.value)
                             if len(matches) == 0:
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
@@ -387,7 +402,7 @@ class AstCreator(MathVisitor):
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
                 if symbol_table.exists(ast.children[0].key):
-                    matches = symbol_table.lookup(ast.children[0].key)
+                    matches = temp_symbol.lookup(ast.children[0].key)
                     if len(matches) != 1:
                         raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                     match = matches[0]
@@ -407,8 +422,8 @@ class AstCreator(MathVisitor):
                     node.const_ptr = True
                 else:
                     node.const = (ast.const is True)
-                if not symbol_table.exists(node):
-                    symbol_table.insert(SymbolEntry(node))
+                if not temp_symbol.exists(node):
+                    temp_symbol.insert(SymbolEntry(node))
                 updates_queue.append(node)
                 # self.symbol_table.refresh()
 
@@ -455,8 +470,8 @@ class AstCreator(MathVisitor):
                 new_param = FunctionParameter(getType(ast.children[0].value), None, "print_val")
                 new_entry = FuncSymbolEntry(ast.root, in_parameters=[new_param])
                 ast.root.type = new_param.type
-                symbol_table.insert(new_entry)
-                symbol_table.refresh()
+                temp_symbol.insert(new_entry)
+                temp_symbol.refresh()
                 node = ast
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
@@ -472,7 +487,7 @@ class AstCreator(MathVisitor):
                 for instance in updates_queue:
                     symbol_table.update(instance)
 
-                symbol_table.refresh()
+                temp_symbol.refresh()
                 updates_queue = []
                 incr_queue = []
                 decr_queue = []
@@ -491,8 +506,8 @@ class AstCreator(MathVisitor):
             index = ast.parent.children.index(ast)
             ast.parent.children[index] = node
         for instance in updates_queue:
-            symbol_table.update(instance)
-        symbol_table.refresh()
+            temp_symbol.update(instance)
+        temp_symbol.refresh()
 
     def visitMath(self, ctx: MathParser.MathContext):
         """
