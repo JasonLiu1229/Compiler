@@ -86,6 +86,13 @@ class AstCreator(MathVisitor):
                 return i
         return -1
 
+    @staticmethod
+    def lastDeclaration(index: int, in_list):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == '}') or isinstance(in_list[i], DeclrAST):
+                return i
+        return -1
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -151,11 +158,13 @@ class AstCreator(MathVisitor):
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
                     indexes["last_instr"] = 0
                 elif child.root.key == "declr":
-                    child.children = base.children[max(indexes["last_declr"], indexes["last_instr"]): index]
+                    last_decl = self.lastDeclaration(index, base.children)
+                    last_decl += 1
+                    child.children = base.children[last_decl: index]
                     child.children.reverse()
-                    base.children[max(indexes["last_declr"], indexes["last_instr"]): index] = []
+                    base.children[last_decl: index] = []
                     index = base.children.index(child)
-                    update_index = max(indexes["last_declr"], indexes["last_instr"])
+                    update_index = last_decl
                     update_index += 1
                 elif child.root.key == "assign":
                     child.children = base.children[index - 2: index]
