@@ -167,11 +167,10 @@ class AST:
             out[name] = []
         else:
             out["children"] = []
-        for i in range(len(self.children)):
-            if self.children[i] is not None and self.root.value is None:
-                out[name].insert(len(out[name]), self.children[i].save())
-            elif self.children[i] is not None:
-                out["children"].insert(len(out["children"]), self.children[i].save())
+        if self.root.value is None:
+            out[name] = [child.save() for child in self.children]
+        else:
+            out["children"] = [child.save() for child in self.children]
         return out
 
     def getDict(self):
@@ -558,11 +557,35 @@ class If_CondAST(Scope_AST):
     def handle(self):
         return self
 
+    def getDict(self):
+        return {"if" : self.condition.save()} , "if"
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        else:
+            out["body"] = []
+        if self.condition is None:
+            out[name] = [child.save() for child in self.children]
+        else:
+            out["body"] = [child.save() for child in self.children]
+        return out
+
 
 class Else_CondAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+    def getDict(self):
+        return {"else" : None} , "else"
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = [child.save() for child in self.children]
+        return out
 
     def handle(self):
         return self
@@ -572,9 +595,25 @@ class For_loopAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+        self.initialization = None
+        self.incr = None
 
     def handle(self):
         return self
+
+    def getDict(self):
+        return {"for" : [self.initialization.save() , self.condition.save() , self.incr.save()]} , "for"
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        if self.condition is None:
+            out[name] = [child.save() for child in self.children]
+        else:
+            out[name].append({"body": [child.save() for child in self.children]})
+            # out["body"] = [child.save() for child in self.children]
+        return out
 
 
 class While_loopAST(Scope_AST):
@@ -584,6 +623,19 @@ class While_loopAST(Scope_AST):
 
     def handle(self):
         return self
+
+    def getDict(self):
+        return {"while" : [self.condition.save()]} , "while"
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        if self.condition is None:
+            out[name] = [child.save() for child in self.children]
+        else:
+            out[name].append({"body": [child.save() for child in self.children]})
+        return out
 
 
 class CondAST(TermAST):
