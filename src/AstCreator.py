@@ -67,6 +67,12 @@ class AstCreator(MathVisitor):
             return self.visitIf_cond(ctx)
         elif isinstance(ctx, MathParser.Else_condContext):
             return self.visitElse_cond(ctx)
+        elif isinstance(ctx, MathParser.InitContext):
+            return self.visitInit(ctx)
+        elif isinstance(ctx, MathParser.CondContext):
+            return self.visitCond(ctx)
+        elif isinstance(ctx, MathParser.IncrContext):
+            return self.visitIncr(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -290,7 +296,7 @@ class AstCreator(MathVisitor):
                     if isinstance(i, AST):
                         not_visited.append(i)
         visited.reverse()
-        self.handle(visited)
+        # self.handle(visited)
         return ast_in
 
     def handle(self, list_ast: list):
@@ -636,7 +642,17 @@ class AstCreator(MathVisitor):
         return For_loopAST(Node("For_loop", None))
 
     def visitInit(self, ctx: MathParser.InitContext):
-        return
+        if len(ctx.children) == 1:
+            return Node(keywords[8], ctx.children[0].getText())
+        else:
+            out = InitAST(Node("init", None))
+            index = 0
+            if ctx.children[index].getText() in keywords_datatype:
+                out.type = ctx.children[index].getText()
+            else:
+                raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
+            return out
+
 
     def visitCond(self, ctx: MathParser.CondContext):
         ast = CondAST()
@@ -645,7 +661,12 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitIncr(self, ctx: MathParser.IncrContext):
-        return
+        if isinstance(ctx.children[0], antlr4.tree.Tree.TerminalNodeImpl):
+            # case for rvar INCR and rvar DECR
+            return TermAST(Node("term", ctx.children[0].getText()))
+        else:
+            # case for INCR rvar and DECR rvar
+            return FactorAST(Node("factor", ctx.children[1].getText()))
 
     @staticmethod
     def convert(value, d_type):

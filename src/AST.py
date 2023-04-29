@@ -588,3 +588,9 @@ class CondAST(TermAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+class InitAST(DeclrAST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+

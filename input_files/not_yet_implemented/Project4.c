@@ -13,7 +13,7 @@
 //    }
 
     for (int i = 0; i < 9; i++) {
-        printf(i);
-        int result = i * 999999;
+//        printf(i);
+//        int result = i * 2;
     }
 }
