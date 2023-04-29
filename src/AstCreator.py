@@ -126,7 +126,7 @@ class AstCreator(MathVisitor):
                     index -= 1
                 # elif isinstance(child, DerefAST):
                 #     pass
-                elif child.root.key == "instr":
+                elif isinstance(child, InstrAST):
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
@@ -142,6 +142,19 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
+                elif isinstance(child, If_CondAST):
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 2: index]
+                    base.children[index - 2: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
+                elif isinstance(child, Else_CondAST):
+                    pass
+                elif isinstance(child, While_loopAST):
+                    pass
+                elif isinstance(child, For_loopAST):
+                    pass
                 elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
@@ -157,7 +170,7 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
                     indexes["last_instr"] = 0
-                elif child.root.key == "declr":
+                elif isinstance(child, DeclrAST):
                     last_decl = self.lastDeclaration(index, base.children)
                     last_decl += 1
                     child.children = base.children[last_decl: index]
@@ -598,16 +611,16 @@ class AstCreator(MathVisitor):
         return Scope_AST(Node("unnamed", None))
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
-        return If_CondAST(Node("", None))
+        return If_CondAST(Node("If_cond", None))
 
     def visitElse_cond(self, ctx: MathParser.Else_condContext):
-        return super().visitElse_cond(ctx)
+        return Else_CondAST(Node("Else_cond", None))
 
     def visitWhile_loop(self, ctx: MathParser.While_loopContext):
-        return super().visitWhile_loop(ctx)
+        return While_loopAST(Node("While_loop", None))
 
     def visitFor_loop(self, ctx: MathParser.For_loopContext):
-        return super().visitFor_loop(ctx)
+        return For_loopAST(Node("For_loop", None))
 
     @staticmethod
     def convert(value, d_type):
