@@ -357,10 +357,10 @@ class AstCreator(MathVisitor):
                     if match.initialized():
                         raise AttributeError(f"Redeclaration of variable {ast.children[0].key}")
 
-                if ast.type != ast.children[0].type and ast.children[0].value is not None:
+                if ast.type != ast.children[0].type and ast.children[0].value is not None and not ast.children[0].cast:
                     if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.type, ast.children[0].type) not in conv_promotions:
+                    elif (ast.children[0].type, ast.type) not in conv_promotions:
                         self.warnings.append(
                             f"Implicit conversion from {ast.children[0].type} to {ast.type} for variable {ast.children[0].key}")
                 node = ast.children[0]
@@ -390,10 +390,10 @@ class AstCreator(MathVisitor):
                     raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
                 if rtype is None:
                     raise AttributeError(f"Type {rtype} does not exist")
-                if rtype != assignee.type:
+                if rtype != assignee.type and not ast.children[1].cast:
                     if (assignee.type, rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (assignee.type, rtype) not in conv_promotions:
+                    elif (rtype, assignee.type) not in conv_promotions:
                         self.warnings.append(
                             f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
                 if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[
@@ -629,36 +629,6 @@ class AstCreator(MathVisitor):
 
     def visitFor_loop(self, ctx: MathParser.For_loopContext):
         return For_loopAST(Node("For_loop", None))
-
-    @staticmethod
-    def convert(value, d_type):
-        """
-        help function for casting
-        :param value: input_value
-        :param d_type: cast type
-        :return: cast value
-        """
-        try:
-            if d_type == "int":
-                if isinstance(value, int):
-                    return value
-                if isinstance(value, str):
-                    return ord(value)
-                else:
-                    return int(value)
-            elif d_type == "float":
-                if isinstance(value, float):
-                    return value
-                if isinstance(value, str):
-                    return float(ord(value))
-                else:
-                    return float(value)
-            elif d_type == "char":
-                if isinstance(value, str):
-                    return value
-                return chr(value)
-        except:
-            raise RuntimeError("Bad Cast")
 
     def warn(self):
         """

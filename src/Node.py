@@ -13,6 +13,7 @@ class Node:
         self.key = key
         self.value = value
         self.parent = parent
+        self.cast = False
 
     # def __eq__(self, o: object) -> bool:
     #     return (self.key == o.key) and (self.value == o.value)

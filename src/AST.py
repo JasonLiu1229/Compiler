@@ -80,6 +80,34 @@ def getType(inputValue):
     else:
         return None
 
+def convert(value, d_type):
+    """
+    help function for casting
+    :param value: input_value
+    :param d_type: cast type
+    :return: cast value
+    """
+    try:
+        if d_type == "int":
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str):
+                return ord(value)
+            else:
+                return int(value)
+        elif d_type == "float":
+            if isinstance(value, float):
+                return value
+            if isinstance(value, str):
+                return float(ord(value))
+            else:
+                return float(value)
+        elif d_type == "char":
+            if isinstance(value, str):
+                return value
+            return chr(value)
+    except:
+        raise RuntimeError("Bad Cast")
 
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -351,6 +379,7 @@ class VarDeclrAST(AST):
                 self.children[0].value = self.children[1]
             else:
                 self.children[0].value = self.children[1].value
+                self.children[0].cast = self.children[1].cast
             child = self.children[1].value
             while isinstance(child, VarNode):
                 child = child.value
@@ -483,6 +512,12 @@ class PrimaryAST(AST):
 
     def handle(self):
         if self.root.value == "&":
+            return self.children[0]
+        elif self.root.value[0] + self.root.value[-1] == "()":
+            ret = self.children[0]
+            cast = self.root.value[1:-1]
+            ret.value = convert(ret.value , cast)
+            ret.cast = True
             return self.children[0]
         return self
 
