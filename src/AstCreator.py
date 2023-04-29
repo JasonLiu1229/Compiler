@@ -71,10 +71,18 @@ class AstCreator(MathVisitor):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
 
-    def searchPrevToken(self, index: int, token: str, in_list):
+    @staticmethod
+    def searchPrevToken(index: int, token: str, in_list):
         # index = len(in_list)
         for i in reversed(range(index)):
             if isinstance(in_list[i], Node) and in_list[i].key == token:
+                return i
+        return -1
+
+    @staticmethod
+    def lastInstruction(index: int, in_list):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == '}'):
                 return i
         return -1
 
@@ -119,11 +127,11 @@ class AstCreator(MathVisitor):
                         child.children = base.children[indexes["last_instr"]: index]
                         base.children[indexes["last_instr"]: index] = []
                     else:
-                        indexes["last_scope_open"] = self.searchPrevToken(index, "}", base.children)
+                        last_inst = self.lastInstruction(index, base.children)
                         child.children = \
-                            base.children[max(indexes["last_instr"], indexes["last_scope_open"] + 1):
+                            base.children[last_inst + 1:
                                           index]
-                        base.children[max(indexes["last_instr"], indexes["last_scope_open"] + 1): index] = []
+                        base.children[last_inst + 1: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
                     indexes["last_instr"] += 1
