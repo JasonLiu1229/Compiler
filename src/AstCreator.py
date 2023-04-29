@@ -135,13 +135,11 @@ class AstCreator(MathVisitor):
                         base.children[indexes["last_instr"]: index] = []
                     else:
                         last_inst = self.lastInstruction(index, base.children)
-                        child.children = \
-                            base.children[last_inst + 1:
-                                          index]
+                        child.children = base.children[last_inst + 1:index]
                         base.children[last_inst + 1: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
-                    indexes["last_instr"] += 1
+                    indexes["last_instr"] = index + 1
                 elif isinstance(child, If_CondAST):
                     if child.parent is None:
                         child.parent = base
@@ -184,7 +182,7 @@ class AstCreator(MathVisitor):
                     base.children[new_index: index - 1] = []
                     index = base.children.index(child)
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
-                    indexes["last_instr"] = 0
+                    indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
                 elif isinstance(child, DeclrAST):
                     last_decl = self.lastDeclaration(index, base.children)
                     last_decl += 1
