@@ -157,7 +157,12 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, While_loopAST):
-                    pass
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 2: index]
+                    base.children[index - 2: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
                 elif isinstance(child, For_loopAST):
                     pass
                 elif isinstance(child, Scope_AST):
