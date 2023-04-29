@@ -72,7 +72,7 @@ class AstCreator(MathVisitor):
                 return Node(ctx.getText(), None)
 
     @staticmethod
-    def searchPrevToken(index: int, token: str, in_list):
+    def searchPrevToken(index: int, in_list, token: str = '}'):
         # index = len(in_list)
         for i in reversed(range(index)):
             if isinstance(in_list[i], Node) and in_list[i].key == token:
@@ -80,16 +80,16 @@ class AstCreator(MathVisitor):
         return -1
 
     @staticmethod
-    def lastInstruction(index: int, in_list):
+    def lastInstruction(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == '}'):
+            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token):
                 return i
         return -1
 
     @staticmethod
-    def lastDeclaration(index: int, in_list):
+    def lastDeclaration(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == '}') or isinstance(in_list[i], DeclrAST):
+            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
                 return i
         return -1
 
@@ -130,7 +130,7 @@ class AstCreator(MathVisitor):
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
-                    if self.searchPrevToken(index, "}", base.children) == -1:
+                    if self.searchPrevToken(index=index, token="}", in_list=base.children) == -1:
                         child.children = base.children[indexes["last_instr"]: index]
                         base.children[indexes["last_instr"]: index] = []
                     else:
@@ -149,7 +149,7 @@ class AstCreator(MathVisitor):
                         indexes["last_scope"].append(0)
                     if child.parent is None:
                         child.parent = base
-                    new_index = self.searchPrevToken(index, "}", base.children)
+                    new_index = self.searchPrevToken(index=index, token="}", in_list=base.children)
                     base.children[new_index:new_index + 1] = []
                     child.children = base.children[new_index: index - 1]
                     child.children.reverse()
