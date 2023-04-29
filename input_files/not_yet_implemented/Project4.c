@@ -3,14 +3,14 @@
 */
 { // unnamed scope
 //    int x = 1;
+    int i = 2;
+    int x = 1;
     {
-    3;
-    int i;
-    4;
+    if (i > 1 && i != 3){
+        x = 2;
     }
-    5;
-}
-6;
+    }
+    }
 //    int y = 2;
 //    int sjdnc = 2;
 //    int yqsdsqk = 2;
