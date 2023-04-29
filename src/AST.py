@@ -582,3 +582,9 @@ class While_loopAST(Scope_AST):
 
     def handle(self):
         return self
+
+
+class CondAST(TermAST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)

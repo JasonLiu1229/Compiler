@@ -162,7 +162,12 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, For_loopAST):
-                    pass
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 2: index]
+                    base.children[index - 2: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
                 elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
@@ -629,6 +634,48 @@ class AstCreator(MathVisitor):
 
     def visitFor_loop(self, ctx: MathParser.For_loopContext):
         return For_loopAST(Node("For_loop", None))
+
+    def visitInit(self, ctx: MathParser.InitContext):
+        return
+
+    def visitCond(self, ctx: MathParser.CondContext):
+        ast = CondAST()
+        if len(ctx.children) == 3:
+            ast.root = Node("term", ctx.children[1].getText())
+        return ast
+
+    def visitIncr(self, ctx: MathParser.IncrContext):
+        return
+
+    @staticmethod
+    def convert(value, d_type):
+        """
+        help function for casting
+        :param value: input_value
+        :param d_type: cast type
+        :return: cast value
+        """
+        try:
+            if d_type == "int":
+                if isinstance(value, int):
+                    return value
+                if isinstance(value, str):
+                    return ord(value)
+                else:
+                    return int(value)
+            elif d_type == "float":
+                if isinstance(value, float):
+                    return value
+                if isinstance(value, str):
+                    return float(ord(value))
+                else:
+                    return float(value)
+            elif d_type == "char":
+                if isinstance(value, str):
+                    return value
+                return chr(value)
+        except:
+            raise RuntimeError("Bad Cast")
 
     def warn(self):
         """
