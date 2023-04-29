@@ -26,7 +26,7 @@ scope       :   '{' instr* '}';
 if_cond     :   IF expr scope;
 else_cond   :   ELSE scope;
 while_loop  :   WHILE expr scope;
-for_loop    :   FOR (expr ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DECR) ) scope;
+for_loop    :   FOR '(' (CONST? TYPE lvar ASSIGN expr) ';' expr ';' (INCR rvar | DECR  | rvar INCR | rvar DECR) ')' scope;
 
 // TODO: for , while , break and continue -> translate for to while
 
