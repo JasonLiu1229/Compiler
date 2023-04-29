@@ -164,7 +164,12 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, For_loopAST):
-                    pass
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 2: index]
+                    base.children[index - 2: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
                 elif isinstance(child, Scope_AST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
@@ -631,6 +636,18 @@ class AstCreator(MathVisitor):
 
     def visitFor_loop(self, ctx: MathParser.For_loopContext):
         return For_loopAST(Node("For_loop", None))
+
+    def visitInit(self, ctx: MathParser.InitContext):
+        return
+
+    def visitCond(self, ctx: MathParser.CondContext):
+        ast = CondAST()
+        if len(ctx.children) == 3:
+            ast.root = Node("term", ctx.children[1].getText())
+        return ast
+
+    def visitIncr(self, ctx: MathParser.IncrContext):
+        return
 
     @staticmethod
     def convert(value, d_type):
