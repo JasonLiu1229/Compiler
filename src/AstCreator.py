@@ -95,7 +95,15 @@ class AstCreator(MathVisitor):
     @staticmethod
     def lastDeclaration(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
+            if isinstance(in_list[i], InstrAST) or (
+                    isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastInit(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], CondAST):
                 return i
         return -1
 
@@ -132,6 +140,15 @@ class AstCreator(MathVisitor):
                     index -= 1
                 # elif isinstance(child, DerefAST):
                 #     pass
+                elif isinstance(child, InitAST):
+                    last_decl = self.lastInit(index, base.children)
+                    last_decl += 1
+                    child.children = base.children[last_decl: index]
+                    child.children.reverse()
+                    base.children[last_decl: index] = []
+                    index = base.children.index(child)
+                    update_index = last_decl
+                    update_index += 1
                 elif isinstance(child, InstrAST):
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
@@ -170,8 +187,8 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, For_loopAST):
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[index - 2: index]
-                    base.children[index - 2: index] = []
+                    child.children = base.children[index - 4: index]
+                    base.children[index - 4: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, Scope_AST):
@@ -357,7 +374,7 @@ class AstCreator(MathVisitor):
                 else:
                     raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
-            elif ast.root.key == "declr":
+            elif isinstance(ast, DeclrAST):
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
                 if self.symbol_table.exists(ast.children[0].key):
@@ -695,7 +712,7 @@ class AstCreator(MathVisitor):
                 if isinstance(value, str):
                     return value
                 return chr(value)
-        except:
+        except Exception as e:
             raise RuntimeError("Bad Cast")
 
     def warn(self):

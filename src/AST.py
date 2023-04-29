@@ -80,6 +80,7 @@ def getType(inputValue):
     else:
         return None
 
+
 def convert(value, d_type):
     """
     help function for casting
@@ -106,8 +107,9 @@ def convert(value, d_type):
             if isinstance(value, str):
                 return value
             return chr(value)
-    except:
+    except Exception as e:
         raise RuntimeError("Bad Cast")
+
 
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -516,7 +518,7 @@ class PrimaryAST(AST):
         elif self.root.value[0] + self.root.value[-1] == "()":
             ret = self.children[0]
             cast = self.root.value[1:-1]
-            ret.value = convert(ret.value , cast)
+            ret.value = convert(ret.value, cast)
             ret.cast = True
             return self.children[0]
         return self
@@ -589,8 +591,8 @@ class CondAST(TermAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+
 class InitAST(DeclrAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
-
