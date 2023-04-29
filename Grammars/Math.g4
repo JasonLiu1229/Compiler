@@ -28,7 +28,7 @@ else_cond   :   ELSE scope;
 while_loop  :   WHILE '(' cond ')' scope;
 for_loop    :   FOR '(' init ';' cond ';' incr ')' scope;
 
-init        :   CONST? TYPE lvar ASSIGN expr
+init        :   TYPE lvar ASSIGN expr
             |   assign;
 
 cond        :   term (GEQ | LEQ | NEQ) factor
