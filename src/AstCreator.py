@@ -383,7 +383,7 @@ class AstCreator(MathVisitor):
                         temp_ast = ast
                         # search in parent scopes if not found
                         old_symbol = symbol_table
-                        while not exists_state and temp_ast is not None:
+                        while not exists_state and temp_ast is not None and temp_parent is not None:
                             temp_symbol = temp_ast.parent.symbolTable
                             temp_ast = temp_ast.parent
                             if temp_symbol is not None:
