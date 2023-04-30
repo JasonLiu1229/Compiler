@@ -10,8 +10,9 @@ instr       :   declr (';')+
             |   if_cond
             |   while_loop
             |   for_loop
-//            |   func_defn
-//            |   func_decl
+            |   func_defn (';')+
+            |   func_decl
+            |   func_call (';')+
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
@@ -50,6 +51,14 @@ incr        :   INCR rvar
 //func_defn   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')' scope;
 //func_decl   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
 //func_call   :   VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
+param_list      :   param_declr (',' param_declr)*;
+param_declr     :   CONST? TYPE (ADDR | STR*)? var_decl;
+func_defn       :   CONST? TYPE VAR_NAME '(' param=param_list ')';
+func_scope      :   '{'(return_instr | instr)* '}';
+func_decl       :   CONST? TYPE VAR_NAME '(' param=param_list ')' func_scope;
+arg_list        :   lvar (',' lvar)*;
+func_call       :   VAR_NAME '(' arg_list ')';
+return_instr    :   RETURN instr;
 
 // Right-hand side variable use
 var_decl    :   lvar ASSIGN expr
@@ -115,6 +124,7 @@ SWITCH      :   'switch';
 CASE        :   'case';
 DEFAULT     :   'default';
 PRINTF      :   'printf';
+RETURN      :   'return';
 // Identifiers and data types
 TYPE        :   'char'
             |   'float'
