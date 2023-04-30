@@ -12,8 +12,15 @@
 //        x = x + 1;
 //    }
 
-    for (int i = 0; i < 9; i++) {
-        printf(i);
-        int result = i * 2;
+//    for (int i = 0; i < 9; i++) {
+//        printf(i);
+//        int result = i * 2;
+//    }
+    int x = 5;
+    if (x < 5){
+        x = 1;
+    }
+    else {
+        x = 123456789;
     }
 }

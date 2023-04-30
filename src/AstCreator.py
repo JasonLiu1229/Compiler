@@ -177,8 +177,12 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, If_CondAST) or isinstance(child, While_loopAST):
                     if child.parent is None:
                         child.parent = base
-                    child.children = base.children[index - 2: index]
-                    base.children[index - 2: index] = []
+                    number = 2
+                    if isinstance(base.children[index - 3], InstrAST):
+                        if isinstance(base.children[index - 3].children[0], Else_CondAST):
+                            number = 3
+                    child.children = base.children[index - number: index]
+                    base.children[index - number: index] = []
                     child.children.reverse()
                     # assign condition
                     child.condition = child.children[0]
