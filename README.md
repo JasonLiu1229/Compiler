@@ -98,9 +98,10 @@ python3 run.py -d ../input_files/ -t .c -a
 
 <a name="authors"></a>
 ### Authors
-    Jason.Liu@student.uantwerpen.be - Jason L. Student nr.: 20213082
-    Orfeo.Terkuçi@student.uantwerpen.be - Orfeo T. Student nr.: 20213863
-
+| **Name**   | **Email**                           | **Student number** |
+|------------|-------------------------------------|--------------------|
+| _Jason L._ | Jason.Liu@student.uantwerpen.be     | 20213082           |
+| _Orfeo T._ | Orfeo.Terkuçi@student.uantwerpen.be | 20213863           |
 
 
 <br>
