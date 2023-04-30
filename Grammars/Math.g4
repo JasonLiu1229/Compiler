@@ -50,11 +50,7 @@ incr        :   INCR rvar
 
 // TODO: switch(case, break, default) -> translate switch to if
 
-// TODO: Function rules
 // Functions
-//func_defn   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')' scope;
-//func_decl   :   CONST? TYPE VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
-//func_call   :   VAR_NAME '(' ((CONST? TYPE (lvar ASSIGN expr | lvar))*',')* (CONST? TYPE (lvar ASSIGN expr | lvar))? ')';
 param_list      :   param_declr (',' param_declr)*;
 param_declr     :   CONST? TYPE (ADDR | STR*)? var_decl;
 func_defn       :   CONST? TYPE VAR_NAME '(' param=param_list ')';
