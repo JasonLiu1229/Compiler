@@ -20,17 +20,27 @@ declr       :   CONST? TYPE (var_decl ',')* var_decl
 printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 
 // TODO: scopes (unnamed)
-scope       :   '{' ( instr | break_instr | cont_instr )* '}';
+scope       :   '{' ( instr | break_instr | cont_instr )* '}'
+            ;
 
-cont_instr  :   CONTINUE (';' | DELIM) instr* ;
+cont_instr  :   CONTINUE (';' | DELIM) instr*
+            ;
 
-break_instr :   BREAK (';' | DELIM) instr*;
+break_instr :   BREAK (';' | DELIM) instr*
+            ;
 
 // TODO: if , else
-if_cond     :   IF '(' condition=cond ')' scope else_cond?;
-else_cond   :   ELSE scope;
-while_loop  :   WHILE '(' condition=cond ')' scope;
-for_loop    :   FOR '(' initialization=init ';' condition=cond ';' increment=incr ')' scope;
+if_cond     :   IF '(' condition=cond ')' scope else_cond?
+            ;
+
+else_cond   :   ELSE scope
+            ;
+
+while_loop  :   WHILE '(' condition=cond ')' scope
+            ;
+
+for_loop    :   FOR '(' initialization=init ';' condition=cond ';' increment=incr ')' scope
+            ;
 
 init        :   TYPE lvar ASSIGN expr
             |   assign;
@@ -51,14 +61,29 @@ incr        :   INCR rvar
 // TODO: switch(case, break, default) -> translate switch to if
 
 // Functions
-param_list      :   param_declr (',' param_declr)*;
-param_declr     :   CONST? TYPE (ADDR | STR*)? var_decl;
-func_defn       :   CONST? TYPE VAR_NAME '(' param=param_list ')';
-func_scope      :   '{'(return_instr | instr)* '}';
-func_decl       :   CONST? TYPE VAR_NAME '(' param=param_list ')' func_scope;
-arg_list        :   lvar (',' lvar)*;
-func_call       :   VAR_NAME '(' arg_list ')';
-return_instr    :   RETURN instr;
+param_list      :   param_declr (',' param_declr)*
+                ;
+
+param_declr     :   CONST? TYPE (ADDR | STR*)? var_decl
+                ;
+
+func_defn       :   CONST? TYPE VAR_NAME '(' param=param_list ')'
+                ;
+
+func_scope      :   '{'(return_instr | instr)* '}'
+                ;
+
+func_decl       :   CONST? TYPE VAR_NAME '(' param=param_list ')' func_scope
+                ;
+
+arg_list        :   lvar (',' lvar)*
+                ;
+
+func_call       :   VAR_NAME '(' arg_list ')'
+                ;
+
+return_instr    :   RETURN instr
+                ;
 
 // Right-hand side variable use
 var_decl    :   lvar ASSIGN expr
