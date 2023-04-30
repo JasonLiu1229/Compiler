@@ -8,7 +8,6 @@ instr       :   declr (';')+
             |   assign (';')+
             |   scope
             |   if_cond
-            |   else_cond
             |   while_loop
             |   for_loop
 //            |   func_defn
@@ -23,7 +22,7 @@ printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 scope       :   '{' instr* '}';
 
 // TODO: if , else
-if_cond     :   IF '(' cond ')' scope;
+if_cond     :   IF '(' cond ')' scope else_cond?;
 else_cond   :   ELSE scope;
 while_loop  :   WHILE '(' cond ')' scope;
 for_loop    :   FOR '(' init ';' cond ';' incr ')' scope;
