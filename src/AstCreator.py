@@ -73,6 +73,10 @@ class AstCreator(MathVisitor):
             return self.visitCond(ctx)
         elif isinstance(ctx, MathParser.IncrContext):
             return self.visitIncr(ctx)
+        elif isinstance(ctx, MathParser.Cont_instrContext):
+            return self.visitCont_instr(ctx)
+        elif isinstance(ctx, MathParser.Break_instrContext):
+            return self.visitBreak_instr(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -178,23 +182,17 @@ class AstCreator(MathVisitor):
                     if child.parent is None:
                         child.parent = base
                     number = 2
-                    Else_child = None
-                    if isinstance(base.children[index - 3], InstrAST):
-                        if isinstance(base.children[index - 3].children[0], Else_CondAST):
-                            number = 3
-                            Else_child = base.children[index - 3].children[0]
+                    else_child = None
+                    if isinstance(base.children[index - 3], Else_CondAST):
+                        number = 3
+                        else_child = base.children[index - 3]
                     child.children = base.children[index - number: index]
                     base.children[index - number: index] = []
                     child.children.reverse()
-                    child.children[number - 1] = Else_child
                     # assign condition
                     child.condition = child.children[0]
                     child.condition.parent = child
                     child.children = child.children[1:]
-                    # assign condition to an else conditional if it exists
-                    if last_else is not None:
-                        last_else.condition = copy.copy(child.condition)
-                        last_else.condition.parent = last_else
                     index = base.children.index(child)
                 elif isinstance(child, Else_CondAST):
                     if child.parent is None:
@@ -342,7 +340,7 @@ class AstCreator(MathVisitor):
                     visited.append(temp)
                 if not isinstance(temp, Scope_AST) or temp is ast_in or temp.parent is ast_in:
                     for i in temp.children:
-                        if isinstance(i, AST):
+                        if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
                 else:
                     if temp.condition is not None and not isinstance(temp.condition, Node):
@@ -405,18 +403,23 @@ class AstCreator(MathVisitor):
                     continue
             # conditional cases
             if isinstance(ast, If_CondAST) or isinstance(ast, While_loopAST) or isinstance(ast, Else_CondAST):
+                # handle for condition true
                 if ast.condition.value:
-                    # handle thing
                     self.resolve(ast)
-                    # update symbol table
-                    for update in updates_queue:
-                        temp_symbol.update(update)
-                    updates_queue = []
-                    for entry in ast.children[0].symbolTable.table:
-                        if temp_symbol.exists(entry.object):
-                            updates_queue.append(entry.object)
-                        else:
-                            temp_symbol.insert(entry.object)
+                    ast.symbolTable = ast.children[0].symbolTable
+                # handle for else
+                elif not ast.condition.value and isinstance(ast.children[-1], Else_CondAST):
+                    self.resolve(ast.children[-1])
+                    ast.symbolTable = ast.children[-1].children[0].symbolTable
+                # update symbol table
+                for update in updates_queue:
+                    temp_symbol.update(update)
+                updates_queue = []
+                for entry in ast.symbolTable.table:
+                    if temp_symbol.exists(entry.object):
+                        updates_queue.append(entry.object)
+                    else:
+                        temp_symbol.insert(entry.object)
 
             # Variable assignment handling
             if ast.root.key == "assign" and ast.root.value is not None:
@@ -753,7 +756,6 @@ class AstCreator(MathVisitor):
                 raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
             return out
 
-
     def visitCond(self, ctx: MathParser.CondContext):
         ast = CondAST()
         if len(ctx.children) == 3:
@@ -767,6 +769,12 @@ class AstCreator(MathVisitor):
         else:
             # case for INCR rvar and DECR rvar
             return FactorAST(Node("factor", ctx.children[1].getText()))
+
+    def visitCont_instr(self, ctx: MathParser.Cont_instrContext):
+        return ContAST(Node("cont", None))
+
+    def visitBreak_instr(self, ctx: MathParser.Break_instrContext):
+        return BreakAST(Node("break", None))
 
     @staticmethod
     def convert(value, d_type):
