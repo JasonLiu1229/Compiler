@@ -44,6 +44,78 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#param_list.
+    def enterParam_list(self, ctx:MathParser.Param_listContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#param_list.
+    def exitParam_list(self, ctx:MathParser.Param_listContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#param_declr.
+    def enterParam_declr(self, ctx:MathParser.Param_declrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#param_declr.
+    def exitParam_declr(self, ctx:MathParser.Param_declrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#func_defn.
+    def enterFunc_defn(self, ctx:MathParser.Func_defnContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#func_defn.
+    def exitFunc_defn(self, ctx:MathParser.Func_defnContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#func_decl.
+    def enterFunc_decl(self, ctx:MathParser.Func_declContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#func_decl.
+    def exitFunc_decl(self, ctx:MathParser.Func_declContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#arg_list.
+    def enterArg_list(self, ctx:MathParser.Arg_listContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#arg_list.
+    def exitArg_list(self, ctx:MathParser.Arg_listContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#func_call.
+    def enterFunc_call(self, ctx:MathParser.Func_callContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#func_call.
+    def exitFunc_call(self, ctx:MathParser.Func_callContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#func_scope.
+    def enterFunc_scope(self, ctx:MathParser.Func_scopeContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#func_scope.
+    def exitFunc_scope(self, ctx:MathParser.Func_scopeContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#return_instr.
+    def enterReturn_instr(self, ctx:MathParser.Return_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#return_instr.
+    def exitReturn_instr(self, ctx:MathParser.Return_instrContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#scope.
     def enterScope(self, ctx:MathParser.ScopeContext):
         pass

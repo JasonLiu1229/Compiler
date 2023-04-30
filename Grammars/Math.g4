@@ -2,24 +2,50 @@ grammar Math;
 
 math        :   instr* EOF
             ;
-instr       :   declr (';')+
-            |   expr (';')+
-            |   printf (';')+
-            |   assign (';')+
-            |   scope
-            |   if_cond
-            |   while_loop
-            |   for_loop
-            |   func_defn (';')+
-            |   func_decl
-            |   func_call (';')+
+instr       :   declr ((';')+ | DELIM)
+            |   expr ((';')+ | DELIM)
+            |   printf ((';')+ | DELIM)
+            |   assign ((';')+ | DELIM)
+            |   scope (';')*
+            |   if_cond (';')*
+            |   while_loop (';')*
+            |   for_loop (';')*
+            |   func_defn ((';')* | DELIM)
+            |   func_decl ((';')+ | DELIM)
+            |   func_call ((';')+ | DELIM)
             ;
 declr       :   CONST? TYPE (var_decl ',')* var_decl
             ;
 
 printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 
-// TODO: scopes (unnamed)
+// Functions
+param_list      :   param_declr (',' param_declr)*
+                ;
+
+param_declr     :   const=CONST? type=TYPE reference=ADDR? pointer=STR* var_decl
+                |   const=CONST? type=TYPE pointer=STR* reference=ADDR? var_decl
+                ;
+
+func_defn       :   CONST? (TYPE | VOID) STR* VAR_NAME '(' params=param_list? ')' func_scope
+                ;
+
+func_decl       :   CONST? (TYPE | VOID) STR* VAR_NAME '(' params=param_list? ')'
+                ;
+
+arg_list        :   (lvar | func_call | rtype) (',' (lvar | func_call | rtype))+?
+                ;
+
+func_call       :   VAR_NAME '(' arg_list? ')'
+                ;
+
+func_scope      :   '{'(return_instr | instr)* '}'
+                ;
+
+return_instr    :   RETURN (expr) ';' (instr | return_instr)*
+                ;
+
+
 scope       :   '{' ( instr | break_instr | cont_instr )* '}'
             ;
 
@@ -29,7 +55,9 @@ cont_instr  :   CONTINUE (';' | DELIM) instr*
 break_instr :   BREAK (';' | DELIM) instr*
             ;
 
-// TODO: if , else
+// TODO: for , while , break and continue -> translate for to while
+// TODO: switch(case, break, default) -> translate switch to if
+
 if_cond     :   IF '(' condition=cond ')' scope else_cond?
             ;
 
@@ -55,35 +83,6 @@ incr        :   INCR rvar
             |   rvar INCR
             |   rvar DECR
             ;
-
-// TODO: for , while , break and continue -> translate for to while
-
-// TODO: switch(case, break, default) -> translate switch to if
-
-// Functions
-param_list      :   param_declr (',' param_declr)*
-                ;
-
-param_declr     :   CONST? TYPE (ADDR | STR*)? var_decl
-                ;
-
-func_defn       :   CONST? TYPE VAR_NAME '(' param=param_list ')'
-                ;
-
-func_scope      :   '{'(return_instr | instr)* '}'
-                ;
-
-func_decl       :   CONST? TYPE VAR_NAME '(' param=param_list ')' func_scope
-                ;
-
-arg_list        :   lvar (',' lvar)*
-                ;
-
-func_call       :   VAR_NAME '(' arg_list ')'
-                ;
-
-return_instr    :   RETURN instr
-                ;
 
 // Right-hand side variable use
 var_decl    :   lvar ASSIGN expr
@@ -155,6 +154,7 @@ TYPE        :   'char'
             |   'float'
             |   'int'
             ;
+VOID        :   'void' ;
 VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
 INT         :   ([1-9][0-9]*) | [0];
 FLOAT       :   [0-9]+ '.' [0-9]+;

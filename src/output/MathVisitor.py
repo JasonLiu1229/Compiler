@@ -29,6 +29,46 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#param_list.
+    def visitParam_list(self, ctx:MathParser.Param_listContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#param_declr.
+    def visitParam_declr(self, ctx:MathParser.Param_declrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_defn.
+    def visitFunc_defn(self, ctx:MathParser.Func_defnContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_decl.
+    def visitFunc_decl(self, ctx:MathParser.Func_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#arg_list.
+    def visitArg_list(self, ctx:MathParser.Arg_listContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_call.
+    def visitFunc_call(self, ctx:MathParser.Func_callContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_scope.
+    def visitFunc_scope(self, ctx:MathParser.Func_scopeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#return_instr.
+    def visitReturn_instr(self, ctx:MathParser.Return_instrContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#scope.
     def visitScope(self, ctx:MathParser.ScopeContext):
         return self.visitChildren(ctx)
