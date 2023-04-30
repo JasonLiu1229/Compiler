@@ -34,11 +34,13 @@ This project is made for the course Compilers at the University of Antwerp.
 
 #### TODO list
 - [x] Project 1
-- [ ] Project 2
+- [x] Project 2
 - [x] Project 3
 - [ ] Project 4
 - [ ] Project 5
 - [ ] Project 6
+- [ ] LLVM
+- [ ] MIPS
 
 <a name="Testing"></a>
 ### How to test?
@@ -57,6 +59,7 @@ Common parameter settings:
 - -f : [str]    : files to parse
 - -a : parse all the files in the directory
 - -h : for help
+- -i : by index
 
 Example code with specified input files:
 
