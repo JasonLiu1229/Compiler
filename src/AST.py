@@ -3,8 +3,10 @@ from pprint import pprint
 from typing import Any
 from Node import Node, VarNode, FunctionNode
 import antlr4.error.ErrorListener
+import antlr4.error.ErrorStrategy
 import json
 from SymbolTable import *
+from antlr4.error.Errors import ParseCancellationException
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
@@ -33,11 +35,15 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         Gives an error when there is a syntax error
         :return: a syntax error class
         """
-        out = "Syntax error at line " + str(line) + ":" + str(column) + ": '"
-        if offendingSymbol is not None:
-            out += offendingSymbol.text
-        out += "'" + "\n" + msg
-        raise SyntaxError(out)
+        input_stream = recognizer.getInputStream()
+        # Get all tokens in this line or the next one
+        line_text = ""
+        for token in input_stream.tokens[:input_stream.index]:
+            if token.line in range(line-1 , line):
+                line_text += token.text
+
+        out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
+        raise ParseCancellationException(out)
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         """
@@ -457,7 +463,10 @@ class TermAST(AST):
                 node.value = self.children[0] == self.children[1]
             node.key = "int"
         elif self.root.value == '!=':
-            node.value = self.children[0] != self.children[1]
+            if type(self.children[0]) != type(self.children[1]):
+                node.value = self.children[0].value != self.children[1].value
+            else:
+                node.value = self.children[0] != self.children[1]
             node.key = "int"
         elif self.root.value == '&&':
             if self.children[0].key == 'char':

@@ -402,7 +402,7 @@ class AstCreator(MathVisitor):
                 if not handle:
                     continue
             # conditional cases
-            if isinstance(ast, If_CondAST) or isinstance(ast, While_loopAST) or isinstance(ast, Else_CondAST):
+            if isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
                 # handle for condition true
                 if ast.condition.value:
                     self.resolve(ast)
