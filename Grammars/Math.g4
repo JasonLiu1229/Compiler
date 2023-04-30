@@ -19,13 +19,17 @@ declr       :   CONST? TYPE (var_decl ',')* var_decl
 printf      :   PRINTF '(' (rvar | rtype | deref) ')';
 
 // TODO: scopes (unnamed)
-scope       :   '{' instr* '}';
+scope       :   '{' ( instr | break_instr | cont_instr )* '}';
+
+cont_instr  :   CONTINUE (';' | DELIM) instr* ;
+
+break_instr :   BREAK (';' | DELIM) instr*;
 
 // TODO: if , else
-if_cond     :   IF '(' cond ')' scope else_cond?;
+if_cond     :   IF '(' condition=cond ')' scope else_cond?;
 else_cond   :   ELSE scope;
-while_loop  :   WHILE '(' cond ')' scope;
-for_loop    :   FOR '(' init ';' cond ';' incr ')' scope;
+while_loop  :   WHILE '(' condition=cond ')' scope;
+for_loop    :   FOR '(' initialization=init ';' condition=cond ';' increment=incr ')' scope;
 
 init        :   TYPE lvar ASSIGN expr
             |   assign;
@@ -149,8 +153,9 @@ DECR        :   '--';
 SP          :   [ ]+ -> skip;
 NEWLINE     :   [\r\n]+ -> skip;
 WS          :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+UNICODE_WS  :   [\p{White_Space}] -> skip; // match all Unicode whitespace
 LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
-DELIM       :   (';')+;
+DELIM       :   [;]+;
 // Comments
 // Ref : https://stackoverflow.com/a/23414078
 COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);

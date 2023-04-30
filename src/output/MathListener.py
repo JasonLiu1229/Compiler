@@ -53,6 +53,24 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#cont_instr.
+    def enterCont_instr(self, ctx:MathParser.Cont_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#cont_instr.
+    def exitCont_instr(self, ctx:MathParser.Cont_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#break_instr.
+    def enterBreak_instr(self, ctx:MathParser.Break_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#break_instr.
+    def exitBreak_instr(self, ctx:MathParser.Break_instrContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#if_cond.
     def enterIf_cond(self, ctx:MathParser.If_condContext):
         pass

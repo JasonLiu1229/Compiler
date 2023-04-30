@@ -34,6 +34,16 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#cont_instr.
+    def visitCont_instr(self, ctx:MathParser.Cont_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#break_instr.
+    def visitBreak_instr(self, ctx:MathParser.Break_instrContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#if_cond.
     def visitIf_cond(self, ctx:MathParser.If_condContext):
         return self.visitChildren(ctx)
