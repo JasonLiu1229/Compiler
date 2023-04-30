@@ -651,3 +651,13 @@ class InitAST(DeclrAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+class BreakAST(InstrAST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+
+
+class ContAST(InstrAST):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
