@@ -109,7 +109,10 @@ class Node:
             self.value = ord(self.value)
         if isinstance(other.value, str) and other.key != "var":
             other.value = ord(other.value)
-        return self.value == other.value and self.key == other.key
+        if not isinstance(self , VarNode) and not isinstance(other, VarNode):
+            return self.value == other.value and self.key == other.key
+        else:
+            return self.value == other.value
 
     def __ne__(self, other):
         return not self.__eq__(other)

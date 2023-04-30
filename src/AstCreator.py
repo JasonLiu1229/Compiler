@@ -107,6 +107,13 @@ class AstCreator(MathVisitor):
                 return i
         return -1
 
+    @staticmethod
+    def lastElse(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], Else_CondAST):
+                return i
+        return -1
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -116,6 +123,7 @@ class AstCreator(MathVisitor):
         # Terminals processing
         index = 0
         indexes = {"last_instr": 0, "last_declr": 0, "last_scope": [0], "last_scope_open": 0, "scope_depth": 0}
+        last_else = None
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr", "term"] and child.root.value is not None:
@@ -174,7 +182,12 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     # assign condition
                     child.condition = child.children[0]
+                    child.condition.parent = child
                     child.children = child.children[1:]
+                    # assign condition to an else conditional if it exists
+                    if last_else is not None:
+                        last_else.condition = copy.copy(child.condition)
+                        last_else.condition.parent = last_else
                     index = base.children.index(child)
                 elif isinstance(child, Else_CondAST):
                     if child.parent is None:
@@ -182,6 +195,7 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     child.children.reverse()
+                    last_else = child
                     index = base.children.index(child)
                 elif isinstance(child, For_loopAST):
                     if child.parent is None:
@@ -191,10 +205,13 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     # assign initialization
                     child.initialization = child.children[0]
+                    child.initialization.parent = child
                     # assign condition
                     child.condition = child.children[1]
+                    child.condition.parent = child
                     # assign increment
                     child.incr = child.children[2]
+                    child.incr.parent = child
                     child.children = child.children[3:]
                     index = base.children.index(child)
                 elif isinstance(child, Scope_AST):
@@ -312,11 +329,17 @@ class AstCreator(MathVisitor):
         not_visited.append(ast_in)
         while len(not_visited) > 0:
             temp = not_visited.pop()
-            if temp not in visited:
-                visited.append(temp)
-                for i in temp.children:
-                    if isinstance(i, AST):
-                        not_visited.append(i)
+            if temp not in visited or isinstance(temp, CondAST):
+                # if a scope, skip
+                if not (isinstance(temp, Scope_AST) and temp is ast_in or temp.parent is ast_in):
+                    visited.append(temp)
+                if not isinstance(temp, Scope_AST) or temp is ast_in or temp.parent is ast_in:
+                    for i in temp.children:
+                        if isinstance(i, AST):
+                            not_visited.append(i)
+                else:
+                    if temp.condition is not None and not isinstance(temp.condition, Node):
+                        not_visited.append(temp.condition)
         visited.reverse()
         self.handle(visited)
         return ast_in
@@ -326,13 +349,15 @@ class AstCreator(MathVisitor):
         updates_queue = []
         incr_queue = []
         decr_queue = []
+        # flags
+        conditional = False
         # initialize symbol table from root
         symbol_table = list_ast[-1].symbolTable
         temp_symbol = symbol_table
-        # temp_parent = list_ast[-1]
-        # while symbol_table is None:
-        #     temp_parent = temp_parent.parent
-        #     symbol_table = temp_parent.symbolTable
+        temp_parent = list_ast[-1].parent
+        while symbol_table is None and temp_parent is not None:
+            temp_parent = list_ast[-1].parent
+            symbol_table = temp_parent.symbolTable
         if symbol_table is None:
             raise RuntimeError("No symbol table found")
         # handle
@@ -343,7 +368,7 @@ class AstCreator(MathVisitor):
                 handle = True
                 for child in ast.children:
                     # unhandled trees
-                    if isinstance(child, AST):
+                    if isinstance(child, AST) and not isinstance(ast, Scope_AST):
                         handle = False
                         break
                     # unreplaced rvars
@@ -352,6 +377,7 @@ class AstCreator(MathVisitor):
                         exists_state = symbol_table.exists(child.value)
                         temp_ast = ast
                         # search in parent scopes if not found
+                        old_symbol = symbol_table
                         while not exists_state and temp_ast is not None:
                             temp_symbol = temp_ast.parent.symbolTable
                             temp_ast = temp_ast.parent
@@ -367,8 +393,24 @@ class AstCreator(MathVisitor):
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                             ast.children[index] = copy.copy(matches[0].object)
+                            temp_symbol = old_symbol
                 if not handle:
                     continue
+            # conditional cases
+            if isinstance(ast, If_CondAST) or isinstance(ast, While_loopAST) or isinstance(ast, Else_CondAST):
+                if ast.condition.value:
+                    # handle thing
+                    self.resolve(ast)
+                    # update symbol table
+                    for update in updates_queue:
+                        temp_symbol.update(update)
+                    updates_queue = []
+                    for entry in ast.children[0].symbolTable.table:
+                        if temp_symbol.exists(entry.object):
+                            updates_queue.append(entry.object)
+                        else:
+                            temp_symbol.insert(entry.object)
+
             # Variable assignment handling
             if ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
@@ -479,13 +521,16 @@ class AstCreator(MathVisitor):
                 for instance in incr_queue:
                     instance = symbol_table.lookup(instance)[0].object
                     instance.value += 1
-                    symbol_table.update(instance)
+                    temp_symbol.update(instance)
                 for instance in decr_queue:
                     instance = symbol_table.lookup(instance)[0].object
                     instance.value -= 1
-                    symbol_table.update(instance)
+                    temp_symbol.update(instance)
                 for instance in updates_queue:
-                    symbol_table.update(instance)
+                    if not temp_symbol.exists(instance):
+                        temp_symbol.insert(SymbolEntry(instance))
+                    else:
+                        temp_symbol.update(instance)
 
                 temp_symbol.refresh()
                 updates_queue = []
@@ -503,11 +548,17 @@ class AstCreator(MathVisitor):
             else:
                 continue
             # Replace node
-            index = ast.parent.children.index(ast)
-            ast.parent.children[index] = node
+            if not isinstance(ast, CondAST):
+                index = ast.parent.children.index(ast)
+                ast.parent.children[index] = node
+            else:
+                ast.parent.condition = node
+                if isinstance(ast.parent, Else_CondAST):
+                    node.value = not node.value
         for instance in updates_queue:
             temp_symbol.update(instance)
         temp_symbol.refresh()
+        symbol_table = temp_symbol
 
     def visitMath(self, ctx: MathParser.MathContext):
         """

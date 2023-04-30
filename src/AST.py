@@ -451,7 +451,10 @@ class TermAST(AST):
         elif self.root.value == '>':
             node = self.children[0] > self.children[1]
         elif self.root.value == '==':
-            node.value = self.children[0] == self.children[1]
+            if type(self.children[0]) != type(self.children[1]):
+                node.value = self.children[0].value == self.children[1].value
+            else:
+                node.value = self.children[0] == self.children[1]
             node.key = "int"
         elif self.root.value == '!=':
             node.value = self.children[0] != self.children[1]
@@ -543,7 +546,7 @@ class Scope_AST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, symbolTable=SymbolTable())
-        self.condition: AST | None = condition
+        self.condition: AST | Node | None = condition
 
     def handle(self):
         return self
