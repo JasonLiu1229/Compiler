@@ -178,12 +178,15 @@ class AstCreator(MathVisitor):
                     if child.parent is None:
                         child.parent = base
                     number = 2
+                    Else_child = None
                     if isinstance(base.children[index - 3], InstrAST):
                         if isinstance(base.children[index - 3].children[0], Else_CondAST):
                             number = 3
+                            Else_child = base.children[index - 3].children[0]
                     child.children = base.children[index - number: index]
                     base.children[index - number: index] = []
                     child.children.reverse()
+                    child.children[number - 1] = Else_child
                     # assign condition
                     child.condition = child.children[0]
                     child.condition.parent = child
