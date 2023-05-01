@@ -928,6 +928,8 @@ class MathParser ( Parser ):
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+            self._param_declr = None # Param_declrContext
+            self.params = list() # of Param_declrContexts
 
         def param_declr(self, i:int=None):
             if i is None:
@@ -964,7 +966,8 @@ class MathParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 189
-            self.param_declr()
+            localctx._param_declr = self.param_declr()
+            localctx.params.append(localctx._param_declr)
             self.state = 194
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -972,7 +975,8 @@ class MathParser ( Parser ):
                 self.state = 190
                 self.match(MathParser.T__1)
                 self.state = 191
-                self.param_declr()
+                localctx._param_declr = self.param_declr()
+                localctx.params.append(localctx._param_declr)
                 self.state = 196
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)

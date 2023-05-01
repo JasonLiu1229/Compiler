@@ -22,7 +22,7 @@ printf          :   PRINTF '(' (rvar | rtype | deref) ')'
                 ;
 
 // Functions
-param_list      :   param_declr (',' param_declr)*
+param_list      :   params+=param_declr (',' params+=param_declr)*
                 ;
 
 param_declr     :   const=CONST? type=TYPE reference=ADDR? pointer=STR* var_decl
