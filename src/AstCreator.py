@@ -826,13 +826,13 @@ class AstCreator(MathVisitor):
                           symbolTable=SymbolTable())
 
     def visitFunc_arg(self, ctx: MathParser.Func_argContext):
-        return Node("func_arg", None)
+        return
 
     def visitArg_list(self, ctx: MathParser.Arg_listContext):
         """
         :return: Node with name args_list and value the number of arguments
         """
-        return Node("args_list", len(ctx.args))
+        # return Node("args_list", len(ctx.args))
 
     def visitFunc_call(self, ctx: MathParser.Func_callContext):
         """
