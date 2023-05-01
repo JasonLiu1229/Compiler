@@ -126,6 +126,7 @@ primary     : rvar
             | deref
             | '(' expr ')'
             | CAST primary
+            | func_call
             ;
 
 rtype       :   INT
