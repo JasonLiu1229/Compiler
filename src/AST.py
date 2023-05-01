@@ -672,14 +672,19 @@ class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+
 class FuncParametersAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
-                 parameters: list[FuncParameter]=None):
+                 parameters: list[FuncParameter] = None):
         super().__init__(root, children, parent, symbolTable)
         if parameters is None:
             parameters = []
-        self.parameters =[]
+        self.parameters = []
+
+    def handle(self):
+        return self
+
 
 class FuncDeclAST(AST):
 
@@ -695,10 +700,24 @@ class FuncDeclAST(AST):
             params = []
         self.params: FuncParametersAST = params
 
+    def handle(self):
+        return self
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        for child in self.children:
+            if isinstance(child, FuncParametersAST):
+                out[name].append({"Parameters": child.save()})
+        return out
+
+
 class FuncDefnAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
-                 return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0, params: FuncParametersAST = None):
+                 return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
+                 params: FuncParametersAST = None):
         super().__init__(root, children, parent, symbolTable)
         self.type: str = return_type
         self.const: bool = const
@@ -708,19 +727,51 @@ class FuncDefnAST(AST):
             params = []
         self.params: FuncParametersAST = params
 
+    def handle(self):
+        return self
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        for child in self.children:
+            if isinstance(child, FuncParametersAST):
+                out[name].append({"Parameters": child.save()})
+            else:
+                out[name].append({"Body": child.save()})
+        return out
+
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
-                 args: list= None):
+                 args: list = None):
         super().__init__(root, children, parent, symbolTable)
         if args is None:
             args = []
         self.args = args
 
+    def handle(self):
+        return self
+
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        out[name].append({"parameters": [child.save() for child in self.children]})
+        return out
+
+
 class FuncScopeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, SymbolTable())
 
+    def handle(self):
+        return self
+
+
 class ReturnInstr(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+    def handle(self):
+        return self

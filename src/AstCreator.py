@@ -186,6 +186,7 @@ class AstCreator(MathVisitor):
                     for i in reversed(range(1, amt + 1)):
                         child.args[i - 1] = base.children[index - i]
                     base.children[index - amt:index] = []
+                    child.children = child.args
                     index = base.children.index(child)
                 elif isinstance(child, FuncDefnAST):
                     last_func = self.lastFuncScope(index=index, in_list=base.children)
@@ -400,7 +401,7 @@ class AstCreator(MathVisitor):
                     if temp.condition is not None and not isinstance(temp.condition, Node):
                         not_visited.append(temp.condition)
         visited.reverse()
-        self.handle(visited)
+        # self.handle(visited)
         return ast_in
 
     def handle(self, list_ast: list):
