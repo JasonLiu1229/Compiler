@@ -77,6 +77,24 @@ class AstCreator(MathVisitor):
             return self.visitCont_instr(ctx)
         elif isinstance(ctx, MathParser.Break_instrContext):
             return self.visitBreak_instr(ctx)
+        elif isinstance(ctx, MathParser.Func_defnContext):
+            return self.visitFunc_defn(ctx)
+        elif isinstance(ctx, MathParser.Func_declContext):
+            return self.visitFunc_decl(ctx)
+        elif isinstance(ctx, MathParser.Arg_listContext):
+            return self.visitArg_list(ctx)
+        elif isinstance(ctx, MathParser.Func_callContext):
+            return self.visitFunc_call(ctx)
+        elif isinstance(ctx, MathParser.Func_scopeContext):
+            return self.visitFunc_scope(ctx)
+        elif isinstance(ctx, MathParser.Func_argContext):
+            return self.visitFunc_arg(ctx)
+        elif isinstance(ctx, MathParser.Param_declrContext):
+            return self.visitParam_declr(ctx)
+        elif isinstance(ctx, MathParser.Param_listContext):
+            return self.visitParam_list(ctx)
+        elif isinstance(ctx, MathParser.Return_instrContext):
+            return self.visitReturn_instr(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -156,7 +174,7 @@ class AstCreator(MathVisitor):
                     pass
                 elif isinstance(child, FuncDefnAST):
                     pass
-                elif isinstance(child, FuncParameterAST):
+                elif isinstance(child, FuncParametersAST):
                     pass
                 elif isinstance(child, CondAST):
                     child.children = base.children[index - 2: index]
@@ -785,28 +803,58 @@ class AstCreator(MathVisitor):
         return BreakAST(Node("break", None))
 
     def visitParam_list(self, ctx: MathParser.Param_listContext):
-        return FuncParameterAST(Node("parameter", None))
+        out = FuncParametersAST(Node("parameter", None), parameters=list(None for p in ctx.params))
+        return out
 
     def visitParam_declr(self, ctx: MathParser.Param_declrContext):
-        return super().visitParam_declr(ctx)
+        out = FuncParameter(key= ctx.var.text, value= None, vtype=ctx.type_.text, const=(ctx.const is not None),
+                            ptr=(ctx.ptr is not None),
+                            deref_level=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                            total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                            const_ptr=(ctx.const is not None and ctx.ptr is not None),
+                            reference=(ctx.reference is not None))
+        return out
 
     def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
-        return FuncDefnAST(Node("", None))
+        return FuncDefnAST(root=Node(ctx.name.text, None),const= (ctx.const is not None), return_type=ctx.type_.text,
+                          ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                          symbolTable=SymbolTable())
 
     def visitFunc_decl(self, ctx: MathParser.Func_declContext):
-        return FuncDeclAST(Node("", None))
+        return FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+                          ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                          symbolTable=SymbolTable())
+
+    def visitFunc_arg(self, ctx: MathParser.Func_argContext):
+        return Node("func_arg", None)
 
     def visitArg_list(self, ctx: MathParser.Arg_listContext):
-        return super().visitArg_list(ctx)
+        """
+        :return: Node with name args_list and value the number of arguments
+        """
+        return Node("args_list", len(ctx.args))
 
     def visitFunc_call(self, ctx: MathParser.Func_callContext):
-        return FuncCallAST(Node("", None))
+        """
+        :return: A FuncCallAST.
+        Key is the name of the function being called and value is None.
+        Args is an empty initialized list with the size of the number of arguments
+        """
+        out = FuncCallAST(Node(ctx.name.text, None))
+        if ctx.args is not None:
+            out.args = [None for arg in ctx.args.args]
+        return out
 
     def visitFunc_scope(self, ctx: MathParser.Func_scopeContext):
-        return FuncScopeAST(Node("", None))
+        """
+        :return: A FuncScopeAST.
+        The key is the name of the function it belongs to.
+        The value is None.
+        """
+        return FuncScopeAST(Node(ctx.parentCtx.name.text, None))
 
     def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
-        return super().visitReturn_instr(ctx)
+        return ReturnInstr(Node("return", None))
 
     @staticmethod
     def convert(value, d_type):
