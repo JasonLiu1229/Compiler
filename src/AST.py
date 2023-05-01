@@ -685,6 +685,8 @@ class FuncParametersAST(AST):
     def handle(self):
         return self
 
+    def save(self):
+        return [child.save() for child in self.children]
 
 class FuncDeclAST(AST):
 
@@ -711,6 +713,10 @@ class FuncDeclAST(AST):
             if isinstance(child, FuncParametersAST):
                 out[name].append({"Parameters": child.save()})
         return out
+
+    def getDict(self):
+        return {f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}": self.root.value}, \
+            f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}"
 
 
 class FuncDefnAST(AST):
@@ -741,6 +747,9 @@ class FuncDefnAST(AST):
                 out[name].append({"Body": child.save()})
         return out
 
+    def getDict(self):
+        return {f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}": self.root.value}, \
+            f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}"
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
