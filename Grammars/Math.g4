@@ -12,7 +12,6 @@ instr           :   declr ((';')+ | DELIM)
                 |   for_loop (';')*
                 |   func_defn ((';')* | DELIM)
                 |   func_decl ((';')+ | DELIM)
-                |   func_call ((';')+ | DELIM)
                 ;
 
 declr           :   CONST? TYPE (var_decl ',')* var_decl
@@ -25,8 +24,8 @@ printf          :   PRINTF '(' (rvar | rtype | deref) ')'
 param_list      :   params+=param_declr (',' params+=param_declr)*
                 ;
 
-param_declr     :   const=CONST? type=TYPE reference=ADDR? pointer=STR* var_decl
-                |   const=CONST? type=TYPE pointer=STR* reference=ADDR? var_decl
+param_declr     :   const=CONST? type=TYPE reference=ADDR? ptr+=STR* var=VAR_NAME (ASSIGN default=expr)?
+                |   const=CONST? type=TYPE ptr+=STR* reference=ADDR? var=VAR_NAME (ASSIGN default=expr)?
                 ;
 
 func_defn       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')' func_scope
@@ -35,10 +34,15 @@ func_defn       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME
 func_decl       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')'
                 ;
 
-arg_list        :   (lvar | func_call | rtype) (',' (lvar | func_call | rtype))+?
+arg_list        :   args+=func_arg (',' args+=func_arg)+?
+                ;
+func_arg        :   rvar
+                |   deref
+                |   func_call
+                |   rtype
                 ;
 
-func_call       :   VAR_NAME '(' arg_list? ')'
+func_call       :   name=VAR_NAME '(' args=arg_list? ')'
                 ;
 
 func_scope      :   '{'(return_instr | instr)* '}'
@@ -99,7 +103,7 @@ deref           :   STR deref
                 |   STR rvar
                 ;
 
-lvar            :   STR* VAR_NAME
+lvar            :   ptr+=STR* name=VAR_NAME
                 ;
 
 rvar            :   VAR_NAME

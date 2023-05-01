@@ -54,6 +54,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#func_arg.
+    def visitFunc_arg(self, ctx:MathParser.Func_argContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#func_call.
     def visitFunc_call(self, ctx:MathParser.Func_callContext):
         return self.visitChildren(ctx)

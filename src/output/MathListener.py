@@ -89,6 +89,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#func_arg.
+    def enterFunc_arg(self, ctx:MathParser.Func_argContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#func_arg.
+    def exitFunc_arg(self, ctx:MathParser.Func_argContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#func_call.
     def enterFunc_call(self, ctx:MathParser.Func_callContext):
         pass
