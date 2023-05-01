@@ -39,7 +39,7 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         # Get all tokens in this line or the next one
         line_text = ""
         for token in input_stream.tokens[:input_stream.index]:
-            if token.line in range(line-1 , line):
+            if token.line in range(line - 1, line):
                 line_text += token.text
 
         out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
@@ -570,7 +570,7 @@ class If_CondAST(Scope_AST):
         return self
 
     def getDict(self):
-        return {"if" : self.condition.save()} , "if"
+        return {"if": self.condition.save()}, "if"
 
     def save(self):
         out, name = self.getDict()
@@ -591,7 +591,7 @@ class Else_CondAST(Scope_AST):
         super().__init__(root, children, parent)
 
     def getDict(self):
-        return {"else" : None} , "else"
+        return {"else": None}, "else"
 
     def save(self):
         out, name = self.getDict()
@@ -614,7 +614,7 @@ class For_loopAST(Scope_AST):
         return self
 
     def getDict(self):
-        return {"for" : [self.initialization.save() , self.condition.save() , self.incr.save()]} , "for"
+        return {"for": [self.initialization.save(), self.condition.save(), self.incr.save()]}, "for"
 
     def save(self):
         out, name = self.getDict()
@@ -637,7 +637,7 @@ class While_loopAST(Scope_AST):
         return self
 
     def getDict(self):
-        return {"while" : [self.condition.save()]} , "while"
+        return {"while": [self.condition.save()]}, "while"
 
     def save(self):
         out, name = self.getDict()
@@ -661,6 +661,7 @@ class InitAST(DeclrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+
 class BreakAST(InstrAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -670,3 +671,33 @@ class BreakAST(InstrAST):
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+
+class FuncDeclAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+
+class FuncDefnAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+
+class FuncCallAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+
+class FuncScopeAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, SymbolTable())
+
+
+class FuncParameterAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)

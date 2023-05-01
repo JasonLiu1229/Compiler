@@ -150,6 +150,14 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
+                elif isinstance(child, FuncDeclAST):
+                    pass
+                elif isinstance(child, FuncCallAST):
+                    pass
+                elif isinstance(child, FuncDefnAST):
+                    pass
+                elif isinstance(child, FuncParameterAST):
+                    pass
                 elif isinstance(child, CondAST):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
@@ -219,7 +227,7 @@ class AstCreator(MathVisitor):
                     child.incr.parent = child
                     child.children = child.children[3:]
                     index = base.children.index(child)
-                elif isinstance(child, Scope_AST):
+                elif isinstance(child, Scope_AST) or isinstance(child, FuncScopeAST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
                     if len(indexes["last_scope"]) < indexes["scope_depth"]:
@@ -775,6 +783,30 @@ class AstCreator(MathVisitor):
 
     def visitBreak_instr(self, ctx: MathParser.Break_instrContext):
         return BreakAST(Node("break", None))
+
+    def visitParam_list(self, ctx: MathParser.Param_listContext):
+        return FuncParameterAST(Node("parameter", None))
+
+    def visitParam_declr(self, ctx: MathParser.Param_declrContext):
+        return super().visitParam_declr(ctx)
+
+    def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
+        return FuncDefnAST(Node("", None))
+
+    def visitFunc_decl(self, ctx: MathParser.Func_declContext):
+        return FuncDeclAST(Node("", None))
+
+    def visitArg_list(self, ctx: MathParser.Arg_listContext):
+        return super().visitArg_list(ctx)
+
+    def visitFunc_call(self, ctx: MathParser.Func_callContext):
+        return FuncCallAST(Node("", None))
+
+    def visitFunc_scope(self, ctx: MathParser.Func_scopeContext):
+        return FuncScopeAST(Node("", None))
+
+    def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
+        return super().visitReturn_instr(ctx)
 
     @staticmethod
     def convert(value, d_type):
