@@ -18,5 +18,6 @@ int main(){
 //    }
 //    return 0;
     int x = 2;
-    int result = mul(x,x);
+    int y = 6;
+    int result = mul(x,y);
 }

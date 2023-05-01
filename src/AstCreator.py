@@ -136,6 +136,14 @@ class AstCreator(MathVisitor):
                 return i
         return -1
 
+    @staticmethod
+    def lastFuncScope(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], FuncScopeAST):
+                return i
+        return -1
+
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -169,13 +177,33 @@ class AstCreator(MathVisitor):
                     base.children[index - 1: index] = []
                     index -= 1
                 elif isinstance(child, FuncDeclAST):
-                    pass
+                    child.children = base.children[index-1: index]
+                    base.children[index-1: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
                 elif isinstance(child, FuncCallAST):
-                    pass
+                    amt = len(child.args)
+                    for i in reversed(range(1, amt + 1)):
+                        child.args[i - 1] = base.children[index - i]
+                    base.children[index - amt:index] = []
+                    index = base.children.index(child)
                 elif isinstance(child, FuncDefnAST):
-                    pass
+                    last_func = self.lastFuncScope(index=index, in_list=base.children)
+                    child.children = base.children[last_func: index]
+                    base.children[last_func: index] = []
+                    child.children.reverse()
+                    if isinstance(child.children[0], FuncParametersAST):
+                        child.params = child.children[0].parameters
+                    index = base.children.index(child)
                 elif isinstance(child, FuncParametersAST):
-                    pass
+                    last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
+                    last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
+                    last_det = max(last_inst, last_func)
+                    child.children = base.children[last_det + 1: index]
+                    base.children[last_det + 1: index] = []
+                    child.children.reverse()
+                    child.parameters = child.children
+                    index = base.children.index(child)
                 elif isinstance(child, CondAST):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
