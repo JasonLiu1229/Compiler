@@ -29,10 +29,10 @@ param_declr     :   const=CONST? type=TYPE reference=ADDR? pointer=STR* var_decl
                 |   const=CONST? type=TYPE pointer=STR* reference=ADDR? var_decl
                 ;
 
-func_defn       :   CONST? (TYPE | VOID) STR* VAR_NAME '(' params=param_list? ')' func_scope
+func_defn       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')' func_scope
                 ;
 
-func_decl       :   CONST? (TYPE | VOID) STR* VAR_NAME '(' params=param_list? ')'
+func_decl       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')'
                 ;
 
 arg_list        :   (lvar | func_call | rtype) (',' (lvar | func_call | rtype))+?
