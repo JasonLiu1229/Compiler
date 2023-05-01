@@ -257,6 +257,28 @@ class VarNode(Node):
             out += str(self.value)
         return out
 
+class FuncParameter(VarNode):
+
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
+                 total_deref: int = 0, const_ptr: bool = False, reference: bool = False) -> None:
+        """
+
+        :param key:
+        :param value:
+        :param vtype:
+        :param const:
+        :param ptr:
+        :param deref_level:
+        :param total_deref:
+        :param const_ptr:
+        :param reference:
+        """
+        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr)
+        self.reference = reference
+
+    def __repr__(self) -> str:
+        return f"{'& ' if self.reference else ''}{super().__repr__()}"
+
 
 class FunctionNode(Node):
 

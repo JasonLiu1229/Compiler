@@ -1,7 +1,7 @@
 from math import floor
 from pprint import pprint
 from typing import Any
-from Node import Node, VarNode, FunctionNode
+from Node import Node, VarNode, FunctionNode, FuncParameter
 import antlr4.error.ErrorListener
 import antlr4.error.ErrorStrategy
 import json
@@ -672,32 +672,55 @@ class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+class FuncParametersAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
+                 parameters: list[FuncParameter]=None):
+        super().__init__(root, children, parent, symbolTable)
+        if parameters is None:
+            parameters = []
+        self.parameters =[]
 
 class FuncDeclAST(AST):
 
-    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
+                 return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
+                 params: FuncParametersAST = None):
         super().__init__(root, children, parent, symbolTable)
-
+        self.type: str = return_type
+        self.const: bool = const
+        self.ptr: bool = ptr
+        self.ptr_level: int = ptr_level
+        if params is None:
+            params = []
+        self.params: FuncParametersAST = params
 
 class FuncDefnAST(AST):
 
-    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
+                 return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0, params: FuncParametersAST = None):
         super().__init__(root, children, parent, symbolTable)
+        self.type: str = return_type
+        self.const: bool = const
+        self.ptr: bool = ptr
+        self.ptr_level: int = ptr_level
+        if params is None:
+            params = []
+        self.params: FuncParametersAST = params
 
 
 class FuncCallAST(AST):
-
-    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
+                 args: list= None):
         super().__init__(root, children, parent, symbolTable)
-
+        if args is None:
+            args = []
+        self.args = args
 
 class FuncScopeAST(AST):
-
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, SymbolTable())
 
-
-class FuncParameterAST(AST):
-
-    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
-        super().__init__(root, children, parent, symbolTable)
+class ReturnInstr(InstrAST):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
