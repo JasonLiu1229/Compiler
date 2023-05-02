@@ -151,7 +151,7 @@ class AST:
     @staticmethod
     def getEntry(entry):
         out = None
-        temp_symbol = None if isinstance(entry,Node) else entry.symbolTable
+        temp_symbol = None if isinstance(entry, Node) else entry.symbolTable
         temp_parent = entry.parent
         found = False
         while not found and temp_parent is not None:
@@ -874,37 +874,75 @@ class While_loopAST(Scope_AST):
 
         # handle everything separately
         for current in visited:
-            pass
+            indexL, indexR = 0, 0
+            leftChild = current.children[0]
+            rightChild = current.children[1]
+            if isinstance(leftChild, VarNode):
+                entry = self.getEntry(leftChild)
+                if entry is not None:
+                    indexL = entry.register
+                    out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
+                    index += 1
+            else:
+                indexL = leftChild.value
 
-        # indexL, indexR = 0, 0
-        #
-        # if isinstance(leftChild, VarNode):
-        #     entry = self.getEntry(leftChild)
-        #     if entry is not None:
-        #         indexL = entry.register
-        #         out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
-        #         index += 1
-        #
-        # if isinstance(rightChild, VarNode):
-        #     entry = self.getEntry(rightChild)
-        #     if entry is not None:
-        #         indexR = entry.register
-        #         out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
-        #         index += 1
-        # operand = self.condition.root.value
-        # if operand == '<':
-        #     pass
-        # elif operand == '>':
-        #     pass
-        # elif operand == '==':
-        #     pass
-        # elif operand == '!=':
-        #     pass
-        # elif operand == '<=':
-        #     pass
-        # elif operand == '>=':
-        #     pass
+            if isinstance(rightChild, VarNode):
+                entry = self.getEntry(rightChild)
+                if entry is not None:
+                    indexR = entry.register
+                    out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
+                    index += 1
+            else:
+                indexR = rightChild.value
+
+            operand = current.root.value
+            currenType = None
+            if isinstance(leftChild, VarNode):
+                currenType = leftChild.type
+            elif isinstance(rightChild, VarNode):
+                currenType = rightChild
+            else:
+                currenType = leftChild.key
+            convertedType = getLLVMType(currenType)
+            if operand == '<':
+                out += f"%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '>':
+                out += f"%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '==':
+                out += f"%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '!=':
+                out += f"%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '<=':
+                out += f"%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '>=':
+                out += f"%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '&&':
+                out += f"%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
+            elif operand == '||':
+                out += f"%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+                index += 1
         return out, index
+
+    def llvm_block2(self, out, index, blocks):
+        pass
+
+    def llvm_block3(self, out, index, blocks):
+        pass
 
     def llvm(self, scope: bool = False, index: int = 1) -> str:
         blocks = {"1": index, "2": index + 1, "3": index + 2}
