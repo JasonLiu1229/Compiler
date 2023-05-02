@@ -1,8 +1,9 @@
 grammar Math;
 
-math            :   instr* EOF
+math            :   incl_stat* instr* EOF
                 ;
 instr           :   declr ((';')+ | DELIM)
+                |   array_decl ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
                 |   printf ((';')+ | DELIM)
                 |   assign ((';')+ | DELIM)
@@ -60,6 +61,19 @@ cont_instr      :   CONTINUE (';' | DELIM) instr*
 
 break_instr     :   BREAK (';' | DELIM) instr*
                 ;
+
+// TODO: Arrays
+array_decl      :   const=CONST? type=TYPE name=VAR_NAME '[' size=INT? ']' ASSIGN '{' (values+=rtype ',')* values+=rtype '}'
+                |   const=CONST? type=TYPE name=VAR_NAME '[' size=INT ']'
+                ;
+
+// TODO: printf (modified) and scanf
+
+
+// TODO: #include statements
+incl_stat       :   '#include' LT VAR_NAME GT
+                ;
+
 
 // TODO: for , while , break and continue -> translate for to while
 // TODO: switch(case, break, default) -> translate switch to if
