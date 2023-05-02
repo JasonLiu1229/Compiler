@@ -481,9 +481,17 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, For_loopAST):
                 self.resolve(ast.condition)
                 ast.incr.children[0] = AST.getEntry(ast.incr.children[0])
+                ast.children[0].children.append(InstrAST(Node("instr", None), [ast.incr]))
+                ast.children[0].children[-1].parent = ast.children[0]
                 # self.resolve(ast.initialization)
+                temp = While_loopAST(Node("while", None), ast.children, ast.parent)
+                temp.condition = ast.condition
+                index = ast.parent.children.index(ast)
+                ast.parent.children[index] = temp
+                ast = temp
+                for child in ast.children:
+                    child.parent = ast
                 node = ast
-
             # Variable assignment handling
             elif ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
@@ -526,7 +534,10 @@ class AstCreator(MathVisitor):
                 new_entry.value = ast.children[1].value
                 temp_symbol.insert(SymbolEntry(new_entry))
                 updates_queue.append(new_entry)
-                node = ast
+                old_parent = ast.parent
+                ast.parent = ast.parent.parent
+                ast.parent.children.insert(ast.parent.children.index(old_parent), ast)
+                node = InstrAST(Node("instr", None), [new_entry])
             elif isinstance(ast, DeclrAST):
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
