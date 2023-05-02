@@ -1122,3 +1122,30 @@ class ReturnInstr(InstrAST):
 
     def handle(self):
         return self
+
+
+class ScanfAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+        self.variables = []
+        self.types = []
+
+    def handle(self):
+        return self
+
+
+class ArrayDeclAST(AST):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+    def handle(self):
+        return self
+
+
+class IncludeAST(AST):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+    def handle(self):
+        return self
