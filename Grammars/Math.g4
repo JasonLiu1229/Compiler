@@ -188,10 +188,7 @@ CHAR            :   ('\'' . '\'')
 STRING          :   '"' (.)*? '"';
 SCANF_TYPES     :   '"' ARG_TYPES '"';
 PRINTF_STRING   :   '"' ((.) | ARG_TYPES)*? '"';
-ARG_TYPES       :   '%d'
-                |   '%f'
-                |   '%s'
-                ;
+ARG_TYPES       :   '%' ('#' | '-' | '+' | '.')? (INT)? (.);
 // Operations
 STR             :   '*';
 DIV             :   '/';
