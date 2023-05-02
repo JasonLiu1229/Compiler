@@ -19,10 +19,11 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' string_input+=PRINTF_STRING (',' (vars+=rvar ',')* vars+=rvar)? ')'
+printf          :   PRINTF '(' string_input+=PRINTF_STRING* (',' (vars+=rvar ',')* vars+=rvar )? ')'
+                |   PRINTF '(' (rvar | rtype) ')'
                 ;
 
-scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar')'
+scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar ')'
                 ;
 
 // Functions
