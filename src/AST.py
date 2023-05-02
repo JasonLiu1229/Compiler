@@ -158,8 +158,10 @@ class AST:
             temp_symbol = temp_parent.symbolTable if isinstance(temp_parent, AST) else None
             temp_parent = temp_parent.parent
             if temp_symbol is not None:
-                if temp_symbol.exists(entry) or temp_symbol.exists(entry.value):
-                    return temp_symbol.lookup(entry)[0]
+                if temp_symbol.exists(entry):
+                    return temp_symbol.lookup(entry)[0].object
+                elif temp_symbol.exists(entry.value):
+                    return temp_symbol.lookup(entry.value)[0].object
         return out
 
     def __repr__(self) -> str:
