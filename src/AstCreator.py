@@ -480,7 +480,10 @@ class AstCreator(MathVisitor):
 
             elif isinstance(ast, For_loopAST):
                 self.resolve(ast.condition)
-                ast.incr.children[0] = AST.getEntry(ast.incr.children[0])
+                entry = AST.getEntry(ast.incr.children[0])
+                if entry is None:
+                    raise ReferenceError(f"Variable {ast.incr.children[0].value} was not declared")
+                ast.incr.children[0] = entry
                 ast.children[0].children.append(InstrAST(Node("instr", None), [ast.incr]))
                 ast.children[0].children[-1].parent = ast.children[0]
                 # self.resolve(ast.initialization)
