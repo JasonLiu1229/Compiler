@@ -80,7 +80,12 @@ Example code with only the input directory and file extension
 cd src || exit &
 python3 run.py -d ../input_files/ -t .c -a
 ```
-
+How to compile the grammar:
+1. Go to Grammar folder using ```cd``` command
+2. Execute the following command:
+```shell
+antlr4 -o ../src/output -listener -visitor -Dlanguage=Python3 Math.g4  
+```
 
 <a name="Files"></a>
 ### Files
