@@ -66,12 +66,10 @@ cont_instr      :   CONTINUE (';' | DELIM) instr*
 break_instr     :   BREAK (';' | DELIM) instr*
                 ;
 
-// TODO: Arrays
 array_decl      :   const=CONST? type=TYPE name=VAR_NAME '[' size=INT? ']' ASSIGN '{' (values+=rtype ',')* values+=rtype '}'
                 |   const=CONST? type=TYPE name=VAR_NAME '[' size=INT ']'
                 ;
 
-// TODO: #include statements
 incl_stat       :   INCLUDE LT library=VAR_NAME GT
                 ;
 
