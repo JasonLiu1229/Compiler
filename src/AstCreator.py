@@ -398,8 +398,10 @@ class AstCreator(MathVisitor):
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
                 else:
-                    if temp.condition is not None and not isinstance(temp.condition, Node):
-                        not_visited.append(temp.condition)
+                    if isinstance(temp, For_loopAST) and temp.initialization is not None:
+                        not_visited.append(temp.initialization)
+                    # if temp.condition is not None and not isinstance(temp.condition, Node):
+                    #     not_visited.append(temp.condition)
         visited.reverse()
         ast_in.symbolTable = self.handle(visited)
         return ast_in
@@ -423,7 +425,6 @@ class AstCreator(MathVisitor):
         # handle
         temp_symbol = symbol_table
         for ast in list_ast:
-            # TODO: disable constant folding for declarations in scopes
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -465,35 +466,22 @@ class AstCreator(MathVisitor):
             # conditional cases
             if isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
                 ast.symbolTable = temp_symbol
+                self.resolve(ast.condition)
                 # handle for condition true
                 self.resolve(ast.children[0])
                 self.resolve(ast.children[-1])
-                # if ast.condition.last_eval:
-                #     self.resolve(ast.children[0])
-                #     # ast.symbolTable = ast.children[0].symbolTable
-                # # handle for else
-                # elif not ast.condition.last_eval and isinstance(ast.children[-1], Else_CondAST):
-                #     self.resolve(ast.children[-1])
-                    # ast.symbolTable = ast.children[-1].children[0].symbolTable
-                # if evaluate:
-                #     # update symbol table
-                #     for update in updates_queue:
-                #         temp_symbol.update(update)
-                #     updates_queue = []
-                #     for entry in ast.symbolTable.table:
-                #         if temp_symbol.exists(entry.object):
-                #             updates_queue.append(entry.object)
-                #         else:
-                #             temp_symbol.insert(entry.object)
-                # else:
-                #     for element in ast.condition.children:
-                #         if isinstance(element, VarNode):
-                #             element.value = None
                 node = ast
 
             elif isinstance(ast, While_loopAST):
+                self.resolve(ast.condition)
                 ast.symbolTable = temp_symbol
                 self.resolve(ast.children[0])
+                node = ast
+
+            elif isinstance(ast, For_loopAST):
+                self.resolve(ast.condition)
+                ast.incr.children[0] = AST.getEntry(ast.incr.children[0])
+                # self.resolve(ast.initialization)
                 node = ast
 
             # Variable assignment handling
@@ -528,6 +516,17 @@ class AstCreator(MathVisitor):
                 else:
                     raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
+            elif isinstance(ast, InitAST):
+                # check if variable already exists
+                if symbol_table.exists(ast.children[0]):
+                    raise ReferenceError(f"Redeclaration of variable {ast.children[0].key}")
+                new_entry = ast.children[0]
+                new_entry.type = ast.type
+                new_entry.const = ast.const
+                new_entry.value = ast.children[1].value
+                temp_symbol.insert(SymbolEntry(new_entry))
+                updates_queue.append(new_entry)
+                node = ast
             elif isinstance(ast, DeclrAST):
                 if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                     raise RuntimeError("Faulty declaration")
@@ -647,7 +646,7 @@ class AstCreator(MathVisitor):
             else:
                 continue
             # Replace node
-            if not isinstance(ast, CondAST):
+            if not isinstance(ast, CondAST) and not isinstance(ast, InitAST):
                 index = ast.parent.children.index(ast)
                 ast.parent.children[index] = node
             else:
