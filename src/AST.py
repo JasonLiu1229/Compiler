@@ -938,6 +938,12 @@ class While_loopAST(Scope_AST):
                 index += 1
         return out, index
 
+    def llvm_block2(self, out, index, blocks):
+        pass
+    def llvm_block3(self, out, index, blocks):
+        pass
+
+
     def llvm(self, scope: bool = False, index: int = 1) -> str:
         blocks = {"1": index, "2": index + 1, "3": index + 2}
         index += 2
