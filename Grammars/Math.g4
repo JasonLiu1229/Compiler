@@ -94,7 +94,7 @@ init            :   TYPE lvar ASSIGN expr
 
 cond            :   term (GEQ | LEQ | NEQ) factor
                 |   term (GT | LT | EQ) factor
-                |   term (AND_OP | OR_OP) factor
+                |   expr (AND_OP | OR_OP) term
                 ;
 
 incr            :   INCR rvar
@@ -125,13 +125,13 @@ rvar            :   VAR_NAME
 expr            :   term
                 |   expr SUM term
                 |   expr DIF term
+                |   expr (AND_OP | OR_OP) term
                 ;
 
 term            :   factor
                 |   term (STR | DIV | MOD) factor
                 |   term (GT | LT | EQ) factor
                 |   term (GEQ | LEQ | NEQ) factor
-                |   term (AND_OP | OR_OP) factor
                 |   (NOT_OP) factor
                 |   term (INCR | DECR)
                 ;

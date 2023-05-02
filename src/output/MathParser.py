@@ -53,8 +53,8 @@ def serializedATN():
         8,25,1,26,1,26,1,26,1,26,1,26,3,26,493,8,26,1,27,1,27,1,27,1,27,
         1,27,1,27,1,27,1,27,3,27,503,8,27,1,28,1,28,1,28,1,28,3,28,509,8,
         28,1,29,5,29,512,8,29,10,29,12,29,515,9,29,1,29,1,29,1,30,1,30,1,
-        31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,5,31,530,8,31,10,31,12,
-        31,533,9,31,1,32,1,32,1,32,1,32,3,32,539,8,32,1,32,1,32,1,32,1,32,
+        31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,1,31,5,31,533,
+        8,31,10,31,12,31,536,9,31,1,32,1,32,1,32,1,32,3,32,542,8,32,1,32,
         1,32,1,32,1,32,1,32,1,32,1,32,1,32,1,32,1,32,1,32,5,32,555,8,32,
         10,32,12,32,558,9,32,1,33,1,33,1,33,1,33,1,33,1,33,1,33,3,33,567,
         8,33,1,34,1,34,1,34,1,34,1,34,1,34,1,34,1,34,1,34,1,34,1,34,1,34,
@@ -69,7 +69,7 @@ def serializedATN():
         0,0,36,420,1,0,0,0,38,426,1,0,0,0,40,434,1,0,0,0,42,437,1,0,0,0,
         44,443,1,0,0,0,46,459,1,0,0,0,48,473,1,0,0,0,50,485,1,0,0,0,52,492,
         1,0,0,0,54,502,1,0,0,0,56,508,1,0,0,0,58,513,1,0,0,0,60,518,1,0,
-        0,0,62,520,1,0,0,0,64,538,1,0,0,0,66,566,1,0,0,0,68,580,1,0,0,0,
+        0,0,62,520,1,0,0,0,64,541,1,0,0,0,66,566,1,0,0,0,68,580,1,0,0,0,
         70,582,1,0,0,0,72,74,3,36,18,0,73,72,1,0,0,0,74,77,1,0,0,0,75,73,
         1,0,0,0,75,76,1,0,0,0,76,81,1,0,0,0,77,75,1,0,0,0,78,80,3,2,1,0,
         79,78,1,0,0,0,80,83,1,0,0,0,81,79,1,0,0,0,81,82,1,0,0,0,82,84,1,
@@ -188,7 +188,7 @@ def serializedATN():
         27,0,459,453,1,0,0,0,459,458,1,0,0,0,460,47,1,0,0,0,461,462,3,64,
         32,0,462,463,7,1,0,0,463,464,3,66,33,0,464,474,1,0,0,0,465,466,3,
         64,32,0,466,467,7,2,0,0,467,468,3,66,33,0,468,474,1,0,0,0,469,470,
-        3,64,32,0,470,471,7,3,0,0,471,472,3,66,33,0,472,474,1,0,0,0,473,
+        3,62,31,0,470,471,7,3,0,0,471,472,3,64,32,0,472,474,1,0,0,0,473,
         461,1,0,0,0,473,465,1,0,0,0,473,469,1,0,0,0,474,49,1,0,0,0,475,476,
         5,51,0,0,476,486,3,60,30,0,477,478,5,52,0,0,478,486,3,60,30,0,479,
         480,3,60,30,0,480,481,5,51,0,0,481,486,1,0,0,0,482,483,3,60,30,0,
@@ -203,16 +203,16 @@ def serializedATN():
         508,506,1,0,0,0,509,57,1,0,0,0,510,512,5,35,0,0,511,510,1,0,0,0,
         512,515,1,0,0,0,513,511,1,0,0,0,513,514,1,0,0,0,514,516,1,0,0,0,
         515,513,1,0,0,0,516,517,5,27,0,0,517,59,1,0,0,0,518,519,5,27,0,0,
-        519,61,1,0,0,0,520,521,6,31,-1,0,521,522,3,64,32,0,522,531,1,0,0,
-        0,523,524,10,2,0,0,524,525,5,38,0,0,525,530,3,64,32,0,526,527,10,
-        1,0,0,527,528,5,39,0,0,528,530,3,64,32,0,529,523,1,0,0,0,529,526,
-        1,0,0,0,530,533,1,0,0,0,531,529,1,0,0,0,531,532,1,0,0,0,532,63,1,
-        0,0,0,533,531,1,0,0,0,534,535,6,32,-1,0,535,539,3,66,33,0,536,537,
-        5,48,0,0,537,539,3,66,33,0,538,534,1,0,0,0,538,536,1,0,0,0,539,556,
-        1,0,0,0,540,541,10,6,0,0,541,542,7,4,0,0,542,555,3,66,33,0,543,544,
-        10,5,0,0,544,545,7,2,0,0,545,555,3,66,33,0,546,547,10,4,0,0,547,
-        548,7,1,0,0,548,555,3,66,33,0,549,550,10,3,0,0,550,551,7,3,0,0,551,
-        555,3,66,33,0,552,553,10,1,0,0,553,555,7,5,0,0,554,540,1,0,0,0,554,
+        519,61,1,0,0,0,520,521,6,31,-1,0,521,522,3,64,32,0,522,534,1,0,0,
+        0,523,524,10,3,0,0,524,525,5,38,0,0,525,533,3,64,32,0,526,527,10,
+        2,0,0,527,528,5,39,0,0,528,533,3,64,32,0,529,530,10,1,0,0,530,531,
+        7,3,0,0,531,533,3,64,32,0,532,523,1,0,0,0,532,526,1,0,0,0,532,529,
+        1,0,0,0,533,536,1,0,0,0,534,532,1,0,0,0,534,535,1,0,0,0,535,63,1,
+        0,0,0,536,534,1,0,0,0,537,538,6,32,-1,0,538,542,3,66,33,0,539,540,
+        5,48,0,0,540,542,3,66,33,0,541,537,1,0,0,0,541,539,1,0,0,0,542,556,
+        1,0,0,0,543,544,10,5,0,0,544,545,7,4,0,0,545,555,3,66,33,0,546,547,
+        10,4,0,0,547,548,7,2,0,0,548,555,3,66,33,0,549,550,10,3,0,0,550,
+        551,7,1,0,0,551,555,3,66,33,0,552,553,10,1,0,0,553,555,7,5,0,0,554,
         543,1,0,0,0,554,546,1,0,0,0,554,549,1,0,0,0,554,552,1,0,0,0,555,
         558,1,0,0,0,556,554,1,0,0,0,556,557,1,0,0,0,557,65,1,0,0,0,558,556,
         1,0,0,0,559,567,3,68,34,0,560,561,5,39,0,0,561,567,3,66,33,0,562,
@@ -228,7 +228,7 @@ def serializedATN():
         173,176,178,181,189,203,207,217,227,238,242,246,251,257,260,266,
         270,275,277,280,284,289,295,301,305,310,316,325,331,336,343,345,
         355,357,364,366,376,384,388,394,404,411,418,432,459,473,485,492,
-        502,508,513,529,531,538,554,556,566,580
+        502,508,513,532,534,541,554,556,566,580
     ]
 
 class MathParser ( Parser ):
@@ -2826,6 +2826,10 @@ class MathParser ( Parser ):
         def EQ(self):
             return self.getToken(MathParser.EQ, 0)
 
+        def expr(self):
+            return self.getTypedRuleContext(MathParser.ExprContext,0)
+
+
         def AND_OP(self):
             return self.getToken(MathParser.AND_OP, 0)
 
@@ -2894,7 +2898,7 @@ class MathParser ( Parser ):
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 469
-                self.term(0)
+                self.expr(0)
                 self.state = 470
                 _la = self._input.LA(1)
                 if not(_la==46 or _la==47):
@@ -2903,7 +2907,7 @@ class MathParser ( Parser ):
                     self._errHandler.reportMatch(self)
                     self.consume()
                 self.state = 471
-                self.factor()
+                self.term(0)
                 pass
 
 
@@ -3363,6 +3367,12 @@ class MathParser ( Parser ):
         def DIF(self):
             return self.getToken(MathParser.DIF, 0)
 
+        def AND_OP(self):
+            return self.getToken(MathParser.AND_OP, 0)
+
+        def OR_OP(self):
+            return self.getToken(MathParser.OR_OP, 0)
+
         def getRuleIndex(self):
             return MathParser.RULE_expr
 
@@ -3389,12 +3399,13 @@ class MathParser ( Parser ):
         _prevctx = localctx
         _startState = 62
         self.enterRecursionRule(localctx, 62, self.RULE_expr, _p)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 521
             self.term(0)
             self._ctx.stop = self._input.LT(-1)
-            self.state = 531
+            self.state = 534
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,70,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -3402,16 +3413,16 @@ class MathParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 529
+                    self.state = 532
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,69,self._ctx)
                     if la_ == 1:
                         localctx = MathParser.ExprContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 523
-                        if not self.precpred(self._ctx, 2):
+                        if not self.precpred(self._ctx, 3):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 2)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
                         self.state = 524
                         self.match(MathParser.SUM)
                         self.state = 525
@@ -3422,17 +3433,35 @@ class MathParser ( Parser ):
                         localctx = MathParser.ExprContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 526
-                        if not self.precpred(self._ctx, 1):
+                        if not self.precpred(self._ctx, 2):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 2)")
                         self.state = 527
                         self.match(MathParser.DIF)
                         self.state = 528
                         self.term(0)
                         pass
 
+                    elif la_ == 3:
+                        localctx = MathParser.ExprContext(self, _parentctx, _parentState)
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        self.state = 529
+                        if not self.precpred(self._ctx, 1):
+                            from antlr4.error.Errors import FailedPredicateException
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
+                        self.state = 530
+                        _la = self._input.LA(1)
+                        if not(_la==46 or _la==47):
+                            self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 531
+                        self.term(0)
+                        pass
+
              
-                self.state = 533
+                self.state = 536
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,70,self._ctx)
 
@@ -3490,12 +3519,6 @@ class MathParser ( Parser ):
         def NEQ(self):
             return self.getToken(MathParser.NEQ, 0)
 
-        def AND_OP(self):
-            return self.getToken(MathParser.AND_OP, 0)
-
-        def OR_OP(self):
-            return self.getToken(MathParser.OR_OP, 0)
-
         def INCR(self):
             return self.getToken(MathParser.INCR, 0)
 
@@ -3531,17 +3554,17 @@ class MathParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 538
+            self.state = 541
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [3, 10, 27, 28, 29, 30, 32, 35, 38, 39, 50, 51, 52]:
-                self.state = 535
+                self.state = 538
                 self.factor()
                 pass
             elif token in [48]:
-                self.state = 536
+                self.state = 539
                 self.match(MathParser.NOT_OP)
-                self.state = 537
+                self.state = 540
                 self.factor()
                 pass
             else:
@@ -3562,31 +3585,13 @@ class MathParser ( Parser ):
                     if la_ == 1:
                         localctx = MathParser.TermContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_term)
-                        self.state = 540
-                        if not self.precpred(self._ctx, 6):
-                            from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
-                        self.state = 541
-                        _la = self._input.LA(1)
-                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 240518168576) != 0):
-                            self._errHandler.recoverInline(self)
-                        else:
-                            self._errHandler.reportMatch(self)
-                            self.consume()
-                        self.state = 542
-                        self.factor()
-                        pass
-
-                    elif la_ == 2:
-                        localctx = MathParser.TermContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_term)
                         self.state = 543
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 544
                         _la = self._input.LA(1)
-                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 23089744183296) != 0):
+                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 240518168576) != 0):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3595,7 +3600,7 @@ class MathParser ( Parser ):
                         self.factor()
                         pass
 
-                    elif la_ == 3:
+                    elif la_ == 2:
                         localctx = MathParser.TermContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_term)
                         self.state = 546
@@ -3604,7 +3609,7 @@ class MathParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 547
                         _la = self._input.LA(1)
-                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 46179488366592) != 0):
+                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 23089744183296) != 0):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3613,7 +3618,7 @@ class MathParser ( Parser ):
                         self.factor()
                         pass
 
-                    elif la_ == 4:
+                    elif la_ == 3:
                         localctx = MathParser.TermContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_term)
                         self.state = 549
@@ -3622,7 +3627,7 @@ class MathParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
                         self.state = 550
                         _la = self._input.LA(1)
-                        if not(_la==46 or _la==47):
+                        if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 46179488366592) != 0):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3631,7 +3636,7 @@ class MathParser ( Parser ):
                         self.factor()
                         pass
 
-                    elif la_ == 5:
+                    elif la_ == 4:
                         localctx = MathParser.TermContext(self, _parentctx, _parentState)
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_term)
                         self.state = 552
@@ -3961,18 +3966,18 @@ class MathParser ( Parser ):
 
     def expr_sempred(self, localctx:ExprContext, predIndex:int):
             if predIndex == 0:
-                return self.precpred(self._ctx, 2)
+                return self.precpred(self._ctx, 3)
          
 
             if predIndex == 1:
+                return self.precpred(self._ctx, 2)
+         
+
+            if predIndex == 2:
                 return self.precpred(self._ctx, 1)
          
 
     def term_sempred(self, localctx:TermContext, predIndex:int):
-            if predIndex == 2:
-                return self.precpred(self._ctx, 6)
-         
-
             if predIndex == 3:
                 return self.precpred(self._ctx, 5)
          
