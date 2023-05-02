@@ -393,7 +393,7 @@ class AstCreator(MathVisitor):
                 # if a scope, skip
                 if not (isinstance(temp, Scope_AST) and temp is ast_in or temp.parent is ast_in):
                     visited.append(temp)
-                if not isinstance(temp, Scope_AST) or temp is ast_in or temp.parent is ast_in:
+                if not isinstance(temp, Scope_AST) or temp is ast_in or isinstance(temp.parent, Scope_AST):
                     for i in temp.children:
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
@@ -401,7 +401,7 @@ class AstCreator(MathVisitor):
                     if temp.condition is not None and not isinstance(temp.condition, Node):
                         not_visited.append(temp.condition)
         visited.reverse()
-        # self.handle(visited)
+        ast_in.symbolTable = self.handle(visited)
         return ast_in
 
     def handle(self, list_ast: list):
@@ -411,17 +411,19 @@ class AstCreator(MathVisitor):
         decr_queue = []
         # flags
         conditional = False
+        evaluate = True
         # initialize symbol table from root
         symbol_table = list_ast[-1].symbolTable
-        temp_symbol = symbol_table
         temp_parent = list_ast[-1].parent
         while symbol_table is None and temp_parent is not None:
-            temp_parent = list_ast[-1].parent
+            temp_parent =temp_parent.parent
             symbol_table = temp_parent.symbolTable
         if symbol_table is None:
             raise RuntimeError("No symbol table found")
         # handle
+        temp_symbol = symbol_table
         for ast in list_ast:
+            # TODO: disable constant folding for declarations in scopes
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -434,15 +436,20 @@ class AstCreator(MathVisitor):
                     # unreplaced rvars
                     elif isinstance(child, Node) and child.key == "var":
                         # search in symbol table
-                        exists_state = symbol_table.exists(child.value)
+                        if temp_symbol is not None:
+                            exists_state = temp_symbol.exists(child.value)
+                        else:
+                            exists_state = symbol_table.exists(child.value)
                         temp_ast = ast
                         # search in parent scopes if not found
                         old_symbol = symbol_table
-                        while not exists_state and temp_ast is not None and temp_parent is not None:
+                        while not exists_state and temp_ast is not None and temp_ast.parent is not None:
                             temp_symbol = temp_ast.parent.symbolTable
                             temp_ast = temp_ast.parent
                             if temp_symbol is not None:
                                 exists_state = temp_symbol.exists(child.value)
+                        if temp_parent is not None:
+                            evaluate = not (isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent, For_loopAST))
                         if not temp_symbol.exists(child.value):
                             raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
@@ -453,33 +460,49 @@ class AstCreator(MathVisitor):
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                             ast.children[index] = copy.copy(matches[0].object)
-                            temp_symbol = old_symbol
                 if not handle:
                     continue
             # conditional cases
             if isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
+                ast.symbolTable = temp_symbol
                 # handle for condition true
-                if ast.condition.value:
-                    self.resolve(ast)
-                    ast.symbolTable = ast.children[0].symbolTable
-                # handle for else
-                elif not ast.condition.value and isinstance(ast.children[-1], Else_CondAST):
-                    self.resolve(ast.children[-1])
-                    ast.symbolTable = ast.children[-1].children[0].symbolTable
-                # update symbol table
-                for update in updates_queue:
-                    temp_symbol.update(update)
-                updates_queue = []
-                for entry in ast.symbolTable.table:
-                    if temp_symbol.exists(entry.object):
-                        updates_queue.append(entry.object)
-                    else:
-                        temp_symbol.insert(entry.object)
+                self.resolve(ast.children[0])
+                self.resolve(ast.children[-1])
+                # if ast.condition.last_eval:
+                #     self.resolve(ast.children[0])
+                #     # ast.symbolTable = ast.children[0].symbolTable
+                # # handle for else
+                # elif not ast.condition.last_eval and isinstance(ast.children[-1], Else_CondAST):
+                #     self.resolve(ast.children[-1])
+                    # ast.symbolTable = ast.children[-1].children[0].symbolTable
+                # if evaluate:
+                #     # update symbol table
+                #     for update in updates_queue:
+                #         temp_symbol.update(update)
+                #     updates_queue = []
+                #     for entry in ast.symbolTable.table:
+                #         if temp_symbol.exists(entry.object):
+                #             updates_queue.append(entry.object)
+                #         else:
+                #             temp_symbol.insert(entry.object)
+                # else:
+                #     for element in ast.condition.children:
+                #         if isinstance(element, VarNode):
+                #             element.value = None
+                node = ast
+
+            elif isinstance(ast, While_loopAST):
+                ast.symbolTable = temp_symbol
+                self.resolve(ast.children[0])
+                node = ast
 
             # Variable assignment handling
-            if ast.root.key == "assign" and ast.root.value is not None:
+            elif ast.root.key == "assign" and ast.root.value is not None:
                 if not isinstance(ast.children[0], VarNode):
                     raise AttributeError(f"Attempting to assign to a non variable type object")
+                if not evaluate:
+                    node = ast
+                    continue
                 # assign the value to the variable if it is not constant
                 if not ast.children[0].const:
                     ast.children[0].value = ast.children[1].value
@@ -515,7 +538,9 @@ class AstCreator(MathVisitor):
                     match = matches[0]
                     if match.initialized():
                         raise AttributeError(f"Redeclaration of variable {ast.children[0].key}")
-
+                    if not evaluate:
+                        node = ast
+                        continue
                 if ast.type != ast.children[0].type and ast.children[0].value is not None and not ast.children[0].cast:
                     if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
@@ -530,9 +555,10 @@ class AstCreator(MathVisitor):
                 else:
                     node.const = (ast.const is True)
                 if not temp_symbol.exists(node):
+                    if not evaluate:
+                        node.value = None
                     temp_symbol.insert(SymbolEntry(node))
                 updates_queue.append(node)
-                # self.symbol_table.refresh()
 
             elif isinstance(ast, AssignAST):
                 # check if assign value is of a valid type
@@ -543,6 +569,9 @@ class AstCreator(MathVisitor):
                 else:
                     rtype = ast.children[1].key
                 assignee = copy.copy(ast.children[0])
+                if not evaluate:
+                    node = ast
+                    continue
                 if not isinstance(assignee, VarNode):
                     raise AttributeError(f"Attempting to assign to a non-variable type")
                 if assignee.const:
@@ -584,11 +613,11 @@ class AstCreator(MathVisitor):
                 node = ast.handle()
                 updates_queue.reverse()
                 for instance in incr_queue:
-                    instance = symbol_table.lookup(instance)[0].object
+                    instance = temp_symbol.lookup(instance)[0].object
                     instance.value += 1
                     temp_symbol.update(instance)
                 for instance in decr_queue:
-                    instance = symbol_table.lookup(instance)[0].object
+                    instance = temp_symbol.lookup(instance)[0].object
                     instance.value -= 1
                     temp_symbol.update(instance)
                 for instance in updates_queue:
@@ -598,16 +627,21 @@ class AstCreator(MathVisitor):
                         temp_symbol.update(instance)
 
                 temp_symbol.refresh()
+                # temp_symbol = old_symbol
                 updates_queue = []
                 incr_queue = []
                 decr_queue = []
             elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"]:
-                node = ast.children[0]
-                if ast.root.value == "++":
-                    incr_queue.append(node)
-                if ast.root.value == "--":
-                    decr_queue.append(node)
-                pass
+                node = ast
+                if evaluate:
+                    node = ast.children[0]
+                    if ast.root.value == "++":
+                        incr_queue.append(node)
+                    if ast.root.value == "--":
+                        decr_queue.append(node)
+            elif isinstance(ast, CondAST):
+                if evaluate:
+                    ast.last_eval = copy.copy(ast).handle().value
             elif ast is not None:
                 node = ast.handle()
             else:
@@ -617,13 +651,13 @@ class AstCreator(MathVisitor):
                 index = ast.parent.children.index(ast)
                 ast.parent.children[index] = node
             else:
-                ast.parent.condition = node
                 if isinstance(ast.parent, Else_CondAST):
-                    node.value = not node.value
+                    ast.last_eval = not ast.last_eval
         for instance in updates_queue:
             temp_symbol.update(instance)
         temp_symbol.refresh()
         symbol_table = temp_symbol
+        return symbol_table
 
     def visitMath(self, ctx: MathParser.MathContext):
         """

@@ -418,6 +418,8 @@ class TermAST(AST):
         for child in self.children:
             if isinstance(child, AST):
                 return self
+            if child.value is None:
+                return self
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
             node_type = checkType(str(node.value))
@@ -654,6 +656,11 @@ class CondAST(TermAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+        self.last_eval = None
+
+    def __repr__(self) -> str:
+        return f"root: {{ {self.root} }}, last_eval: " \
+               f"{self.last_eval.value if isinstance(self.last_eval, Node) else self.last_eval} , children: {self.children}"
 
 
 class InitAST(DeclrAST):
@@ -671,6 +678,7 @@ class BreakAST(InstrAST):
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
 
 
 class FuncParametersAST(AST):
