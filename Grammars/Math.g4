@@ -18,7 +18,11 @@ instr           :   declr ((';')+ | DELIM)
 declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
-printf          :   PRINTF '(' (rvar | rtype | deref) ')'
+// TODO: printf (modified) and scanf
+printf          :   PRINTF '(' string_input=PRINTF_STRING (rvar ',')* rvar')'
+                ;
+
+scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (rvar ',')* rvar')'
                 ;
 
 // Functions
@@ -67,11 +71,8 @@ array_decl      :   const=CONST? type=TYPE name=VAR_NAME '[' size=INT? ']' ASSIG
                 |   const=CONST? type=TYPE name=VAR_NAME '[' size=INT ']'
                 ;
 
-// TODO: printf (modified) and scanf
-
-
 // TODO: #include statements
-incl_stat       :   '#include' LT VAR_NAME GT
+incl_stat       :   INCLUDE LT library=VAR_NAME GT
                 ;
 
 
@@ -173,6 +174,8 @@ CASE            :   'case';
 DEFAULT         :   'default';
 PRINTF          :   'printf';
 RETURN          :   'return';
+SCANF           :   'scanf';
+INCLUDE         :   '#include';
 // Identifiers and data types
 TYPE            :   'char'
                 |   'float'
@@ -185,6 +188,12 @@ FLOAT           :   [0-9]+ '.' [0-9]+;
 CHAR            :   ('\'' . '\'')
                 |   ('\'\\' . '\'');
 STRING          :   '"' (.)*? '"';
+SCANF_TYPES     :   '"' ARG_TYPES '"';
+PRINTF_STRING   :   '"' ((.) | ARG_TYPES)*? '"';
+ARG_TYPES       :   '%d'
+                |   '%f'
+                |   '%s'
+                ;
 // Operations
 STR             :   '*';
 DIV             :   '/';
