@@ -269,60 +269,66 @@ class VarNode(Node):
         :param scope: global, local --> True is local
         :return: str
         """
-        out = ''
+        """
+        @y = global i32 4, align 4
+        @x = global ptr @y, align 8
+        @z = global ptr @x, align 8
+        """
+        if self.value is None:
+            if self.type == "int":
+                self.value = 0
+            elif self.type == "float":
+                self.value = 0.0
+            elif self.type == "char":
+                self.value = ord('\0')
         # Scope and constant
-        if scope or not self.const:
-            out += '%'
+        if scope and not self.const:
+            out = f"%{self.key} = "
         else:
-            out += '@'
+            out = f"@{self.key} = "
 
         if self.const:
-            out += 'constant'
+            out += 'constant '
         elif not scope:
             out += "global "
         elif scope:
             out += "alloca "
-
-        # get type
-        var_type = ''
-        if self.type == "int":
-            var_type += "i32"
-        elif self.type == "char":
-            var_type += "i8"
-        elif self.type == "float":
-            var_type += "float"
-        out += var_type
-        if self.ptr:
-            out += "*" * self.total_deref + " "
+        var_type = ""
+        if not self.ptr:
+            if self.type == "int":
+                var_type = "i32"
+                out += "i32 "
+            elif self.type == "char":
+                var_type = "i32"
+                out += "i8 "
+            elif self.type == "float":
+                var_type = "i32"
+                out += "float "
         else:
-            out += " "
+            out += f"ptr @{self.value.key}"
+
+        out_val = ""
+        # convert the value if needed
+        if self.type == "float" and not self.ptr:
+            val = array('f', [self.value])
+            self.value = val[0]
+            out_val = str(val[0])
+        elif isinstance(self.value, str) and not self.ptr:
+            out_val = str(ord(self.value))
+        else:
+            out_val = self.value
         # allocate the value
         if not scope:
-            out += "\n"
+            out += f"{out_val if not self.ptr else ''} , align {'4' if not self.ptr else '8'}\n"
         else:
-            if self.value is None:
-                if self.type == "int":
-                    self.value = 0
-                elif self.type == "float":
-                    self.value = 0.0
-                elif self.type == "char":
-                    self.value = ord('\0')
             if scope and not self.const:
                 out += "\tstore " + var_type + " "
-                if isinstance(self.value, float):
-                    val = array('f', [self.value])
-                    self.value = val[0]
-                    out += str(val[0])
-                elif isinstance(self.value, str):
-                    out += str(ord(self.value))
-                else:
-                    out += str(self.value)
                 out += "," + var_type + "* %" + str(self.key) + "\n"
             else:
                 if isinstance(self.value, float):
                     val = array('f', [self.value])
                     self.value = val[0]
-                    out += str(val[0]) + "\n"
+                    out += out_val + "\n"
                 elif isinstance(self.value, str):
                     out += str(ord(self.value))
                 elif isinstance(self.value, VarNode):

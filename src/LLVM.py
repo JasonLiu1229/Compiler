@@ -397,9 +397,34 @@ class LLVM:
         """
         Converts the AST given in the constructor to LLVM code and writes the code to file
         """
-        # # clear file
-        # open(self.file_name, 'w')
+        # clear file
+        f = open(self.file_name, 'w')
         # indexes = {"printf": 1}
+        # get all the nodes via DFS
+        # DFS the condition
+        visited = []
+        not_visited = [self.ast]
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                for i in current.children:
+                    if not isinstance(i, Node):
+                        not_visited.append(i)
+        visited.reverse()
+        latest_index = 1
+        for instruction in visited:
+            # declare for the symbol table
+            if instruction.symbolTable is not None:
+                for symbol in instruction.symbolTable.table:
+                    out , latest_index = symbol.object.llvm(False, latest_index)
+                    f.write(out)
+            for child in instruction.children:
+                if not isinstance(child, Node):
+                    out , latest_index = child.llvm(False, latest_index)
+                    f.write(out)
+
+        print("Done!!!")
         # for entry in self.symbol_table.table:
         #     node = copy.copy(entry.object)
         #     if isinstance(entry, FuncSymbolEntry):
