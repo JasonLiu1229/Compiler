@@ -19,10 +19,10 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' string_input=PRINTF_STRING (rvar ',')* rvar')'
+printf          :   PRINTF '(' string_input+=PRINTF_STRING (',' (vars+=rvar ',')* vars+=rvar)? ')'
                 ;
 
-scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (rvar ',')* rvar')'
+scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar')'
                 ;
 
 // Functions
@@ -70,7 +70,7 @@ array_decl      :   const=CONST? type=TYPE name=VAR_NAME '[' size=INT? ']' ASSIG
                 |   const=CONST? type=TYPE name=VAR_NAME '[' size=INT ']'
                 ;
 
-incl_stat       :   INCLUDE LT library=VAR_NAME GT
+incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
                 ;
 
 
@@ -185,9 +185,9 @@ INT             :   ([1-9][0-9]*) | [0];
 FLOAT           :   [0-9]+ '.' [0-9]+;
 CHAR            :   ('\'' . '\'')
                 |   ('\'\\' . '\'');
+PRINTF_STRING   :   '"' ( . | ARG_TYPES)*? '"';
 STRING          :   '"' (.)*? '"';
 SCANF_TYPES     :   '"' ARG_TYPES '"';
-PRINTF_STRING   :   '"' ((.) | ARG_TYPES)*? '"';
 ARG_TYPES       :   '%' ('#' | '-' | '+' | '.')? (INT)? (.);
 // Operations
 STR             :   '*';

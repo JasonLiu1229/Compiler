@@ -44,6 +44,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#scanf.
+    def enterScanf(self, ctx:MathParser.ScanfContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#scanf.
+    def exitScanf(self, ctx:MathParser.ScanfContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#param_list.
     def enterParam_list(self, ctx:MathParser.Param_listContext):
         pass
@@ -149,6 +158,24 @@ class MathListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathParser#break_instr.
     def exitBreak_instr(self, ctx:MathParser.Break_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#array_decl.
+    def enterArray_decl(self, ctx:MathParser.Array_declContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#array_decl.
+    def exitArray_decl(self, ctx:MathParser.Array_declContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#incl_stat.
+    def enterIncl_stat(self, ctx:MathParser.Incl_statContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#incl_stat.
+    def exitIncl_stat(self, ctx:MathParser.Incl_statContext):
         pass
 
 

@@ -29,6 +29,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#scanf.
+    def visitScanf(self, ctx:MathParser.ScanfContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#param_list.
     def visitParam_list(self, ctx:MathParser.Param_listContext):
         return self.visitChildren(ctx)
@@ -86,6 +91,16 @@ class MathVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathParser#break_instr.
     def visitBreak_instr(self, ctx:MathParser.Break_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#array_decl.
+    def visitArray_decl(self, ctx:MathParser.Array_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#incl_stat.
+    def visitIncl_stat(self, ctx:MathParser.Incl_statContext):
         return self.visitChildren(ctx)
 
 
