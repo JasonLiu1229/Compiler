@@ -139,6 +139,20 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    @staticmethod
+    def getEntry(entry):
+        out = None
+        temp_symbol = None if isinstance(entry,Node) else entry.symbolTable
+        temp_parent = entry.parent
+        found = False
+        while not found and temp_parent is not None:
+            temp_symbol = temp_parent.symbolTable
+            temp_parent = temp_parent.parent
+            if temp_symbol is not None:
+                if temp_symbol.exists(entry) or temp_symbol.exists(entry.value):
+                    return temp_symbol.lookup(entry)[0]
+        return out
+
     def __repr__(self) -> str:
         return f"root: {{ {self.root} }} , children: {self.children}"
 
