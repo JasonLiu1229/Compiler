@@ -1,6 +1,6 @@
 from math import floor
 from pprint import pprint
-from typing import Any
+from typing import Any, Tuple
 from Node import Node, VarNode, FunctionNode, FuncParameter
 import antlr4.error.ErrorListener
 import antlr4.error.ErrorStrategy
@@ -117,6 +117,16 @@ def convert(value, d_type):
         raise RuntimeError("Bad Cast")
 
 
+def getLLVMType(ObjectType: str) -> str | None:
+    if ObjectType == 'int':
+        return 'i32'
+    elif ObjectType == 'float':
+        return 'float'
+    elif ObjectType == 'char':
+        return 'i8'
+    return None
+
+
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         """
@@ -138,7 +148,6 @@ class AST:
     #
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
-
     @staticmethod
     def getEntry(entry):
         out = None
@@ -146,7 +155,7 @@ class AST:
         temp_parent = entry.parent
         found = False
         while not found and temp_parent is not None:
-            temp_symbol = temp_parent.symbolTable
+            temp_symbol = temp_parent.symbolTable if isinstance(temp_parent, AST) else None
             temp_parent = temp_parent.parent
             if temp_symbol is not None:
                 if temp_symbol.exists(entry) or temp_symbol.exists(entry.value):
@@ -330,6 +339,186 @@ class AST:
 
     def handle(self):
         return self
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        return f" ", index
+
+    @staticmethod
+    def sub(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a subtract operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"sub nsw {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def add(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an addition operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"add nsw {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def mul(var_type, op1, op2):
+        """
+        Writes LLVM code for a multiplication operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"mul nsw {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def sdiv(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (signed)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"sdiv {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def udiv(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"udiv {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def mod(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a modulo operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"urem {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def incr(var_type: str, op: str):
+        """
+        Writes LLVM code for an increment operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return AST.add(var_type, op, "1")
+
+    @staticmethod
+    def decr(var_type: str, op: str):
+        """
+        Writes LLVM code for a decrement operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return AST.sub(var_type, op, "1")
+
+    @staticmethod
+    def comp_gt(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a greater than operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sgt {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def comp_lt(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a less than operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp slt {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def comp_eq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an is equal operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp eq {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def comp_geq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a greater than equals operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sge {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def comp_leq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a less than equals operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp sle {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def comp_neq(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a not equal operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f'icmp ne {var_type} {op1}, {op2}'
+
+    @staticmethod
+    def and_op(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an AND operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"and {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def or_op(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for an OR operation
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return f"or {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def not_op(var_type: str, op: str):
+        """
+        Writes LLVM code for an NOT operation
+        :param var_type: the type of return value
+        :param op: the first operand
+        """
+        return f"not {var_type} {op}"
+
+    @staticmethod
+    def assign(var_type: str, value, ptr):
+        """
+        Writes LLVM code for an assign operation
+        :param var_type: the type of value to assign to the variable
+        :param value: the value to store on the variable
+        :param ptr: The register to store the value in
+        """
+        return f"store {var_type} {value}, {var_type}* {ptr}"
 
 
 class ExprAST(AST):
@@ -665,6 +854,62 @@ class While_loopAST(Scope_AST):
             out[name].append({"body": [child.save() for child in self.children]})
         return out
 
+    def llvm_block1(self, out, index, blocks):
+        name = blocks["1"]
+        out += f"{name}:"
+        index += 1
+
+        # DFS the condition
+        visited = []
+        not_visited = [self.condition]
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                for i in current.children:
+                    if not isinstance(i, Node):
+                        not_visited.append(i)
+
+        # handle everything separately
+        for current in visited:
+            pass
+
+        # indexL, indexR = 0, 0
+        #
+        # if isinstance(leftChild, VarNode):
+        #     entry = self.getEntry(leftChild)
+        #     if entry is not None:
+        #         indexL = entry.register
+        #         out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
+        #         index += 1
+        #
+        # if isinstance(rightChild, VarNode):
+        #     entry = self.getEntry(rightChild)
+        #     if entry is not None:
+        #         indexR = entry.register
+        #         out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
+        #         index += 1
+        # operand = self.condition.root.value
+        # if operand == '<':
+        #     pass
+        # elif operand == '>':
+        #     pass
+        # elif operand == '==':
+        #     pass
+        # elif operand == '!=':
+        #     pass
+        # elif operand == '<=':
+        #     pass
+        # elif operand == '>=':
+        #     pass
+        return out, index
+
+    def llvm(self, scope: bool = False, index: int = 1) -> str:
+        blocks = {"1": index, "2": index + 1, "3": index + 2}
+        index += 2
+        out = f"\tbr label %{index}\n\n"
+        out, index = self.llvm_block1(out, index, blocks)
+
 
 class CondAST(TermAST):
 
@@ -710,6 +955,7 @@ class FuncParametersAST(AST):
     def save(self):
         return [child.save() for child in self.children]
 
+
 class FuncDeclAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -737,8 +983,8 @@ class FuncDeclAST(AST):
         return out
 
     def getDict(self):
-        return {f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}": self.root.value}, \
-            f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}"
+        return {f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}": self.root.value}, \
+            f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
 
 
 class FuncDefnAST(AST):
@@ -770,8 +1016,9 @@ class FuncDefnAST(AST):
         return out
 
     def getDict(self):
-        return {f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}": self.root.value}, \
-            f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key}"
+        return {f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}": self.root.value}, \
+            f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
+
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,

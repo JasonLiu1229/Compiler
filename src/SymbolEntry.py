@@ -16,6 +16,7 @@ class SymbolEntry:
             self.type = self.object.type
         else:
             self.type = in_type
+        self.register = None
 
     def initialized(self):
         return self.const is not None and self.type is not None

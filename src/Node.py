@@ -1,5 +1,7 @@
+from array import array
 from math import floor
 from pprint import pprint
+from typing import Tuple
 
 
 class Node:
@@ -109,7 +111,7 @@ class Node:
             self.value = ord(self.value)
         if isinstance(other.value, str) and other.key != "var":
             other.value = ord(other.value)
-        if not isinstance(self , VarNode) and not isinstance(other, VarNode):
+        if not isinstance(self, VarNode) and not isinstance(other, VarNode):
             return self.value == other.value and self.key == other.key
         else:
             return self.value == other.value
@@ -178,6 +180,9 @@ class Node:
         else:
             dictionary[name].add(self.value)
 
+    def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
+        return f" ", index
+
 
 class VarNode(Node):
 
@@ -201,7 +206,8 @@ class VarNode(Node):
     def __eq__(self, o):
         if not isinstance(o, VarNode):
             return False
-        return self.key == o.key and (self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr
+        return self.key == o.key and (
+                self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr
 
     def __ne__(self, o):
         return not self.__eq__(o)
@@ -256,6 +262,76 @@ class VarNode(Node):
         else:
             out += str(self.value)
         return out
+
+    def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
+        """
+        converts VarNode in to llvm
+        :param scope: global, local --> True is local
+        :return: str
+        """
+        out = ''
+        # Scope and constant
+        if scope or not self.const:
+            out += '%'
+        else:
+            out += '@'
+
+        if self.const:
+            out += 'constant'
+        elif not scope:
+            out += "global "
+        elif scope:
+            out += "alloca "
+
+        # get type
+        var_type = ''
+        if self.type == "int":
+            var_type += "i32"
+        elif self.type == "char":
+            var_type += "i8"
+        elif self.type == "float":
+            var_type += "float"
+        out += var_type
+        if self.ptr:
+            out += "*" * self.total_deref + " "
+        else:
+            out += " "
+        # allocate the value
+        if not scope:
+            out += "\n"
+        else:
+            if self.value is None:
+                if self.type == "int":
+                    self.value = 0
+                elif self.type == "float":
+                    self.value = 0.0
+                elif self.type == "char":
+                    self.value = ord('\0')
+            if scope and not self.const:
+                out += "\tstore " + var_type + " "
+                if isinstance(self.value, float):
+                    val = array('f', [self.value])
+                    self.value = val[0]
+                    out += str(val[0])
+                elif isinstance(self.value, str):
+                    out += str(ord(self.value))
+                else:
+                    out += str(self.value)
+                out += "," + var_type + "* %" + str(self.key) + "\n"
+            else:
+                if isinstance(self.value, float):
+                    val = array('f', [self.value])
+                    self.value = val[0]
+                    out += str(val[0]) + "\n"
+                elif isinstance(self.value, str):
+                    out += str(ord(self.value))
+                elif isinstance(self.value, VarNode):
+                    out += f"@{self.value.key} , align 8"
+                else:
+                    out += str(self.value) + "\n"
+            out += "\n"
+        return out, index
+
 
 class FuncParameter(VarNode):
 

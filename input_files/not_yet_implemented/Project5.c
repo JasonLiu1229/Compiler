@@ -1,11 +1,11 @@
-int mul(int x, int y){
-    return x * y;
-}
+//int mul(int x, int y){
+//    return x * y;
+//}
 /*
 * My program
 */
 
-int add(int x, int& y);
+//int add(int x, int& y);
 int main(){
 //    int x = 1;
 //    while (x < 10) {
@@ -19,5 +19,8 @@ int main(){
 //    return 0;
     int x = 2;
     int y = 6;
-    int result = mul(x,y);
+//    int result = mul(x,y);
+    while (x < 9 && y < 90){
+    // code
+    }
 }
