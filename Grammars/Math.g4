@@ -1,18 +1,11 @@
 grammar Math;
 
-math            :   incl_stat* instr* EOF
+math            :   incl_stat*  (instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
                 ;
+
 instr           :   declr ((';')+ | DELIM)
                 |   array_decl ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
-                |   printf ((';')+ | DELIM)
-                |   assign ((';')+ | DELIM)
-                |   scope (';')*
-                |   if_cond (';')*
-                |   while_loop (';')*
-                |   for_loop (';')*
-                |   func_defn ((';')* | DELIM)
-                |   func_decl ((';')+ | DELIM)
                 ;
 
 declr           :   CONST? TYPE (var_decl ',')* var_decl
@@ -51,14 +44,20 @@ func_arg        :   rvar
 func_call       :   name=VAR_NAME '(' args=arg_list? ')'
                 ;
 
-func_scope      :   '{'(return_instr | instr)* '}'
+func_scope      :   '{'(
+                        printf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM) | while_loop ((';')* | DELIM)
+                        | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
+                           )* '}'
                 ;
 
 return_instr    :   RETURN (expr) ';' (instr | return_instr)*
                 ;
 
 
-scope           :   '{' ( instr | break_instr | cont_instr )* '}'
+scope           :   '{' (
+                        printf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM) | while_loop ((';')* | DELIM)
+                        | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | break_instr | cont_instr | instr
+                        )* '}'
                 ;
 
 cont_instr      :   CONTINUE (';' | DELIM) instr*
