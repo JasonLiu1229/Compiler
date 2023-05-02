@@ -905,50 +905,80 @@ class While_loopAST(Scope_AST):
                 currenType = leftChild.key
             convertedType = getLLVMType(currenType)
             if operand == '<':
-                out += f"%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '>':
-                out += f"%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '==':
-                out += f"%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '!=':
-                out += f"%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '<=':
-                out += f"%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '>=':
-                out += f"%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '&&':
-                out += f"%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
             elif operand == '||':
-                out += f"%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+                out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
                 current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
                 index += 1
+        index2 = blocks["2"]
+        index3 = blocks["3"]
+        out += f"br i1 %{index - 1}, label %{index2}, label %{index3}"
         return out, index
 
     def llvm_block2(self, out, index, blocks):
-        pass
+        name = blocks["2"]
+        out += f"{name}:"
 
-    def llvm_block3(self, out, index, blocks):
-        pass
+        # DFS
+        visited = []
+        not_visited = [self.condition]
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                for i in current.children:
+                    if not isinstance(i, Node):
+                        not_visited.append(i)
+
+        # Handle
+        for current in visited:
+            # handle the right AST
+            pass
+        index1 = blocks["1"]
+        out += f"\tbr label %{index1}, !llvm.loop !6"
+        return out, index
+
+    @staticmethod
+    def llvm_block3(out, index, blocks):
+        name = blocks["3"]
+        out += f"{name}:"
+        out += f"\t%ret i32 0"
+        index += 1
+        return out, index
 
     def llvm(self, scope: bool = False, index: int = 1) -> str:
         blocks = {"1": index, "2": index + 1, "3": index + 2}
         index += 2
         out = f"\tbr label %{index}\n\n"
         out, index = self.llvm_block1(out, index, blocks)
+        out, index = self.llvm_block2(out, index, blocks)
+        out, index = self.llvm_block3(out, index, blocks)
 
 
 class CondAST(TermAST):
@@ -977,7 +1007,6 @@ class BreakAST(InstrAST):
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
-
 
 
 class FuncParametersAST(AST):
