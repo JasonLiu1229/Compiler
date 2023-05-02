@@ -151,7 +151,7 @@ class AST:
     @staticmethod
     def getEntry(entry):
         out = None
-        temp_symbol = None if isinstance(entry,Node) else entry.symbolTable
+        temp_symbol = None if isinstance(entry, Node) else entry.symbolTable
         temp_parent = entry.parent
         found = False
         while not found and temp_parent is not None:
@@ -938,6 +938,12 @@ class While_loopAST(Scope_AST):
                 index += 1
         return out, index
 
+    def llvm_block2(self, out, index, blocks):
+        pass
+
+    def llvm_block3(self, out, index, blocks):
+        pass
+
     def llvm(self, scope: bool = False, index: int = 1) -> str:
         blocks = {"1": index, "2": index + 1, "3": index + 2}
         index += 2
@@ -971,7 +977,6 @@ class BreakAST(InstrAST):
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
-
 
 
 class FuncParametersAST(AST):
