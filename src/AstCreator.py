@@ -95,6 +95,12 @@ class AstCreator(MathVisitor):
             return self.visitParam_list(ctx)
         elif isinstance(ctx, MathParser.Return_instrContext):
             return self.visitReturn_instr(ctx)
+        elif isinstance(ctx, MathParser.Array_declContext):
+            return self.visitArray_decl(ctx)
+        elif isinstance(ctx, MathParser.Incl_statContext):
+            return self.visitIncl_stat(ctx)
+        elif isinstance(ctx, MathParser.ScanfContext):
+            return self.visitScanf(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -143,7 +149,6 @@ class AstCreator(MathVisitor):
                 return i
         return -1
 
-
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -176,9 +181,15 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
+                elif isinstance(child, ScanfAST):
+                    pass
+                elif isinstance(child, IncludeAST):
+                    pass
+                elif isinstance(child, ArrayDeclAST):
+                    pass
                 elif isinstance(child, FuncDeclAST):
-                    child.children = base.children[index-1: index]
-                    base.children[index-1: index] = []
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, FuncCallAST):
@@ -208,7 +219,7 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, CondAST):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
-                    base.children[index-2:index] = []
+                    base.children[index - 2:index] = []
                     index = base.children.index(child)
                 elif isinstance(child, InitAST):
                     last_decl = self.lastInit(index, base.children)
@@ -418,7 +429,7 @@ class AstCreator(MathVisitor):
         symbol_table = list_ast[-1].symbolTable
         temp_parent = list_ast[-1].parent
         while symbol_table is None and temp_parent is not None:
-            temp_parent =temp_parent.parent
+            temp_parent = temp_parent.parent
             symbol_table = temp_parent.symbolTable
         if symbol_table is None:
             raise RuntimeError("No symbol table found")
@@ -450,7 +461,9 @@ class AstCreator(MathVisitor):
                             if temp_symbol is not None:
                                 exists_state = temp_symbol.exists(child.value)
                         if temp_parent is not None:
-                            evaluate = not (isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent, For_loopAST))
+                            evaluate = not (
+                                        isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent,
+                                                                                                    For_loopAST))
                         if not temp_symbol.exists(child.value):
                             raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
@@ -883,7 +896,7 @@ class AstCreator(MathVisitor):
         return out
 
     def visitParam_declr(self, ctx: MathParser.Param_declrContext):
-        out = FuncParameter(key= ctx.var.text, value= None, vtype=ctx.type_.text, const=(ctx.const is not None),
+        out = FuncParameter(key=ctx.var.text, value=None, vtype=ctx.type_.text, const=(ctx.const is not None),
                             ptr=(ctx.ptr is not None),
                             deref_level=(len(ctx.ptr) if ctx.ptr is not None else 0),
                             total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
@@ -892,14 +905,14 @@ class AstCreator(MathVisitor):
         return out
 
     def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
-        return FuncDefnAST(root=Node(ctx.name.text, None),const= (ctx.const is not None), return_type=ctx.type_.text,
-                          ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
-                          symbolTable=SymbolTable())
+        return FuncDefnAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+                           ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                           symbolTable=SymbolTable())
 
     def visitFunc_decl(self, ctx: MathParser.Func_declContext):
         return FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
-                          ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
-                          symbolTable=SymbolTable())
+                           ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                           symbolTable=SymbolTable())
 
     def visitFunc_arg(self, ctx: MathParser.Func_argContext):
         return
@@ -931,6 +944,19 @@ class AstCreator(MathVisitor):
 
     def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
         return ReturnInstr(Node("return", None))
+
+    def visitScanf(self, ctx: MathParser.ScanfContext):
+        ast = ScanfAST(Node("scanf", None))
+        ast.variables = ctx.vars
+        ast.types = ctx.scan_types
+        return ast
+
+    def visitArray_decl(self, ctx: MathParser.Array_declContext):
+        # return ArrayDeclAST(VarNode("array", None))
+        pass
+
+    def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
+        return IncludeAST(Node(ctx.library, None))
 
     @staticmethod
     def convert(value, d_type):

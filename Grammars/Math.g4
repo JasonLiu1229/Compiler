@@ -6,6 +6,7 @@ math            :   incl_stat*  (instr | func_defn ((';')* | DELIM) | func_decl 
 instr           :   declr ((';')+ | DELIM)
                 |   array_decl ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
+                |   scanf ((';')+ | DELIM)
                 ;
 
 declr           :   CONST? TYPE (var_decl ',')* var_decl
@@ -16,7 +17,7 @@ printf          :   PRINTF '(' string_input+=PRINTF_STRING* (',' (vars+=rvar ','
                 |   PRINTF '(' (rvar | rtype) ')'
                 ;
 
-scanf           :   SCANF '(' (SCANF_TYPES ',')* SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar ')'
+scanf           :   SCANF '(' (scan_types+=SCANF_TYPES ',')* scan_types+=SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar ')'
                 ;
 
 // Functions
