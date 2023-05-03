@@ -22,7 +22,7 @@ printf_arg      :   rvar
                 |   rtype
                 |   FORMAT_STRING;
 
-scanf           :   SCANF '(' format_string=FORMAT_STRING ',' (ADDR vars+=rvar ',')* ADDR vars+=rvar ')'
+scanf           :   SCANF '(' (format_string+=FORMAT_STRING ',')* format_string+=FORMAT_STRING ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
                 ;
 
 // Functions
@@ -194,7 +194,8 @@ INT             :   ([1-9][0-9]*) | [0];
 FLOAT           :   [0-9]+ '.' [0-9]+;
 CHAR            :   ('\'' . '\'')
                 |   ('\'\\' . '\'');
-FORMAT_STRING   :   '"' ( . | ARG_TYPES)*? '"';
+FORMAT_STRING   :   '"' ( . | ARG_TYPES)*? '"'
+                |   '\'' ( . | ARG_TYPES)*? '\'';
 STRING          :   '"' (.)*? '"';
 ARG_TYPES       :   '%' ('#' | '-' | '+' | '.')? (INT)? (.);
 // Operations
