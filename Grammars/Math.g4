@@ -14,7 +14,7 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' string_input+=FORMAT_STRING (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
+printf          :   PRINTF '(' format_string=FORMAT_STRING (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
                 |   PRINTF '(' (rvar | rtype) ')'
                 ;
 
@@ -22,7 +22,7 @@ printf_arg      :   rvar
                 |   rtype
                 |   FORMAT_STRING;
 
-scanf           :   SCANF '(' scan_types+=FORMAT_STRING ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
+scanf           :   SCANF '(' format_string=FORMAT_STRING ',' (ADDR vars+=rvar ',')* ADDR vars+=rvar ')'
                 ;
 
 // Functions
