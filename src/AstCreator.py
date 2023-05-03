@@ -116,15 +116,18 @@ class AstCreator(MathVisitor):
     @staticmethod
     def lastInstruction(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], InstrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token):
+            if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
+                isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
+                    (isinstance(in_list[i], Node) and in_list[i].key == token):
                 return i
         return -1
 
     @staticmethod
     def lastDeclaration(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], InstrAST) or (
-                    isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
+            if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
+                    isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
+                    (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
                 return i
         return -1
 
@@ -185,7 +188,7 @@ class AstCreator(MathVisitor):
                     base.children[index-len(child.variables):index] = []
                     index -= len(child.variables)
                 elif isinstance(child, IncludeAST):
-                    pass
+                    child.parent = base
                 elif isinstance(child, ArrayDeclAST):
                     last_inst = self.lastInstruction(index=index, in_list=base.children)
                     child.children = base.children[last_inst + 1: index]
@@ -197,6 +200,7 @@ class AstCreator(MathVisitor):
                     base.children[index - 1: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
+                    child.parent = base
                 elif isinstance(child, FuncCallAST):
                     amt = len(child.args)
                     for i in reversed(range(1, amt + 1)):
@@ -212,6 +216,7 @@ class AstCreator(MathVisitor):
                     if isinstance(child.children[0], FuncParametersAST):
                         child.params = child.children[0].parameters
                     index = base.children.index(child)
+                    child.parent = base
                 elif isinstance(child, FuncParametersAST):
                     last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
                     last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
@@ -222,9 +227,13 @@ class AstCreator(MathVisitor):
                     child.parameters = child.children
                     index = base.children.index(child)
                 elif isinstance(child, CondAST):
-                    child.children = base.children[index - 2: index]
+                    if child.root.value == "const":
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1:index] = []
+                    else:
+                        child.children = base.children[index - 2: index]
+                        base.children[index - 2:index] = []
                     child.children.reverse()
-                    base.children[index - 2:index] = []
                     index = base.children.index(child)
                 elif isinstance(child, InitAST):
                     last_decl = self.lastInit(index, base.children)
@@ -252,7 +261,7 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, If_CondAST) or isinstance(child, While_loopAST):
                     if child.parent is None:
                         child.parent = base
-                    number = 2
+                    number = len(base.children[index-1].children)
                     else_child = None
                     if isinstance(base.children[index - 3], Else_CondAST):
                         number = 3
@@ -307,7 +316,7 @@ class AstCreator(MathVisitor):
                     indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
                 elif isinstance(child, DeclrAST):
                     last_decl = self.lastDeclaration(index, base.children)
-                    last_decl += 1
+                    # last_decl += 1
                     child.children = base.children[last_decl: index]
                     child.children.reverse()
                     base.children[last_decl: index] = []
@@ -407,9 +416,9 @@ class AstCreator(MathVisitor):
             temp = not_visited.pop()
             if temp not in visited or isinstance(temp, CondAST):
                 # if a scope, skip
-                if not (isinstance(temp, Scope_AST) and temp is ast_in or temp.parent is ast_in):
+                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)):
                     visited.append(temp)
-                if not isinstance(temp, Scope_AST) or temp is ast_in or isinstance(temp.parent, Scope_AST):
+                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or temp is ast_in or isinstance(temp.parent, Scope_AST):
                     for i in temp.children:
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
@@ -431,16 +440,42 @@ class AstCreator(MathVisitor):
         conditional = False
         evaluate = True
         # initialize symbol table from root
-        symbol_table = list_ast[-1].symbolTable
-        temp_parent = list_ast[-1].parent
-        while symbol_table is None and temp_parent is not None:
-            temp_parent = temp_parent.parent
-            symbol_table = temp_parent.symbolTable
-        if symbol_table is None:
-            raise RuntimeError("No symbol table found")
+        # symbol_table = None
+        # temp_parent = list_ast[0].parent
+        # while symbol_table is None and temp_parent is not None:
+        #     temp_parent = temp_parent.parent
+        #     symbol_table = temp_parent.symbolTable
+        # if symbol_table is None:
+        #     raise RuntimeError("No symbol table found")
         # handle
-        temp_symbol = symbol_table
+        # temp_symbol = symbol_table
         for ast in list_ast:
+            temp_parent = ast.parent
+            symbol_table = ast.symbolTable
+            temp_symbol = ast.symbolTable
+            while symbol_table is None and temp_parent is not None:
+                symbol_table = temp_parent.symbolTable
+                temp_parent = temp_parent.parent
+            if symbol_table is None:
+                raise RuntimeError("No symbol table found")
+            temp_symbol = symbol_table
+            if isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
+                pass
+                # symbol_table = self.resolve(ast.children[0])
+                # functions
+            elif isinstance(ast, FuncDeclAST):
+                continue
+            elif isinstance(ast, ScanfAST):
+                for var in ast.variables:
+                    match , total = AST.getEntry(var)
+                    if total is None:
+                        raise ReferenceError(f"Variable {var.value} undeclared")
+                    elif total > 1:
+                        raise ReferenceError(f"Multiple matches for variable {var.value}")
+                    ast.variables[ast.variables.index(var)] = match
+                node = ast
+            if isinstance(ast, IncludeAST):
+                continue
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -452,14 +487,18 @@ class AstCreator(MathVisitor):
                         break
                     # unreplaced rvars
                     elif isinstance(child, Node) and child.key == "var":
+                        # temp_parent = child.parent
+                        # temp_symbol = child.parent.symbolTable
+                        # symbol_table = child.parent.symbolTable
                         # search in symbol table
                         if temp_symbol is not None:
                             exists_state = temp_symbol.exists(child.value)
-                        else:
+                        elif symbol_table is not None:
                             exists_state = symbol_table.exists(child.value)
+                        else:
+                            exists_state = False
                         temp_ast = ast
                         # search in parent scopes if not found
-                        old_symbol = symbol_table
                         while not exists_state and temp_ast is not None and temp_ast.parent is not None:
                             temp_symbol = temp_ast.parent.symbolTable
                             temp_ast = temp_ast.parent
@@ -880,6 +919,8 @@ class AstCreator(MathVisitor):
         ast = CondAST()
         if len(ctx.children) == 3:
             ast.root = Node("cond", ctx.children[1].getText())
+        elif len(ctx.children) == 1:
+            ast.root = Node("cond", "const")
         return ast
 
     def visitIncr(self, ctx: MathParser.IncrContext):
@@ -954,6 +995,8 @@ class AstCreator(MathVisitor):
         ast = ScanfAST(Node("scanf", None))
         # ast.variables = ctx.vars_
         ast.variables = [self.visit_child(var) for var in ctx.vars_]
+        for var in ast.variables:
+            var.parent = ast
         ast.format_string = ctx.format_string.text
         return ast
 

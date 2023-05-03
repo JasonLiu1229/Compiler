@@ -160,9 +160,11 @@ class AST:
             temp_parent = temp_parent.parent
             if temp_symbol is not None:
                 if temp_symbol.exists(entry):
-                    return temp_symbol.lookup(entry)[0].object
+                    out = temp_symbol.lookup(entry)
+                    return out[0].object , len(out) if out is not None else None
                 elif temp_symbol.exists(entry.value):
-                    return temp_symbol.lookup(entry.value)[0].object
+                    out = temp_symbol.lookup(entry.value)
+                    return out[0].object , len(out) if out is not None else None
         return out
 
     def __repr__(self) -> str:
