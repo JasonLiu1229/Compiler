@@ -1132,6 +1132,18 @@ class ScanfAST(AST):
         self.variables = []
         self.format_string = None
 
+    def save(self):
+        out, name = self.getDict()
+        if out[name] is None:
+            out[name] = []
+        if self.root.value is None:
+            out[name] = [child.save() for child in self.variables]
+        return out
+
+    def getDict(self):
+        name = f"scanf({self.format_string})"
+        return {name : self.variables} , name
+
     def handle(self):
         return self
 

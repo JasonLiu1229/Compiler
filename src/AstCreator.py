@@ -182,7 +182,8 @@ class AstCreator(MathVisitor):
                     base.children[index - 1: index] = []
                     index -= 1
                 elif isinstance(child, ScanfAST):
-                    pass
+                    base.children[index-len(child.variables):index] = []
+                    index -= len(child.variables)
                 elif isinstance(child, IncludeAST):
                     pass
                 elif isinstance(child, ArrayDeclAST):
