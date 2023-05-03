@@ -777,6 +777,8 @@ class Scope_AST(AST):
     def handle(self):
         return self
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 class If_CondAST(Scope_AST):
 
