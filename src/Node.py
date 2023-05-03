@@ -187,7 +187,7 @@ class Node:
 class VarNode(Node):
 
     def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
-                 total_deref: int = 0, const_ptr: bool = False) -> None:
+                 total_deref: int = 0, const_ptr: bool = False, is_array: bool = False) -> None:
         """
         Initializer function for VarNode
         """
@@ -198,6 +198,7 @@ class VarNode(Node):
         self.deref_level = deref_level
         self.total_deref = total_deref
         self.const_ptr = const_ptr
+        self.array = is_array
 
     def __repr__(self) -> str:
         rep = f"{self.type} {'*' * self.total_deref} {self.key} : {self.value}"
