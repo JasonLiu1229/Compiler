@@ -8,6 +8,7 @@ instr           :   declr ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
                 |   scanf ((';')+ | DELIM)
                 |   assign ((';')+ | DELIM)
+                |   scope
                 ;
 
 declr           :   CONST? TYPE (var_decl ',')* var_decl

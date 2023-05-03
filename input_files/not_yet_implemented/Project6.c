@@ -17,8 +17,12 @@
 //return 0;
 //}
 #include <stdio.h>
+#include <stdio.h>
+#include <stdio.h>
 {
     int x = 7;
-    scanf('%d', '%s', number, name);
+    scanf("%d %s", number, name);
     int y = 9;
+    int arr[9] = {8,9,7};
+    int arr[] = {6};
 }

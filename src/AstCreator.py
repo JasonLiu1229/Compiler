@@ -187,7 +187,11 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, IncludeAST):
                     pass
                 elif isinstance(child, ArrayDeclAST):
-                    pass
+                    last_inst = self.lastInstruction(index=index, in_list=base.children)
+                    child.children = base.children[last_inst + 1: index]
+                    base.children[last_inst + 1: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
                 elif isinstance(child, FuncDeclAST):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
@@ -954,8 +958,13 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitArray_decl(self, ctx: MathParser.Array_declContext):
-        # return ArrayDeclAST(VarNode("array", None))
-        pass
+        ast = ArrayDeclAST(VarNode(vtype=ctx.type_.text, key=ctx.name.text, const=True if ctx.const is not None else False, value="", is_array=True))
+        ast.values = [self.visit_child(value) for value in ctx.values]
+        if ctx.size is not None:
+            ast.size = int(ctx.size.text)
+        else:
+            ast.size = len(ast.values)
+        return ast
 
     def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
         return IncludeAST(Node(f"{ctx.library.text}.h", None))
