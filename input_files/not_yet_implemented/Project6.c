@@ -16,7 +16,7 @@
 //    }
 //return 0;
 //}
-#include "<stdio.h>"
+#include <stdio.h>
 {
     int x = 7;
     scanf('%d', '%s', number, name);
