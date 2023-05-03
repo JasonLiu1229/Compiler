@@ -780,6 +780,7 @@ class Scope_AST(AST):
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         pass
 
+
 class If_CondAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -959,13 +960,15 @@ class While_loopAST(Scope_AST):
 
         # DFS
         visited = []
-        not_visited = [self.condition]
+        not_visited = [self.children[0]]
         while len(not_visited) > 0:
             current = not_visited.pop()
             if current not in visited:
                 visited.append(current)
-                for i in current.children:
-                    not_visited.append(i)
+                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) or not isinstance(
+                        current, FuncDefnAST):
+                    for i in current.children:
+                        not_visited.append(i)
 
         # Handle
         for current in visited:
@@ -1040,7 +1043,7 @@ class FuncParametersAST(AST):
         super().__init__(root, children, parent, symbolTable)
         if parameters is None:
             parameters = []
-        self.parameters = []
+        self.parameters = parameters
 
     def handle(self):
         return self
@@ -1083,7 +1086,29 @@ class FuncDeclAST(AST):
             f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = f""
+        # Begin
+        out += f"define dso_local {getLLVMType(self.type)} @{self.root.key}"
+        # Parameters
+        paramaters = self.params.parameters
+        param_string = ""
+        default_exist = False
+        if len(paramaters) > 0:
+            count = 0
+            for i in paramaters:
+                param_string += f"{getLLVMType(i.type)} %{i.key}"
+                if count + 1 != len(paramaters):
+                    param_string += ', '
+                count += 1
+            pass
+        out += f" ({param_string})"
+
+        if default_exist:
+            # the rest
+            out += " #0 {"
+
+            # extra bullshit if they have default values
+        return out, index
 
 
 class FuncDefnAST(AST):
@@ -1119,7 +1144,34 @@ class FuncDefnAST(AST):
             f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = f""
+        # Begin
+        out += f"define dso_local {getLLVMType(self.type)} @{self.root.key}"
+        # Parameters
+        paramaters = self.params.parameters
+        param_string = ""
+        default_exist = False
+        if len(paramaters) > 0:
+            count = 0
+            for i in paramaters:
+                param_string += f"{getLLVMType(i.type)} %{i.key}"
+                if count + 1 != len(paramaters):
+                    param_string += ', '
+                count += 1
+            pass
+        out += f" ({param_string})"
+        # the rest
+        out += " #0 {"
+
+        # extra bullshit if they have default values
+        if default_exist:
+            pass
+        # Scope
+        if len(paramaters) == 0:
+            self.children[0].llvm()
+        else:
+            self.children[1].llvm()
+        return out, index
 
 
 class FuncCallAST(AST):
@@ -1141,6 +1193,8 @@ class FuncCallAST(AST):
         return out
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        # %result = call i32 @add(i32 3, i32 4)
+        function = self.getEntry(self.root)
         pass
 
 
@@ -1152,7 +1206,25 @@ class FuncScopeAST(AST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        # DFS the whole scope and llvm every part of them
+        visited = []
+        not_visited = [self]
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) or not isinstance(
+                        current, FuncDefnAST):
+                    for i in current.children:
+                        not_visited.append(i)
+
+        out = ""
+        for current in visited:
+            output = current.llvm(True, index)
+            out += output[0]
+            index = output[1]
+        out += "}\n"
+        return out, index
 
 
 class ReturnInstr(InstrAST):
@@ -1183,7 +1255,7 @@ class ScanfAST(AST):
 
     def getDict(self):
         name = f"scanf({self.format_string})"
-        return {name : self.variables} , name
+        return {name: self.variables}, name
 
     def handle(self):
         return self
@@ -1210,7 +1282,7 @@ class IncludeAST(AST):
         super().__init__(root, children, parent, symbolTable)
 
     def getDict(self):
-        return {f"#include<{self.root.key}>" : self.root.value} , f"#include<{self.root.key}>"
+        return {f"#include<{self.root.key}>": self.root.value}, f"#include<{self.root.key}>"
 
     def handle(self):
         return self
