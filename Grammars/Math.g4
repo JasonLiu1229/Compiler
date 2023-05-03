@@ -7,6 +7,7 @@ instr           :   declr ((';')+ | DELIM)
                 |   array_decl ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
                 |   scanf ((';')+ | DELIM)
+                |   assign ((';')+ | DELIM)
                 ;
 
 declr           :   CONST? TYPE (var_decl ',')* var_decl
@@ -111,7 +112,10 @@ var_decl        :   lvar ASSIGN expr
 
 assign          :   rvar ASSIGN expr
                 |   deref ASSIGN expr
+                |   array_el ASSIGN expr
                 ;
+
+array_el        :   lvar '[' INT ']';
 
 deref           :   STR deref
                 |   STR rvar
