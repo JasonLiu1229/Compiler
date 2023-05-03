@@ -1098,8 +1098,7 @@ class MathParser ( Parser ):
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
-            self._FORMAT_STRING = None # Token
-            self.format_string = list() # of Tokens
+            self.format_string = None # Token
             self._rvar = None # RvarContext
             self.vars_ = list() # of RvarContexts
 
@@ -1154,8 +1153,7 @@ class MathParser ( Parser ):
             self.state = 202
             self.match(MathParser.T__2)
             self.state = 203
-            localctx._FORMAT_STRING = self.match(MathParser.FORMAT_STRING)
-            localctx.format_string.append(localctx._FORMAT_STRING)
+            localctx.format_string = self.match(MathParser.FORMAT_STRING)
             self.state = 204
             self.match(MathParser.T__1)
             self.state = 213
