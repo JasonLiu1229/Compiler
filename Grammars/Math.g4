@@ -101,6 +101,7 @@ init            :   TYPE lvar ASSIGN expr
 cond            :   term (GEQ | LEQ | NEQ) factor
                 |   term (GT | LT | EQ) factor
                 |   expr (AND_OP | OR_OP) term
+                |   expr
                 ;
 
 incr            :   INCR rvar
