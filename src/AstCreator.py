@@ -418,7 +418,8 @@ class AstCreator(MathVisitor):
                 # if a scope, skip
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)):
                     visited.append(temp)
-                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or temp is ast_in or isinstance(temp.parent, Scope_AST):
+                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
+                        temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
                     for i in temp.children:
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
@@ -460,10 +461,25 @@ class AstCreator(MathVisitor):
                 raise RuntimeError("No symbol table found")
             temp_symbol = symbol_table
             if isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
-                pass
-                # symbol_table = self.resolve(ast.children[0])
+                if symbol_table.exists(ast):
+                    raise AttributeError(f"Redefinition of function {ast.root.key}")
+                else:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    ast.parent.symbolTable.insert(new_entry)
+                # declare each parameter in your scope
+                # handle what's in the function scope
+                ast.children[1].symbolTable = ast.symbolTable
+                symbol_table = self.resolve(ast.children[1]).symbolTable
+                # print symbol table
+                print(f"Symbol table for {ast.root.key}:")
+                symbol_table.print()
                 # functions
             elif isinstance(ast, FuncDeclAST):
+                # check all the parameters
+                node = ast
                 continue
             elif isinstance(ast, ScanfAST):
                 for var in ast.variables:
@@ -951,15 +967,20 @@ class AstCreator(MathVisitor):
         return out
 
     def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
-        return FuncDefnAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+        out = FuncDefnAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
                            ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
                            symbolTable=SymbolTable())
+        out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
+                           const_ptr=out.ptr and out.const)
+        return out
 
     def visitFunc_decl(self, ctx: MathParser.Func_declContext):
-        return FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+        out = FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
                            ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
                            symbolTable=SymbolTable())
-
+        out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
+                           const_ptr=out.ptr and out.const)
+        return out
     def visitFunc_arg(self, ctx: MathParser.Func_argContext):
         return
 

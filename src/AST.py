@@ -36,15 +36,15 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         :return: a syntax error class
         """
         pass
-        # input_stream = recognizer.getInputStream()
-        # # Get all tokens in this line or the next one
-        # line_text = ""
-        # for token in input_stream.tokens[:input_stream.index]:
-        #     if token.line in range(line - 1, line):
-        #         line_text += token.text
-        #
-        # out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
-        # raise ParseCancellationException(out)
+        input_stream = recognizer.getInputStream()
+        # Get all tokens in this line or the next one
+        line_text = ""
+        for token in input_stream.tokens[:input_stream.index]:
+            if token.line in range(line - 1, line):
+                line_text += token.text
+
+        out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
+        raise ParseCancellationException(out)
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         """

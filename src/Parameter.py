@@ -1,8 +1,14 @@
+from AST import FuncParameter
 class FunctionParameter:
-    def __init__(self, in_type: str, in_default, in_name) -> None:
-        self.type = in_type
-        self.name = in_name
-        self.default_value = in_default
+    def __init__(self, in_object: FuncParameter) -> None:
+        self.type = in_object.type
+        self.ptr = in_object.ptr
+        self.ptr_level = in_object.total_deref - in_object.deref_level
+        self.reference = in_object.reference
+        self.array = in_object.array
+        self.const = in_object.const
+        self.name = in_object.key
+        self.default_value = in_object.value
 
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, FunctionParameter):
