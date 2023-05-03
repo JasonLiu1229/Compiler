@@ -560,6 +560,9 @@ class PrintfAST(AST):
     def handle(self):
         return self
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class DeclrAST(AST):
 
@@ -577,6 +580,9 @@ class DeclrAST(AST):
 
     def getDict(self):
         return {self.root.key: [f"{'const ' if self.const else ''}{self.type}"]}, self.root.key
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class VarDeclrAST(AST):
@@ -603,6 +609,9 @@ class VarDeclrAST(AST):
             return self.children[0]
         else:
             return self.children[0]
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class AssignAST(AST):
@@ -954,13 +963,15 @@ class While_loopAST(Scope_AST):
             if current not in visited:
                 visited.append(current)
                 for i in current.children:
-                    if not isinstance(i, Node):
-                        not_visited.append(i)
+                    not_visited.append(i)
 
         # Handle
         for current in visited:
             # handle the right AST
-            pass
+            output = current.llvm(scope=True, index=index)
+            out += output[0]
+            index = output[1]
+
         index1 = blocks["1"]
         out += f"\tbr label %{index1}, !llvm.loop !6"
         return out, index
@@ -973,13 +984,14 @@ class While_loopAST(Scope_AST):
         index += 1
         return out, index
 
-    def llvm(self, scope: bool = False, index: int = 1) -> str:
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[Any, Any]:
         blocks = {"1": index, "2": index + 1, "3": index + 2}
         index += 2
         out = f"\tbr label %{index}\n\n"
         out, index = self.llvm_block1(out, index, blocks)
         out, index = self.llvm_block2(out, index, blocks)
         out, index = self.llvm_block3(out, index, blocks)
+        return out, index
 
 
 class CondAST(TermAST):
@@ -992,11 +1004,17 @@ class CondAST(TermAST):
         return f"root: {{ {self.root} }}, last_eval: " \
                f"{self.last_eval.value if isinstance(self.last_eval, Node) else self.last_eval} , children: {self.children}"
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class InitAST(DeclrAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class BreakAST(InstrAST):
@@ -1008,6 +1026,9 @@ class BreakAST(InstrAST):
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class FuncParametersAST(AST):
@@ -1024,6 +1045,9 @@ class FuncParametersAST(AST):
 
     def save(self):
         return [child.save() for child in self.children]
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class FuncDeclAST(AST):
@@ -1055,6 +1079,9 @@ class FuncDeclAST(AST):
     def getDict(self):
         return {f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}": self.root.value}, \
             f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class FuncDefnAST(AST):
@@ -1089,6 +1116,9 @@ class FuncDefnAST(AST):
         return {f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}": self.root.value}, \
             f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}"
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -1108,6 +1138,9 @@ class FuncCallAST(AST):
         out[name].append({"parameters": [child.save() for child in self.children]})
         return out
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class FuncScopeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -1116,6 +1149,9 @@ class FuncScopeAST(AST):
     def handle(self):
         return self
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class ReturnInstr(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -1123,6 +1159,9 @@ class ReturnInstr(InstrAST):
 
     def handle(self):
         return self
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class ScanfAST(AST):
@@ -1147,13 +1186,21 @@ class ScanfAST(AST):
     def handle(self):
         return self
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class ArrayDeclAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, symbolTable)
+        self.size = 0
+        self.values = []
 
     def handle(self):
         return self
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class IncludeAST(AST):
@@ -1165,3 +1212,6 @@ class IncludeAST(AST):
 
     def handle(self):
         return self
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass

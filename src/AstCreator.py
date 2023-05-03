@@ -954,8 +954,10 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitArray_decl(self, ctx: MathParser.Array_declContext):
-        # return ArrayDeclAST(VarNode("array", None))
-        pass
+        ast = ArrayDeclAST(VarNode(vtype=ctx.type_, key=ctx.name, const=ctx.const, value="", is_array=True))
+        ast.size = ctx.size
+        ast.values = ctx.values
+        return ast
 
     def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
         return IncludeAST(Node(f"{ctx.library.text}.h", None))
