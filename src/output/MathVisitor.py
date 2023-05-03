@@ -149,6 +149,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#array_el.
+    def visitArray_el(self, ctx:MathParser.Array_elContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#deref.
     def visitDeref(self, ctx:MathParser.DerefContext):
         return self.visitChildren(ctx)

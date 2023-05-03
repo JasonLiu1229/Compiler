@@ -260,6 +260,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#array_el.
+    def enterArray_el(self, ctx:MathParser.Array_elContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#array_el.
+    def exitArray_el(self, ctx:MathParser.Array_elContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#deref.
     def enterDeref(self, ctx:MathParser.DerefContext):
         pass
