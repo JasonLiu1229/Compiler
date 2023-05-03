@@ -947,8 +947,9 @@ class AstCreator(MathVisitor):
 
     def visitScanf(self, ctx: MathParser.ScanfContext):
         ast = ScanfAST(Node("scanf", None))
-        ast.variables = ctx.vars
-        ast.types = ctx.scan_types
+        # ast.variables = ctx.vars_
+        ast.variables = [self.visit_child(var) for var in ctx.vars_]
+        ast.format_string = ctx.format_string.text
         return ast
 
     def visitArray_decl(self, ctx: MathParser.Array_declContext):
@@ -956,7 +957,7 @@ class AstCreator(MathVisitor):
         pass
 
     def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
-        return IncludeAST(Node(ctx.library, None))
+        return IncludeAST(Node(f"{ctx.library.text}.h", None))
 
     @staticmethod
     def convert(value, d_type):
