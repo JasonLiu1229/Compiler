@@ -44,6 +44,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#printf_arg.
+    def enterPrintf_arg(self, ctx:MathParser.Printf_argContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#printf_arg.
+    def exitPrintf_arg(self, ctx:MathParser.Printf_argContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#scanf.
     def enterScanf(self, ctx:MathParser.ScanfContext):
         pass

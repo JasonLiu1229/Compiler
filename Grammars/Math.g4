@@ -14,11 +14,15 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' string_input+=PRINTF_STRING* (',' (vars+=rvar ',')* vars+=rvar )? ')'
+printf          :   PRINTF '(' string_input+=FORMAT_STRING (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
                 |   PRINTF '(' (rvar | rtype) ')'
                 ;
 
-scanf           :   SCANF '(' (scan_types+=SCANF_TYPES ',')* scan_types+=SCANF_TYPES ',' (vars+=rvar ',')* vars+=rvar ')'
+printf_arg      :   rvar
+                |   rtype
+                |   FORMAT_STRING;
+
+scanf           :   SCANF '(' scan_types+=FORMAT_STRING ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
                 ;
 
 // Functions
@@ -159,7 +163,7 @@ primary         :   rvar
 rtype           :   INT
                 |   FLOAT
                 |   CHAR
-                |   STRING
+//                |   STRING
                 ;
 
 
@@ -190,9 +194,8 @@ INT             :   ([1-9][0-9]*) | [0];
 FLOAT           :   [0-9]+ '.' [0-9]+;
 CHAR            :   ('\'' . '\'')
                 |   ('\'\\' . '\'');
-PRINTF_STRING   :   '"' ( . | ARG_TYPES)*? '"';
+FORMAT_STRING   :   '"' ( . | ARG_TYPES)*? '"';
 STRING          :   '"' (.)*? '"';
-SCANF_TYPES     :   '"' ARG_TYPES '"';
 ARG_TYPES       :   '%' ('#' | '-' | '+' | '.')? (INT)? (.);
 // Operations
 STR             :   '*';
