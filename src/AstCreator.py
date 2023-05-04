@@ -199,6 +199,11 @@ class AstCreator(MathVisitor):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     child.children.reverse()
+                    if isinstance(child.children[0], FuncParametersAST):
+                        child.params = child.children[0].parameters
+                    for param in child.params:
+                        if param.value is not None:
+                            child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
                 elif isinstance(child, FuncCallAST):
@@ -215,6 +220,9 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     if isinstance(child.children[0], FuncParametersAST):
                         child.params = child.children[0].parameters
+                    for param in child.params:
+                        if param.value is not None:
+                            child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
                 elif isinstance(child, FuncParametersAST):
@@ -490,7 +498,7 @@ class AstCreator(MathVisitor):
                 symbol_table.print()
                 # functions
             elif isinstance(ast, FuncDeclAST):
-                # check all the parameters
+                # check function was previously declared
                 node = ast
                 continue
             elif isinstance(ast, ScanfAST):

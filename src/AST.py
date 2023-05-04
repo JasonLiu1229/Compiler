@@ -1061,7 +1061,7 @@ class FuncDeclAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
-                 params: FuncParametersAST = None):
+                 params = None):
         super().__init__(root, children, parent, symbolTable)
         self.type: str = return_type
         self.const: bool = const
@@ -1069,7 +1069,8 @@ class FuncDeclAST(AST):
         self.ptr_level: int = ptr_level
         if params is None:
             params = []
-        self.params: FuncParametersAST = params
+        self.params = params
+        self.has_defaults = []
 
     def handle(self):
         return self
@@ -1117,7 +1118,7 @@ class FuncDefnAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
-                 params: FuncParametersAST = None):
+                 params = None):
         super().__init__(root, children, parent, symbolTable)
         self.type: str = return_type
         self.const: bool = const
@@ -1125,7 +1126,8 @@ class FuncDefnAST(AST):
         self.ptr_level: int = ptr_level
         if params is None:
             params = []
-        self.params: FuncParametersAST = params
+        self.params = params
+        self.has_defaults = []
 
     def handle(self):
         return self
