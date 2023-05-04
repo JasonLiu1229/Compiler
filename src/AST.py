@@ -20,7 +20,7 @@ keywords_functions = ["printf"]
 conversions = [("float", "int"), ("int", "char"), ("float", "char"),
                ("int", "float"), ("char", "int"), ("char", "float")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
-tokens = ['!=','==','>','>=','<','<=','||','&&','%','/','-','+','++','--','*']
+tokens = ['!=', '==', '>', '>=', '<', '<=', '||', '&&', '%', '/', '-', '+', '++', '--', '*']
 
 
 # TODO: Make specific types of AST in the visit functions
@@ -893,8 +893,6 @@ class Scope_AST(AST):
         return out, index
 
 
-
-
 class If_CondAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -1394,7 +1392,25 @@ class ArrayDeclAST(AST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        if scope:
+            # local
+            out += f"%{index} = alloca [ {self.size} x {getLLVMType(self.root.type)}], align {min(self.size * 4, 16)}\n"
+            index += 1
+
+        else:
+            # global
+            vals = "["
+            count = 0
+            for val in self.values:
+                vals += f"{getLLVMType(getType(self.root.value))} {val.value} {', ' if count + 1 != len(self.values) else ''}"
+                count += 1
+            if count < self.size != 0:
+                for i in range(self.size - count):
+                    vals += f"{getLLVMType(getType(self.root.value))} 0 {', ' if count + 1 != len(self.values) else ''}"
+            vals += "]"
+            out += f"@{self.root.key} = dso_local global [ {self.size} x {getLLVMType(getType(self.root.value))}] {'zeroinitializer' if len(self.values) == 0 else vals}, align {min(self.size * 4, 16)}\n"
+        return out, index
 
 
 class IncludeAST(AST):
