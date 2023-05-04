@@ -218,13 +218,19 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
                     child.parent = base
                 elif isinstance(child, FuncParametersAST):
-                    last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
-                    last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
-                    last_det = max(last_inst, last_func)
-                    child.children = base.children[last_det + 1: index]
-                    base.children[last_det + 1: index] = []
-                    child.children.reverse()
-                    child.parameters = child.children
+                    # last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
+                    # last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
+                    # last_det = max(last_inst, last_func)
+                    child.parameters = base.children[index - len(child.parameters): index]
+                    base.children[index - len(child.parameters): index] = []
+                    child.parameters.reverse()
+                    # check default parameters order
+                    default_found = False
+                    for param in child.parameters:
+                        if param.value is not None:
+                            default_found = True
+                        elif param.value is None and default_found:
+                            raise AttributeError("Default value in the middle")
                     index = base.children.index(child)
                 elif isinstance(child, CondAST):
                     if child.root.value == "const":
@@ -385,8 +391,6 @@ class AstCreator(MathVisitor):
                         child.value = base.children[index - 1].value
                         base.children[index-1: index] = []
                         index = base.children.index(child)
-                    else:
-                        continue
             index += 1
         base.children.reverse()
         return base
