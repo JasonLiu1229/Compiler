@@ -118,7 +118,7 @@ class AstCreator(MathVisitor):
         for i in reversed(range(index)):
             if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
                 isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
-                    (isinstance(in_list[i], Node) and in_list[i].key == token):
+                isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token):
                 return i
         return -1
 
@@ -196,14 +196,16 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                 elif isinstance(child, FuncDeclAST):
-                    child.children = base.children[index - 1: index]
-                    base.children[index - 1: index] = []
+                    if isinstance(base.children[index-1], FuncParametersAST):
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1: index] = []
                     child.children.reverse()
-                    if isinstance(child.children[0], FuncParametersAST):
-                        child.params = child.children[0].parameters
-                    for param in child.params:
-                        if param.value is not None:
-                            child.has_defaults.append(param)
+                    if len(child.children) > 0:
+                        if isinstance(child.children[0], FuncParametersAST):
+                            child.params = child.children[0].parameters
+                        for param in child.params:
+                            if param.value is not None:
+                                child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
                 elif isinstance(child, FuncCallAST):
@@ -212,6 +214,16 @@ class AstCreator(MathVisitor):
                         child.args[i - 1] = base.children[index - i]
                     base.children[index - amt:index] = []
                     child.children = child.args
+                    index = base.children.index(child)
+                elif isinstance(child, ReturnInstr):
+                    if child.root.value is None:
+                        last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
+                        child.children = base.children[index-1:index]
+                        base.children[last_token : index] = []
+                        index = base.children.index(child)
+                elif isinstance(child, ContAST) or isinstance(child, BreakAST):
+                    last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
+                    base.children[last_token: index] = []
                     index = base.children.index(child)
                 elif isinstance(child, FuncDefnAST):
                     last_func = self.lastFuncScope(index=index, in_list=base.children)
@@ -350,9 +362,10 @@ class AstCreator(MathVisitor):
                     #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
                 elif child.root.key == "printf":
-                    child.children = base.children[index - 1: index]
-                    base.children[index - 1: index] = []
-                    index -= 1
+                    if child.root.value is None:
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1: index] = []
+                        index -= 1
                 elif child.root.key == "deref":
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
@@ -452,7 +465,7 @@ class AstCreator(MathVisitor):
         return ast_in
 
     def handle(self, list_ast: list):
-        # TODO: handle returnINSTR , break and continue
+        # TODO: handle function call
         # initialize queues
         updates_queue = []
         incr_queue = []
@@ -460,16 +473,7 @@ class AstCreator(MathVisitor):
         # flags
         conditional = False
         evaluate = True
-        # initialize symbol table from root
-        # symbol_table = None
-        # temp_parent = list_ast[0].parent
-        # while symbol_table is None and temp_parent is not None:
-        #     temp_parent = temp_parent.parent
-        #     symbol_table = temp_parent.symbolTable
-        # if symbol_table is None:
-        #     raise RuntimeError("No symbol table found")
-        # handle
-        # temp_symbol = symbol_table
+
         for ast in list_ast:
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
@@ -480,8 +484,20 @@ class AstCreator(MathVisitor):
             if symbol_table is None:
                 raise RuntimeError("No symbol table found")
             temp_symbol = symbol_table
-            if isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
-                if symbol_table.exists(ast):
+            if isinstance(ast, ReturnInstr):
+                temp_parent = ast.parent
+                while temp_parent is not None:
+                    if isinstance(temp_parent, FuncDefnAST):
+                        if temp_parent.type == "void" and ast.root.value != "void" :
+                            raise AttributeError(f"\'return\' with a value, in function returning void")
+                        if temp_parent.type != "void" and ast.root.value == "void":
+                            raise AttributeError(f"\'return\' with no value, in function returning non-void")
+                        break
+                    temp_parent = temp_parent.parent
+
+            if isinstance(ast, FuncDeclAST):
+                # check function was previously declared
+                if ast.parent.symbolTable.exists(ast.root):
                     raise AttributeError(f"Redefinition of function {ast.root.key}")
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
@@ -489,18 +505,47 @@ class AstCreator(MathVisitor):
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
                     ast.parent.symbolTable.insert(new_entry)
+                node = ast
+                continue
+            elif isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
+                temp_exists = False
+                match = None
+                if ast.parent.symbolTable.exists(ast.root):
+                    temp_exists = True
+                    matches = ast.parent.symbolTable.lookup(ast.root)
+                    if len(matches) == 1:
+                        if matches[0].defined:
+                            raise AttributeError(f"Redefinition of function {ast.root.key}")
+                        match = matches[0]
+                if not temp_exists:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    new_entry.defined = True
+                    ast.parent.symbolTable.insert(new_entry)
+                else:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    if new_entry != match:
+                        raise AttributeError(f"Redeclaration of function {ast.root.key} with different signature")
+                    elif match.defined:
+                        raise AttributeError(f"Redefinition of function {ast.root.key}")
+                    match.defined = True
+                    # ast.parent.symbolTable.refresh()
+
+                    # check if entries match
                 # declare each parameter in your scope
                 # handle what's in the function scope
-                ast.children[1].symbolTable = ast.symbolTable
-                symbol_table = self.resolve(ast.children[1]).symbolTable
+                ast.children[-1].symbolTable = ast.symbolTable
+                symbol_table = self.resolve(ast.children[-1]).symbolTable
                 # print symbol table
                 print(f"Symbol table for {ast.root.key}:")
                 symbol_table.print()
                 # functions
-            elif isinstance(ast, FuncDeclAST):
-                # check function was previously declared
-                node = ast
-                continue
+
             elif isinstance(ast, ScanfAST):
                 for var in ast.variables:
                     match , total = AST.getEntry(var)
@@ -709,7 +754,7 @@ class AstCreator(MathVisitor):
                 # hard code the parameters for this particular function
                 if not isinstance(ast.children[0], VarNode):
                     continue
-                new_param = FunctionParameter(getType(ast.children[0].value), None, "print_val")
+                new_param = FunctionParameter(getType(ast.children[0].value))
                 new_entry = FuncSymbolEntry(ast.root, in_parameters=[new_param])
                 ast.root.type = new_param.type
                 temp_symbol.insert(new_entry)
@@ -807,6 +852,8 @@ class AstCreator(MathVisitor):
         """
 
         out = PrintfAST(FunctionNode(key="printf"))
+        if ctx.print_val is not None:
+            out.root.value = ctx.print_val.text
         # PrintfAST root is the definition of the function
         # PrintfAST children are the parameters given to the function
         return out
@@ -1030,7 +1077,11 @@ class AstCreator(MathVisitor):
         return FuncScopeAST(Node(ctx.parentCtx.name.text, None))
 
     def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
-        return ReturnInstr(Node("return", None))
+        out = ReturnInstr(Node("return", None))
+        if ctx.ret_val is None:
+            out.root.value = "void"
+        return out
+
 
     def visitScanf(self, ctx: MathParser.ScanfContext):
         ast = ScanfAST(Node("scanf", None))
