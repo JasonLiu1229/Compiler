@@ -20,9 +20,18 @@ printf          :   PRINTF '(' (rvar | rtype | print_val=STRING) ')'
 
 printf_arg      :   rvar
                 |   rtype
+                |   array_el
+                |   deref
                 |   STRING;
 
-scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
+scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? (vars+=scanf_arg) ',')* ADDR? vars+=scanf_arg ')'
+                ;
+
+scanf_arg       :   rvar
+                |   deref
+                |   array_el
+                |   ADDR rvar
+                |   ADDR deref
                 ;
 
 // Functions
