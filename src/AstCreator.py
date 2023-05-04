@@ -518,7 +518,8 @@ class AstCreator(MathVisitor):
                         raise AttributeError(f"Redeclaration of function {ast.root.key} with different signature")
                     elif match.defined:
                         raise AttributeError(f"Redefinition of function {ast.root.key}")
-                    new_entry.defined = True
+                    match.defined = True
+                    # ast.parent.symbolTable.refresh()
 
                     # check if entries match
                 # declare each parameter in your scope
