@@ -381,9 +381,12 @@ class AstCreator(MathVisitor):
                             elif isinstance(n, VarNode):
                                 n.type = child.root.value
                 elif isinstance(child, FuncParameter):
-                    child.value = base.children[index - 1].value
-                    base.children[index-1: index] = []
-                    index = base.children.index(child)
+                    if not isinstance(base.children[index - 1], FuncParameter) and isinstance(base.children[index - 1], Node):
+                        child.value = base.children[index - 1].value
+                        base.children[index-1: index] = []
+                        index = base.children.index(child)
+                    else:
+                        continue
             index += 1
         base.children.reverse()
         return base
