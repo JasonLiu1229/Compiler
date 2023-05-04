@@ -118,16 +118,19 @@ class AstCreator(MathVisitor):
         for i in reversed(range(index)):
             if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
                 isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
-                isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token):
+                isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or \
+                isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST):
                 return i
         return -1
 
     @staticmethod
     def lastDeclaration(index: int, in_list, token: str = '}'):
         for i in reversed(range(index)):
-            if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
+            if isinstance(in_list[i], PrintfAST) or \
                     isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
-                    isinstance(in_list[i], VarDeclrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
+                    (isinstance(in_list[i], Node) and in_list[i].key == token) or \
+                    isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
+                    isinstance(in_list[i], DeclrAST):
                 return i
         return -1
 
@@ -174,27 +177,33 @@ class AstCreator(MathVisitor):
                         base.children[index - 2: index] = []
                         index -= 2
                     child.children.reverse()
+
                 elif child.root.key == "factor" and child.root.value is not None:
                     if child.root.value in ["++", "+", "--", "-"]:
                         child.children = base.children[index - 1: index]
                         base.children[index - 1: index] = []
                         index -= 1
                     child.children.reverse()
+
                 elif child.root.key == "primary" and child.root.value is not None:
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index -= 1
+
                 elif isinstance(child, ScanfAST):
                     base.children[index-len(child.variables):index] = []
                     index -= len(child.variables)
+
                 elif isinstance(child, IncludeAST):
                     child.parent = base
+
                 elif isinstance(child, ArrayDeclAST):
                     last_inst = self.lastInstruction(index=index, in_list=base.children)
                     child.children = base.children[last_inst + 1: index]
                     base.children[last_inst + 1: index] = []
                     child.children.reverse()
                     index = base.children.index(child)
+
                 elif isinstance(child, FuncDeclAST):
                     if isinstance(base.children[index-1], FuncParametersAST):
                         child.children = base.children[index - 1: index]
@@ -208,6 +217,7 @@ class AstCreator(MathVisitor):
                                 child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
+
                 elif isinstance(child, FuncCallAST):
                     amt = len(child.args)
                     for i in reversed(range(1, amt + 1)):
@@ -215,16 +225,19 @@ class AstCreator(MathVisitor):
                     base.children[index - amt:index] = []
                     child.children = child.args
                     index = base.children.index(child)
+
                 elif isinstance(child, ReturnInstr):
                     if child.root.value is None:
                         last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
                         child.children = base.children[index-1:index]
                         base.children[last_token : index] = []
                         index = base.children.index(child)
+
                 elif isinstance(child, ContAST) or isinstance(child, BreakAST):
                     last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
                     base.children[last_token: index] = []
                     index = base.children.index(child)
+
                 elif isinstance(child, FuncDefnAST):
                     last_func = self.lastFuncScope(index=index, in_list=base.children)
                     child.children = base.children[last_func: index]
@@ -237,6 +250,7 @@ class AstCreator(MathVisitor):
                             child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
+
                 elif isinstance(child, FuncParametersAST):
                     # last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
                     # last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
@@ -252,6 +266,7 @@ class AstCreator(MathVisitor):
                         elif param.value is None and default_found:
                             raise AttributeError("Default value in the middle")
                     index = base.children.index(child)
+
                 elif isinstance(child, CondAST):
                     if child.root.value == "const":
                         child.children = base.children[index - 1: index]
@@ -261,6 +276,7 @@ class AstCreator(MathVisitor):
                         base.children[index - 2:index] = []
                     child.children.reverse()
                     index = base.children.index(child)
+
                 elif isinstance(child, InitAST):
                     last_decl = self.lastInit(index, base.children)
                     last_decl += 1
@@ -270,13 +286,15 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
                     update_index = last_decl
                     update_index += 1
+
                 elif isinstance(child, InstrAST):
                     # Parent of instr is base itself, if no parent is already found
                     if child.parent is None:
                         child.parent = base
                     if self.searchPrevToken(index=index, token="}", in_list=base.children) == -1:
-                        child.children = base.children[indexes["last_instr"]: index]
-                        base.children[indexes["last_instr"]: index] = []
+                        last_inst = self.lastInstruction(index, base.children)
+                        child.children = base.children[last_inst + 1: index]
+                        base.children[last_inst + 1: index] = []
                     else:
                         last_inst = self.lastInstruction(index, base.children)
                         child.children = base.children[last_inst + 1:index]
@@ -284,6 +302,7 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     index = base.children.index(child)
                     indexes["last_instr"] = index + 1
+
                 elif isinstance(child, If_CondAST) or isinstance(child, While_loopAST):
                     if child.parent is None:
                         child.parent = base
@@ -300,6 +319,7 @@ class AstCreator(MathVisitor):
                     child.condition.parent = child
                     child.children = child.children[1:]
                     index = base.children.index(child)
+
                 elif isinstance(child, Else_CondAST):
                     if child.parent is None:
                         child.parent = base
@@ -308,6 +328,7 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     last_else = child
                     index = base.children.index(child)
+
                 elif isinstance(child, For_loopAST):
                     if child.parent is None:
                         child.parent = base
@@ -325,6 +346,7 @@ class AstCreator(MathVisitor):
                     child.incr.parent = child
                     child.children = child.children[3:]
                     index = base.children.index(child)
+
                 elif isinstance(child, Scope_AST) or isinstance(child, FuncScopeAST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
@@ -340,15 +362,17 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
                     indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
+
                 elif isinstance(child, DeclrAST):
                     last_decl = self.lastDeclaration(index, base.children)
                     # last_decl += 1
-                    child.children = base.children[last_decl: index]
+                    child.children = base.children[last_decl + 1: index]
                     child.children.reverse()
-                    base.children[last_decl: index] = []
+                    base.children[last_decl + 1: index] = []
                     index = base.children.index(child)
                     update_index = last_decl
                     update_index += 1
+
                 elif child.root.key == "assign":
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
@@ -361,6 +385,7 @@ class AstCreator(MathVisitor):
                     # else:
                     #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
+
                 elif child.root.key == "printf":
                     if child.root.value is None:
                         child.children = base.children[index - 1: index]
@@ -379,24 +404,29 @@ class AstCreator(MathVisitor):
                             n.root.value = child.root.value
                         elif isinstance(n, VarNode):
                             n.type = child.root.value
+
             elif isinstance(child, Node):
                 if child.key == "}":
                     indexes["scope_depth"] += 1
                     indexes["last_scope_open"] = index
                     # base.children[index:index+1] = []
                     # index -= 1
+
                 if child.key == "{":
                     indexes["scope_depth"] -= 1
                     base.children[index:index + 1] = []
                     index -= 1
+
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index - 1].value
+
                 if child.key == "assign_op":
                     base.children[index] = AssignAST(Node("assign", None))
                     base.children[index].children = base.children[index - 2:index]
                     base.children[index].children.reverse()
                     base.children[index - 2:index] = []
                     index -= 2
+
                 if isinstance(base.children[index], AST):
                     child = base.children[index]
                     # connect children to this node
@@ -407,11 +437,13 @@ class AstCreator(MathVisitor):
                                 n.root.value = child.root.value
                             elif isinstance(n, VarNode):
                                 n.type = child.root.value
+
                 elif isinstance(child, FuncParameter):
                     if not isinstance(base.children[index - 1], FuncParameter) and isinstance(base.children[index - 1], Node):
                         child.value = base.children[index - 1].value
                         base.children[index-1: index] = []
                         index = base.children.index(child)
+
             index += 1
         base.children.reverse()
         return base
