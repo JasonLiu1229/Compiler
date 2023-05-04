@@ -14,8 +14,8 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
-                |   PRINTF '(' (rvar | rtype | STRING) ')'
+printf          :   PRINTF '(' (rvar | rtype | print_val=STRING) ')'
+                |   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
                 ;
 
 printf_arg      :   rvar
@@ -56,7 +56,7 @@ func_scope      :   '{'(
                            )* '}'
                 ;
 
-return_instr    :   RETURN (ret_val=expr) ';' (instr | return_instr)*
+return_instr    :   RETURN (ret_val=expr)? ';' (instr | return_instr)*
                 ;
 
 
