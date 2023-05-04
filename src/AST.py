@@ -161,10 +161,10 @@ class AST:
             if temp_symbol is not None:
                 if temp_symbol.exists(entry):
                     out = temp_symbol.lookup(entry)
-                    return out[0].object , len(out) if out is not None else None
+                    return (out[0].object , len(out)) if out is not None else ([], None)
                 elif temp_symbol.exists(entry.value):
                     out = temp_symbol.lookup(entry.value)
-                    return out[0].object , len(out) if out is not None else None
+                    return (out[0].object , len(out)) if out is not None else ([], None)
         return out
 
     def __repr__(self) -> str:
