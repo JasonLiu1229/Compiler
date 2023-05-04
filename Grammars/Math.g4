@@ -57,7 +57,7 @@ func_scope      :   '{'(
                            )* '}'
                 ;
 
-return_instr    :   RETURN (expr) ';' (instr | return_instr)*
+return_instr    :   RETURN (ret_val=expr) ';' (instr | return_instr)*
                 ;
 
 
