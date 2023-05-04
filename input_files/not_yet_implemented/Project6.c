@@ -25,6 +25,6 @@
     int arr[] = {6};
 }
 
-int main(int x, int y = 9){
+int main(int x, int y = 9, int z, int a = 9){
 
 }

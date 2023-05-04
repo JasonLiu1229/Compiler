@@ -20,6 +20,7 @@ keywords_functions = ["printf"]
 conversions = [("float", "int"), ("int", "char"), ("float", "char"),
                ("int", "float"), ("char", "int"), ("char", "float")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
+tokens = ['!=','==','>','>=','<','<=','||','&&','%','/','-','+','++','--','*']
 
 
 # TODO: Make specific types of AST in the visit functions
@@ -128,6 +129,21 @@ def getLLVMType(ObjectType: str) -> str | None:
     return None
 
 
+def visited_list_DFS(ast) -> list:
+    not_visited = [ast]
+    visited = []
+    while len(not_visited) > 0:
+        v = not_visited.pop()
+        if v not in visited:
+            visited.append(v)
+            if not isinstance(v, While_loopAST) or not isinstance(v, FuncDeclAST) \
+                    or not isinstance(v, If_CondAST) \
+                    or not isinstance(v, FuncDefnAST):
+                for i in v.children:
+                    not_visited.append(i)
+    return visited
+
+
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         """
@@ -149,6 +165,87 @@ class AST:
     #
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
+
+    def visitLLVMOp(self, current, index: int) -> tuple[str, int]:
+        out = ""
+        indexL, indexR = 0, 0
+        leftChild = current.children[0]
+        rightChild = current.children[1]
+        if isinstance(leftChild, VarNode):
+            entry, length = self.getEntry(leftChild)
+            if entry is not None:
+                indexL = entry.register
+                out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
+                index += 1
+        else:
+            indexL = leftChild.value
+
+        if isinstance(rightChild, VarNode):
+            entry, length = self.getEntry(rightChild)
+            if entry is not None:
+                indexR = entry.register
+                out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
+                index += 1
+        else:
+            indexR = rightChild.value
+
+        operand = current.root.value
+        currenType = None
+        if isinstance(leftChild, VarNode):
+            currenType = leftChild.type
+        elif isinstance(rightChild, VarNode):
+            currenType = rightChild
+        else:
+            currenType = leftChild.key
+        convertedType = getLLVMType(currenType)
+        if operand == '<':
+            out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '>':
+            out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '==':
+            out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '!=':
+            out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '<=':
+            out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '>=':
+            out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '&&':
+            out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '||':
+            out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
+        elif operand == '+':
+            pass
+        elif operand == '-':
+            pass
+        elif operand == '/':
+            pass
+        elif operand == '*':
+            pass
+        elif operand == '%':
+            pass
+        elif operand == '++':
+            pass
+        elif operand == '--':
+            pass
+        return out, index
+
     @staticmethod
     def getEntry(entry):
         out = None
@@ -161,11 +258,11 @@ class AST:
             if temp_symbol is not None:
                 if temp_symbol.exists(entry):
                     out = temp_symbol.lookup(entry)
-                    return (out[0].object , len(out)) if out is not None else ([], None)
+                    return (out[0].object, len(out)) if out is not None else ([], None)
                 elif temp_symbol.exists(entry.value):
                     out = temp_symbol.lookup(entry.value)
-                    return (out[0].object , len(out)) if out is not None else ([], None)
-        return out
+                    return (out[0].object, len(out)) if out is not None else ([], None)
+        return out, -1
 
     def __repr__(self) -> str:
         return f"root: {{ {self.root} }} , children: {self.children}"
@@ -780,7 +877,20 @@ class Scope_AST(AST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        visited = visited_list_DFS(self)
+        out = ""
+
+        for current in visited:
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitLLVMOp(current, index)
+            else:
+                output = current.llvm()
+            out += output[0]
+            index = output[1]
+        return out, index
+
+
 
 
 class If_CondAST(Scope_AST):
@@ -806,6 +916,44 @@ class If_CondAST(Scope_AST):
             out["body"] = [child.save() for child in self.children]
         return out
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        # condition first with branch
+        out = ""
+        visited = visited_list_DFS(self.condition)
+
+        for current in visited:
+            output_str, output_in = self.visitLLVMOp(current, index)
+            out += output_str
+            index = output_in
+
+        # if block
+        visited = visited_list_DFS(self)
+
+        for current in visited:
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitLLVMOp(current, index)
+            else:
+                output = current.llvm(True, index)
+            out += output[0]
+            index = output[1]
+
+        # else block if else ast exist do 'else llvm' else do 'create block'
+        else_bool = False
+        for child in self.children:
+            if isinstance(child, Else_CondAST):
+                output = child.llvm(True, index)
+                out += output[0]
+                index = output[1]
+                else_bool = True
+                break
+        # create new block if else llvm didn't pass
+        if not else_bool:
+            out += f"{index}:\n"
+            index += 1
+
+        return out, index
+
 
 class Else_CondAST(Scope_AST):
 
@@ -823,6 +971,19 @@ class Else_CondAST(Scope_AST):
 
     def handle(self):
         return self
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        visited = visited_list_DFS(self)
+        out = ""
+        for current in visited:
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitLLVMOp(current, index)
+            else:
+                output = current.llvm(True, index)
+            out += output[0]
+            index = output[1]
+        return out, index
 
 
 class For_loopAST(Scope_AST):
@@ -889,68 +1050,10 @@ class While_loopAST(Scope_AST):
 
         # handle everything separately
         for current in visited:
-            indexL, indexR = 0, 0
-            leftChild = current.children[0]
-            rightChild = current.children[1]
-            if isinstance(leftChild, VarNode):
-                entry = self.getEntry(leftChild)
-                if entry is not None:
-                    indexL = entry.register
-                    out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
-                    index += 1
-            else:
-                indexL = leftChild.value
+            output = self.visitLLVMOp(current, index)
 
-            if isinstance(rightChild, VarNode):
-                entry = self.getEntry(rightChild)
-                if entry is not None:
-                    indexR = entry.register
-                    out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
-                    index += 1
-            else:
-                indexR = rightChild.value
-
-            operand = current.root.value
-            currenType = None
-            if isinstance(leftChild, VarNode):
-                currenType = leftChild.type
-            elif isinstance(rightChild, VarNode):
-                currenType = rightChild
-            else:
-                currenType = leftChild.key
-            convertedType = getLLVMType(currenType)
-            if operand == '<':
-                out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '>':
-                out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '==':
-                out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '!=':
-                out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '<=':
-                out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '>=':
-                out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '&&':
-                out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
-            elif operand == '||':
-                out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
-                current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-                index += 1
+            out += output[0]
+            index = output[1]
         index2 = blocks["2"]
         index3 = blocks["3"]
         out += f"br i1 %{index - 1}, label %{index2}, label %{index3}"
@@ -967,15 +1070,19 @@ class While_loopAST(Scope_AST):
             current = not_visited.pop()
             if current not in visited:
                 visited.append(current)
-                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) or not isinstance(
-                        current, FuncDefnAST):
+                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
+                        or not isinstance(current, If_CondAST) \
+                        or not isinstance(current, FuncDefnAST):
                     for i in current.children:
                         not_visited.append(i)
 
         # Handle
         for current in visited:
-            # handle the right AST
-            output = current.llvm(scope=True, index=index)
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitLLVMOp(current, index)
+            else:
+                output = current.llvm(True, index)
             out += output[0]
             index = output[1]
 
@@ -1053,15 +1160,12 @@ class FuncParametersAST(AST):
     def save(self):
         return [child.save() for child in self.children]
 
-    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
-
 
 class FuncDeclAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
-                 params = None):
+                 params=None):
         super().__init__(root, children, parent, symbolTable)
         self.type: str = return_type
         self.const: bool = const
@@ -1099,18 +1203,11 @@ class FuncDeclAST(AST):
         if len(paramaters) > 0:
             count = 0
             for i in paramaters:
-                param_string += f"{getLLVMType(i.type)} %{i.key}"
+                param_string += f"{getLLVMType(i.type)} noundef %{i.key}"
                 if count + 1 != len(paramaters):
                     param_string += ', '
                 count += 1
-            pass
         out += f" ({param_string})"
-
-        if default_exist:
-            # the rest
-            out += " #0 {"
-
-            # extra bullshit if they have default values
         return out, index
 
 
@@ -1118,7 +1215,7 @@ class FuncDefnAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
-                 params = None):
+                 params=None):
         super().__init__(root, children, parent, symbolTable)
         self.type: str = return_type
         self.const: bool = const
@@ -1158,23 +1255,26 @@ class FuncDefnAST(AST):
         if len(paramaters) > 0:
             count = 0
             for i in paramaters:
-                param_string += f"{getLLVMType(i.type)} %{i.key}"
+                param_string += f"{getLLVMType(i.type)} noundef %{i.key}"
                 if count + 1 != len(paramaters):
                     param_string += ', '
                 count += 1
-            pass
         out += f" ({param_string})"
         # the rest
-        out += " #0 {"
+        out += " #0 {\n"
 
-        # extra bullshit if they have default values
-        if default_exist:
-            pass
+        local_index = 1
+        if len(paramaters) > 0:
+            for child in paramaters:
+                out += f"%{local_index} = alloca {getLLVMType(child.type)}, align {'4' if not child.ptr else '8'}\n"
+                out += f"%store {getLLVMType(child.type)} %{child.key}, ptr %{local_index}, align {'4' if not child.ptr else '8'}\n"
+                entry, length = self.getEntry(child)
+                entry.register = local_index
+                local_index += 1
         # Scope
-        if len(paramaters) == 0:
-            self.children[0].llvm()
-        else:
-            self.children[1].llvm()
+        output = self.children[0].llvm(True, local_index)
+        out += output[0]
+        out += "}\n"
         return out, index
 
 
@@ -1198,8 +1298,17 @@ class FuncCallAST(AST):
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         # %result = call i32 @add(i32 3, i32 4)
-        function = self.getEntry(self.root)
-        pass
+        function, length = self.getEntry(self.root)
+        # arguments
+        arg_string = ""
+        count = 0
+        for arg in self.args:
+            arg_string += f"{getLLVMType(getType(arg.value) if isinstance(arg, Node) else arg.type)} {str(arg.value)}"
+            if count + 1 != len(arg):
+                arg_string += ', '
+        # end string
+        out = f"call {getLLVMType(function.type)} @{self.root.key}({arg_string})\n"
+        return out, index
 
 
 class FuncScopeAST(AST):
@@ -1217,14 +1326,19 @@ class FuncScopeAST(AST):
             current = not_visited.pop()
             if current not in visited:
                 visited.append(current)
-                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) or not isinstance(
-                        current, FuncDefnAST):
+                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
+                        or not isinstance(current, If_CondAST) \
+                        or not isinstance(current, FuncDefnAST):
                     for i in current.children:
                         not_visited.append(i)
 
         out = ""
         for current in visited:
-            output = current.llvm(True, index)
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitLLVMOp(current, index)
+            else:
+                output = current.llvm(True, index)
             out += output[0]
             index = output[1]
         out += "}\n"
