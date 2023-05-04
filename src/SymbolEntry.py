@@ -53,6 +53,7 @@ class FuncSymbolEntry(SymbolEntry):
         self.parameters = in_parameters
         if self.parameters is None:
             self.parameters = []
+        self.defined = False
 
     def __repr__(self):
         return f"{'const ' if self.const else ''}{self.type} {self.name}"

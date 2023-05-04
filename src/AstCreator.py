@@ -118,7 +118,7 @@ class AstCreator(MathVisitor):
         for i in reversed(range(index)):
             if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
                 isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
-                    (isinstance(in_list[i], Node) and in_list[i].key == token):
+                isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token):
                 return i
         return -1
 
@@ -480,8 +480,9 @@ class AstCreator(MathVisitor):
             if symbol_table is None:
                 raise RuntimeError("No symbol table found")
             temp_symbol = symbol_table
-            if isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
-                if symbol_table.exists(ast):
+            if isinstance(ast, FuncDeclAST):
+                # check function was previously declared
+                if ast.parent.symbolTable.exists(ast.root):
                     raise AttributeError(f"Redefinition of function {ast.root.key}")
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
@@ -489,18 +490,46 @@ class AstCreator(MathVisitor):
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
                     ast.parent.symbolTable.insert(new_entry)
+                node = ast
+                continue
+            elif isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
+                temp_exists = False
+                match = None
+                if ast.parent.symbolTable.exists(ast.root):
+                    temp_exists = True
+                    matches = ast.parent.symbolTable.lookup(ast.root)
+                    if len(matches) == 1:
+                        if matches[0].defined:
+                            raise AttributeError(f"Redefinition of function {ast.root.key}")
+                        match = matches[0]
+                if not temp_exists:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    new_entry.defined = True
+                    ast.parent.symbolTable.insert(new_entry)
+                else:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    if new_entry != match:
+                        raise AttributeError(f"Redeclaration of function {ast.root.key} with different signature")
+                    elif match.defined:
+                        raise AttributeError(f"Redefinition of function {ast.root.key}")
+                    new_entry.defined = True
+
+                    # check if entries match
                 # declare each parameter in your scope
                 # handle what's in the function scope
-                ast.children[1].symbolTable = ast.symbolTable
-                symbol_table = self.resolve(ast.children[1]).symbolTable
+                ast.children[-1].symbolTable = ast.symbolTable
+                symbol_table = self.resolve(ast.children[-1]).symbolTable
                 # print symbol table
                 print(f"Symbol table for {ast.root.key}:")
                 symbol_table.print()
                 # functions
-            elif isinstance(ast, FuncDeclAST):
-                # check function was previously declared
-                node = ast
-                continue
+
             elif isinstance(ast, ScanfAST):
                 for var in ast.variables:
                     match , total = AST.getEntry(var)
