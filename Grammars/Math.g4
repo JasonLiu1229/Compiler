@@ -82,8 +82,8 @@ cont_instr      :   CONTINUE (';' | DELIM) instr*
 break_instr     :   BREAK (';' | DELIM) instr*
                 ;
 
-array_decl      :   const=CONST? type=TYPE name=VAR_NAME '[' size=INT? ']' ASSIGN '{' (values+=rtype ',')* values+=rtype '}'
-                |   const=CONST? type=TYPE name=VAR_NAME '[' size=INT ']'
+array_decl      :   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT? ']' ASSIGN '{' (values+=rtype ',')* values+=rtype '}'
+                |   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT ']'
                 ;
 
 incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
