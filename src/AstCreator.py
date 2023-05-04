@@ -127,7 +127,7 @@ class AstCreator(MathVisitor):
         for i in reversed(range(index)):
             if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
                     isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
-                    (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
+                    isinstance(in_list[i], VarDeclrAST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or isinstance(in_list[i], DeclrAST):
                 return i
         return -1
 
@@ -473,7 +473,6 @@ class AstCreator(MathVisitor):
         # flags
         conditional = False
         evaluate = True
-
         for ast in list_ast:
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
@@ -489,11 +488,67 @@ class AstCreator(MathVisitor):
                 while temp_parent is not None:
                     if isinstance(temp_parent, FuncDefnAST):
                         if temp_parent.type == "void" and ast.root.value != "void" :
-                            raise AttributeError(f"\'return\' with a value, in function returning void")
+                            raise AttributeError(f"void function '{temp_parent.root.key}' should not return a value")
                         if temp_parent.type != "void" and ast.root.value == "void":
-                            raise AttributeError(f"\'return\' with no value, in function returning non-void")
+                            raise AttributeError(f"non-void function '{temp_parent.root.key}' should return a value")
                         break
                     temp_parent = temp_parent.parent
+            if isinstance(ast, FuncCallAST):
+                # check whether function is in symbol table
+                match = None
+                temp_parent = ast
+                while temp_parent.parent is not None:
+                    temp_parent = temp_parent.parent
+                # replace args
+                for i in range(len(ast.args)):
+                    if isinstance(ast.args[i], Node) and ast.args[i].key != "var":
+                        continue
+                    match = AST.getEntry(ast.args[i])
+                    if match is None:
+                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                    if match[0] is None:
+                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                    ast.args[i] = match[0]
+                if temp_parent.symbolTable is None:
+                    raise RuntimeError("Symbol table not found")
+                match_found = True
+                for entry in temp_parent.symbolTable.table:
+                    # name match
+                    if entry.name == ast.root.key:
+                        if len(entry.parameters) != len(ast.args):
+                            continue
+                        for i in range(len(entry.parameters)):
+                            # name , const , ptr , ptr_level, array , type
+                            # key , const , ptr , total_deref - deref_level , array, type
+                            current_param = entry.parameters[i]
+                            current_arg = ast.args[i]
+                            if isinstance(current_arg, VarNode):
+                                # check all attributes
+                                if current_param.name != current_arg.key:
+                                    match_found = False
+                                    break
+                                if current_param.const != current_arg.const:
+                                    match_found = False
+                                    break
+                                if current_param.ptr != current_arg.ptr:
+                                    match_found = False
+                                    break
+                                if current_param.ptr_level != (current_arg.total_deref - current_arg.deref_level):
+                                    match_found = False
+                                    break
+                                if current_param.array != current_arg.array:
+                                    match_found = False
+                                    break
+                                if current_param.type != current_arg.type:
+                                    match_found = False
+                                    break
+                            else:
+                                if current_param.type != getType(current_arg.value):
+                                    if (getType(current_arg.value), current_param.type) not in conversions:
+                                        match_found = False
+                                        break
+                if not match_found:
+                    raise AttributeError(f"Function {ast.root.key} not found")
 
             if isinstance(ast, FuncDeclAST):
                 # check function was previously declared

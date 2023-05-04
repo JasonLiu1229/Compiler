@@ -25,22 +25,22 @@ This project is made for the course Compilers at the **University of Antwerp**.
 - [ ] Project 4
   - [X] For loops
   - [X] While loops
-  - [ ] Break
-  - [ ] Continue
+  - [X] Break
+  - [X] Continue
 - [ ] Project 5
-  - [ ] Function declarations
-  - [ ] Function definitions
-  - [ ] Function calls
-  - [ ] Return
-  - [ ] Return values and type checking / **void type**
-  - [ ] No dead code after **return, break, continue**
+  - [X] Function declarations
+  - [X] Function definitions
+  - [X] Function calls
+  - [X] Return
+  - [X] Return values and type checking / **void type**
+  - [X] No dead code after **return, break, continue**
 - [ ] Project 6
   - [ ] Arrays
-  - [ ] Declarations
-  - [ ] Access
-  - [ ] Printf
-  - [ ] Scanf
-  - [ ] Includes
+    - [ ] Declarations
+    - [ ] Access
+  - [X] Printf
+  - [X] Scanf
+  - [X] Includes
 - [ ] LLVM
   - [ ] Project 1
   - [ ] Project 2

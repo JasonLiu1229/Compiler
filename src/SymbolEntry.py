@@ -49,7 +49,7 @@ class SymbolEntry:
 class FuncSymbolEntry(SymbolEntry):
     def __init__(self, in_object, in_name: str = None, in_type: str = None, in_const: bool = None,
                  in_parameters: list[FunctionParameter] = None) -> None:
-        super().__init__(in_object, in_object, in_type, in_const)
+        super().__init__(in_object, in_name, in_type, in_const)
         self.parameters = in_parameters
         if self.parameters is None:
             self.parameters = []
