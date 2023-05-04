@@ -48,7 +48,7 @@ func_defn       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME
 func_decl       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')'
                 ;
 
-arg_list        :   args+=func_arg (',' args+=func_arg)+?
+arg_list        :   args+=func_arg (',' args+=func_arg)*?
                 ;
 func_arg        :   rvar
                 |   deref
@@ -169,6 +169,7 @@ primary         :   rvar
                 |   '(' expr ')'
                 |   CAST primary
                 |   func_call
+                |   array_el
                 ;
 
 rtype           :   INT
