@@ -6,7 +6,6 @@ math            :   incl_stat*  (instr | func_defn ((';')* | DELIM) | func_decl 
 instr           :   declr ((';')+ | DELIM)
                 |   array_decl ((';')+ | DELIM)
                 |   expr ((';')+ | DELIM)
-                |   scanf ((';')+ | DELIM)
                 |   assign ((';')+ | DELIM)
                 |   scope
                 ;
@@ -15,15 +14,15 @@ declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
 // TODO: printf (modified) and scanf
-printf          :   PRINTF '(' format_string=FORMAT_STRING (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
-                |   PRINTF '(' (rvar | rtype) ')'
+printf          :   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
+                |   PRINTF '(' (rvar | rtype | STRING) ')'
                 ;
 
 printf_arg      :   rvar
                 |   rtype
-                |   FORMAT_STRING;
+                |   STRING;
 
-scanf           :   SCANF '(' format_string=FORMAT_STRING ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
+scanf           :   SCANF '(' format_string=SCANF_STRING ',' (ADDR? vars+=rvar ',')* ADDR? vars+=rvar ')'
                 ;
 
 // Functions
@@ -52,8 +51,8 @@ func_call       :   name=VAR_NAME '(' args=arg_list? ')'
                 ;
 
 func_scope      :   '{'(
-                        printf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM) | while_loop ((';')* | DELIM)
-                        | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
+                        printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
+                        | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
                            )* '}'
                 ;
 
@@ -62,8 +61,9 @@ return_instr    :   RETURN (ret_val=expr) ';' (instr | return_instr)*
 
 
 scope           :   '{' (
-                        printf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM) | while_loop ((';')* | DELIM)
-                        | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | break_instr | cont_instr | instr
+                        printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
+                        | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
+                        | break_instr | cont_instr | instr
                         )* '}'
                 ;
 
@@ -81,7 +81,7 @@ incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
                 ;
 
 
-// TODO: for , while , break and continue -> translate for to while
+// TODO: break and continue
 // TODO: switch(case, break, default) -> translate switch to if
 
 if_cond         :   IF '(' condition=cond ')' scope else_cond?
@@ -196,9 +196,8 @@ INT             :   ([1-9][0-9]*) | [0];
 FLOAT           :   [0-9]+ '.' [0-9]+;
 CHAR            :   ('\'' . '\'')
                 |   ('\'\\' . '\'');
-FORMAT_STRING   :   '"' ( . | ARG_TYPES)*? '"';
+SCANF_STRING    :   '"' ('%' ('-' | '+')? (INT)? [disc])* '"';
 STRING          :   '"' (.)*? '"';
-ARG_TYPES       :   '%' ('#' | '-' | '+' | '.')? (INT)? (.);
 // Operations
 STR             :   '*';
 DIV             :   '/';
