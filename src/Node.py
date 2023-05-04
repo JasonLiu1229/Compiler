@@ -56,7 +56,7 @@ class Node:
                 self.value = ord(self.value)
             if isinstance(other.value, str):
                 other.value = ord(other.value)
-            return Node("float", self.value / other.value)
+            return Node(f"{'float' if not (isinstance(self.value, int) or isinstance(other.value, int)) else 'int'}", self.value / other.value)
         else:
             raise ZeroDivisionError
 
