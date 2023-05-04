@@ -22,6 +22,7 @@ printf_arg      :   rvar
                 |   rtype
                 |   array_el
                 |   deref
+                |   expr
                 |   STRING;
 
 scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? (vars+=scanf_arg) ',')* ADDR? vars+=scanf_arg ')'
