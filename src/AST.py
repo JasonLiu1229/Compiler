@@ -640,6 +640,24 @@ class ExprAST(AST):
             node = self.children[0] - self.children[1]
             node_type = checkType(str(node.value))
             node.key = node_type
+
+        # convert the value of first operand to int
+        if self.children[0].key == 'char':
+            temp_val1 = ord(self.children[0].value)
+        else:
+            temp_val1 = self.children[0].value
+
+        # convert the value of second operand to int
+        if self.children[1].key == 'char':
+            temp_val2 = ord(self.children[1].value)
+        else:
+            temp_val2 = self.children[1].value
+
+        # perform the operation
+        if self.root.value == '&&':
+            node = Node("int", int(temp_val1 != 0 and temp_val2 != 0) )
+        elif self.root.value == '||':
+            node = Node("int", int(temp_val1 != 0 or temp_val2 != 0) )
         node.parent = self.parent
         return node
 
@@ -768,36 +786,35 @@ class TermAST(AST):
             node.value -= 1
         elif self.root.value == '<=':
             node = self.children[0] <= self.children[1]
+            node.value = int(node.value)
         elif self.root.value == '<':
             node = self.children[0] < self.children[1]
+            node.value = int(node.value)
         elif self.root.value == '>=':
             node = self.children[0] >= self.children[1]
+            node.value = int(node.value)
         elif self.root.value == '>':
             node = self.children[0] > self.children[1]
+            node.value = int(node.value)
         elif self.root.value == '==':
             if type(self.children[0]) != type(self.children[1]):
                 node.value = self.children[0].value == self.children[1].value
             else:
                 node.value = self.children[0] == self.children[1]
+            node.value = int(node.value)
             node.key = "int"
         elif self.root.value == '!=':
             if type(self.children[0]) != type(self.children[1]):
                 node.value = self.children[0].value != self.children[1].value
             else:
                 node.value = self.children[0] != self.children[1]
+            node.value = int(node.value)
             node.key = "int"
-        elif self.root.value == '&&':
-            if self.children[0].key == 'char':
-                return Node("int", ord(self.children[0].value) and ord(self.children[1].value))
-            node = Node("int", self.children[0].value and self.children[1].value)
-        elif self.root.value == '||':
-            if self.children[0].key == 'char':
-                return Node("int", ord(self.children[0].value) or ord(self.children[1].value))
-            node = Node("int", self.children[0].value or self.children[1].value)
         elif self.root.value == '!':
             if self.children[0].key == 'char':
-                node.value = int(not ord(self.children[0].value))
-            node.value = int(not self.children[0].value)
+                node.value = not ord(self.children[0].value)
+            node.value = not self.children[0].value
+            node.value = int(node.value)
             node.key = "int"
         node.parent = self.parent
         return node
