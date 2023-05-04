@@ -40,8 +40,10 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         input_stream = recognizer.getInputStream()
         # Get all tokens in this line or the next one
         line_text = ""
-        for token in input_stream.tokens[:input_stream.index]:
-            if token.line in range(line - 1, line):
+        for token in input_stream.tokens[input_stream.index:]:
+            if token.line in range(line - 1, line + 1):
+                if input_stream.tokens.index(token) == input_stream.index:
+                    line_text += "\u0332"
                 line_text += token.text
 
         out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
