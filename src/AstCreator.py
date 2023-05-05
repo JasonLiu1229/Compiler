@@ -1235,6 +1235,8 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
+        if ctx.library.text != "stdio":
+            raise RuntimeError("Unsupported Library")
         return IncludeAST(Node(f"{ctx.library.text}.h", None))
 
     @staticmethod
