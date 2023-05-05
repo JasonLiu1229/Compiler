@@ -276,6 +276,7 @@ class VarNode(Node):
         @x = global ptr @y, align 8
         @z = global ptr @x, align 8
         """
+
         if self.value is None:
             if self.type == "int":
                 self.value = 0
@@ -285,9 +286,9 @@ class VarNode(Node):
                 self.value = ord('\0')
         # Scope and constant
         if scope and not self.const:
-            out = f"%{self.key} = "
+            out = f"%{index} = "
         else:
-            out = f"@{self.key} = "
+            out = f"@{index} = "
 
         if self.const:
             out += 'constant '
@@ -296,6 +297,7 @@ class VarNode(Node):
         elif scope:
             out += "alloca "
         var_type = ""
+        # type
         if not self.ptr:
             if self.type == "int":
                 var_type = "i32"
@@ -306,26 +308,34 @@ class VarNode(Node):
             elif self.type == "float":
                 var_type = "i32"
                 out += "float "
+            out += f" , align 4\n"
         else:
-            out += f"ptr @{self.value.key}"
-
+            out += f"ptr @{index}, align 8\n"
+        # align
         out_val = ""
         # convert the value if needed
-        if self.type == "float" and not self.ptr:
-            val = array('f', [self.value])
-            self.value = val[0]
-            out_val = str(val[0])
-        elif isinstance(self.value, str) and not self.ptr:
-            out_val = str(ord(self.value))
-        else:
-            out_val = self.value
+        if not self.ptr:
+            if self.type == "float" and not self.ptr:
+                if self.value is None:
+                    self.value = 0.0
+                val = array('f', [self.value])
+                self.value = val[0]
+                out_val = str(val[0])
+            elif isinstance(self.value, str) and not self.ptr:
+                if self.value is None:
+                    self.value = '\0'
+                out_val = str(ord(self.value))
+            else:
+                if self.value is None:
+                    self.value = 0
+                out_val = self.value
+
         # allocate the value
         if not scope:
             out += f"{out_val if not self.ptr else ''} , align {'4' if not self.ptr else '8'}\n"
         else:
             if scope and not self.const:
-                out += "\tstore " + var_type + " "
-                out += "," + var_type + "* %" + str(self.key) + "\n"
+                out += f"store {var_type} {out_val}, ptr %{index}, align 4\n"
             else:
                 if isinstance(self.value, float):
                     val = array('f', [self.value])
@@ -338,7 +348,8 @@ class VarNode(Node):
                 else:
                     out += str(self.value) + "\n"
             out += "\n"
-        return out, index
+        self.register = index
+        return out, index + 1
 
 
 class FuncParameter(VarNode):

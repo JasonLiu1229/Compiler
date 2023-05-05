@@ -538,6 +538,10 @@ class AstCreator(MathVisitor):
                 temp_parent = ast
                 while temp_parent.parent is not None:
                     temp_parent = temp_parent.parent
+                if temp_parent.symbolTable is None:
+                    raise RuntimeError("Symbol table not found")
+                if not temp_parent.symbolTable.exists(ast.root):
+                    raise AttributeError(f"Function {ast.root.key} not found in scope")
                 # replace args
                 for i in range(len(ast.args)):
                     if isinstance(ast.args[i], Node) and ast.args[i].key != "var":
@@ -598,9 +602,13 @@ class AstCreator(MathVisitor):
                     raise AttributeError(f"Redefinition of function {ast.root.key}")
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
+                    param_names = []
                     for param in ast.params:
+                        if param.key in param_names:
+                            raise AttributeError(f"Redefinition of parameter {param.key}")
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
+                        param_names.append(param.key)
                     ast.parent.symbolTable.insert(new_entry)
                 node = ast
                 continue
@@ -616,9 +624,13 @@ class AstCreator(MathVisitor):
                         match = matches[0]
                 if not temp_exists:
                     new_entry = FuncSymbolEntry(ast.root)
+                    param_names = []
                     for param in ast.params:
+                        if param.key in param_names:
+                            raise AttributeError(f"Redefinition of parameter {param.key}")
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
+                        param_names.append(param.key)
                     new_entry.defined = True
                     ast.parent.symbolTable.insert(new_entry)
                 else:
@@ -673,9 +685,11 @@ class AstCreator(MathVisitor):
                             if temp_symbol is not None:
                                 exists_state = temp_symbol.exists(child.value)
                         if temp_parent is not None:
-                            evaluate = not (
-                                        isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent,
-                                                                                                    For_loopAST))
+                            if evaluate:
+                                evaluate = not (
+                                            isinstance(temp_parent, While_loopAST) or isinstance(temp_parent,
+                                                                                                        For_loopAST)
+                                or isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent,For_loopAST))
                         if not temp_symbol.exists(child.value):
                             raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
@@ -829,7 +843,7 @@ class AstCreator(MathVisitor):
                 if rtype != assignee.type and not ast.children[1].cast:
                     if (assignee.type, rtype) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
-                    elif (rtype, assignee.type) not in conv_promotions:
+                    elif (assignee.type, rtype) not in conv_promotions:
                         self.warnings.append(
                             f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
                 if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[
@@ -891,7 +905,7 @@ class AstCreator(MathVisitor):
                 updates_queue = []
                 incr_queue = []
                 decr_queue = []
-            elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"]:
+            elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and evaluate:
                 node = ast
                 if evaluate:
                     node = ast.children[0]
@@ -902,6 +916,8 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, CondAST):
                 if evaluate:
                     ast.last_eval = copy.copy(ast).handle().value
+            elif isinstance(ast, TermAST) and ast.root.value == "++" and not evaluate:
+                continue
             elif ast is not None:
                 node = ast.handle()
             else:

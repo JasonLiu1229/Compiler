@@ -209,6 +209,11 @@ class AST:
             if isinstance(rightChild, VarNode):
                 rentry, length = self.getEntry(rightChild)
                 if rentry is not None:
+                    if rentry.register is None:
+                        indexR = index
+                        rentry.register = index
+                        index += 1
+                if rentry is not None:
                     indexR = rentry.register
                     out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
                     index += 1
@@ -218,8 +223,12 @@ class AST:
         if isinstance(leftChild, VarNode):
             lentry, length = self.getEntry(leftChild)
             if lentry is not None:
-                indexL = lentry.register
-                out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
+                if lentry is not None:
+                    if lentry.register is None:
+                        indexL = index
+                        lentry.register = index
+                        index += 1
+                out += f"\t%{index} = load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
                 index += 1
         else:
             indexL = leftChild.value
@@ -469,7 +478,11 @@ class AST:
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        return f" ", index
+        out = ""
+        # if len(self.children) > 0:
+        #     for child in self.children:
+        #         out , index = child.llvm(scope, index)
+        return out, index
 
     @staticmethod
     def sub(var_type: str, op1: str, op2: str):
@@ -489,7 +502,7 @@ class AST:
         :param op1: the first operand
         :param op2: the second operand
         """
-        return f"add nsw {var_type} {op1}, {op2}"
+        return f"add nsw ptr {op1}, {op2}"
 
     @staticmethod
     def mul(var_type, op1, op2):
@@ -682,7 +695,7 @@ class ExprAST(AST):
             temp_val1 = self.children[0].value
 
         # convert the value of second operand to int
-        if self.children[1].key == 'char':
+        if self.children[1].key == 'char' and isinstance(self.children[1].value, str):
             temp_val2 = ord(self.children[1].value)
         else:
             temp_val2 = self.children[1].value
@@ -1286,7 +1299,7 @@ class While_loopAST(Scope_AST):
             index = output[1]
         index2 = blocks["2"]
         index3 = blocks["3"]
-        out += f"br i1 %{index - 1}, label %{index2}, label %{index3}"
+        out += f"br i1 %{index}, label %{index2}, label %{index3}\n"
         return out, index
 
     def llvm_block2(self, out, index, blocks):
@@ -1307,14 +1320,14 @@ class While_loopAST(Scope_AST):
             index = output[1]
 
         index1 = blocks["1"]
-        out += f"\tbr label %{index1}, !llvm.loop !6"
+        out += f"br label %{index1}\n"
         return out, index
 
     @staticmethod
     def llvm_block3(out, index, blocks):
         name = blocks["3"]
         out += f"{name}: ; preds = %{blocks['1']}\n"
-        out += f"\t%ret i32 0"
+        # out += f"\t%ret i32 0\n"
         index += 1
         return out, index
 
@@ -1323,10 +1336,8 @@ class While_loopAST(Scope_AST):
         index += 2
         out = f"\tbr label %{index}\n\n"
         out, index = self.llvm_block1(out, index, self.blocks)
-        new_out, index = self.llvm_block2(out, index, self.blocks)
-        out += new_out
-        new_out, index = self.llvm_block3(out, index, self.blocks)
-        out += new_out
+        out, index = self.llvm_block2(out, index, self.blocks)
+        out, index = self.llvm_block3(out, index, self.blocks)
         return out, index
 
 
@@ -1605,7 +1616,7 @@ class ReturnInstr(InstrAST):
         elif isinstance(child, VarNode):
             temp_type = getLLVMType(child.key)
             entry, length = self.getEntry(child)
-            out += f"%{index} = load {temp_type}, ptr %{entry.register}, align {'4' if not child.ptr else '8'}\n"
+            out += f"%{index} = load {temp_type}, {temp_type} %{entry.register}, align {'4' if not child.ptr else '8'}\n"
             out += f"ret {temp_type} %{entry.register}\n"
         return out, index
 
