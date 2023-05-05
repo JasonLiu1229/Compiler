@@ -7,6 +7,8 @@ from Node import VarNode, FunctionNode
 class SymbolTable:
     def __init__(self) -> None:
         self.table: list[SymbolEntry] = []
+        self.parent: SymbolTable | None = None
+        self.owner: str = ""
 
     def __repr__(self):
         out = f""

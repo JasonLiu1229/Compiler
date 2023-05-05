@@ -168,6 +168,15 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        """
+        Generates the LLVM code for the global variables
+        :param index: index of the current variable
+        :return: tuple of the LLVM code and the index
+        """
+        out = ""
+        return out, index
+
     def visitLLVMOp(self, current, index: int) -> tuple[str, int]:
         out = ""
         indexL, indexR = 0, 0
@@ -891,6 +900,7 @@ class Scope_AST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, symbolTable=SymbolTable())
         self.condition: AST | Node | None = condition
+        self.symbolTable.owner = self.root.key
 
     def handle(self):
         return self
@@ -1331,6 +1341,7 @@ class FuncCallAST(AST):
 class FuncScopeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, SymbolTable())
+        self.symbolTable.owner = self.root.key
 
     def handle(self):
         return self
@@ -1414,6 +1425,11 @@ class ArrayDeclAST(AST):
 
     def handle(self):
         return self
+
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        out = ""
+
+        return out, index
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""

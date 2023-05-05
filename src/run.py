@@ -39,6 +39,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             print(f'Excepted with error \"{e}\"\n')
             continue
 
+
 def main():
     parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
     parser.add_argument('-d', '--directory', help='directory of the file that needs to be parsed', required=True)
@@ -63,7 +64,6 @@ def main():
             run(directory=args.directory, file_type=args.fType, filenames=filenames)
     except Exception as e:
         print(f'Excepted with error \"{e}\"')
-
 
 
 if __name__ == '__main__':
