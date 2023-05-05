@@ -724,6 +724,7 @@ class PrintfAST(AST):
         for i in range(len(self.format_specifiers)):
             current_specifier = self.format_specifiers[i]
             current_child = self.children[i]
+            length = int(current_specifier[1:-1]) if current_specifier[1:-1].isdigit() else 0
             # check the child's type
             if current_specifier[-1] == 'd':
                 # check if the child is a node
@@ -749,18 +750,14 @@ class PrintfAST(AST):
             if current_specifier[-1] == 'c':
                 if isinstance(current_child, Node):
                     if not isinstance(current_child.value, str) or len(current_child.value) != 1:
-                        if isinstance(current_child.value, int):
-                            current_child.value = chr(current_child.value)
-                        elif isinstance(current_child.value, float):
-                            current_child.value = chr(int(current_child.value))
+                        if isinstance(current_child.value, float):
+                            current_child.value = int(current_child.value)
                         else:
                             raise TypeError("Invalid type for printf")
                 elif isinstance(current_child, VarNode):
                     if not current_child.type == 'char':
-                        if current_child.type == 'int':
-                            current_child.value = chr(current_child.value)
-                        elif current_child.type == 'float':
-                            current_child.value = chr(int(current_child.value))
+                        if current_child.type == 'float':
+                            current_child.value = int(current_child.value)
                         else:
                             raise TypeError("Invalid type for printf")
                 current_child.type = 'char'
@@ -771,6 +768,12 @@ class PrintfAST(AST):
                         raise TypeError("Invalid type for printf")
                 if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
                     raise TypeError("Invalid type for printf")
+            # check the length of format specifiers and child
+            if length != 0:
+                # convert child value to string
+                if isinstance(current_child, Node):
+                    if length > len(str(current_child.value)):
+                        current_child.value = str(current_child.value).rjust(length, ' ')
         return self
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
@@ -1507,6 +1510,7 @@ class ScanfAST(AST):
         super().__init__(root, children, parent, symbolTable)
         self.variables = []
         self.format_string = None
+        self.format_specifiers = []
 
     def save(self):
         out, name = self.getDict()

@@ -50,6 +50,20 @@ class SymbolTable:
         if not (isinstance(in_object, VarNode) or isinstance(in_object, FunctionNode)):
             return False
         for entry in self.table:
+            # check dereference level
+            current_object = entry.object
+            entry_stack = []
+            # if current_object.ptr:
+            #     while current_object.ptr and current_object.value is not None:
+            #         entry_stack.append(current_object)
+            #         current_object = current_object.value
+            #         if current_object == in_object:
+            #             current_object.value = in_object.value
+            #             while len(entry_stack) > 0:
+            #                 current_parent = entry_stack.pop()
+            #                 current_parent.value = current_object
+            #                 current_object = current_parent
+            #             return True
             if entry.object == in_object:
                 entry.object = copy.deepcopy(in_object)
                 return True
