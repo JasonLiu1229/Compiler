@@ -402,17 +402,19 @@ class LLVM:
         # indexes = {"printf": 1}
         # get all the nodes via DFS
         # DFS the condition
-        visited = []
-        not_visited = [self.ast]
+        visited = list()
+        not_visited = list()
+        not_visited.append(self.ast)
         while len(not_visited) > 0:
-            current = not_visited.pop()
-            if current not in visited:
-                visited.append(current)
-                for i in current.children:
-                    if not isinstance(i, Node):
-                        not_visited.append(i)
+            temp = not_visited.pop()
+            if temp not in visited or isinstance(temp, CondAST):
+                # if a scope, skip
+                # if include instruction, skip
+                if isinstance(temp, InstrAST):
+                    visited.append(temp)
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST):
+                    visited.append(temp)
         visited.reverse()
-        latest_index = 1
         for instruction in visited:
             # declare for the symbol table
             if instruction.symbolTable is not None:
