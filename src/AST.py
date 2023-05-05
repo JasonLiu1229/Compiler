@@ -801,6 +801,8 @@ class PrintfAST(AST):
                             current_child.value = random.choice(string.ascii_letters)
                         else:
                             raise TypeError("Invalid type for printf")
+                if current_child.type == "char":
+                    current_child.value = str(ord(current_child.value))
                 current_child.type = 'char'
 
             if current_specifier[-1] == 's':
