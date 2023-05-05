@@ -170,6 +170,7 @@ class AST:
         self.dic_count = {"instr": 0, "expr": 0}
         self.symbolTable: SymbolTable | None = symbolTable
         self.register = None
+        self.blocks = []
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
@@ -177,6 +178,15 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def searchBlocks(self):
+        if isinstance(self, While_loopAST):
+            return self.blocks
+        temp_parent = self.parent
+        while self.parent is not None and isinstance(self.parent, Scope_AST):
+            if isinstance(temp_parent, Scope_AST) and not isinstance(temp_parent, While_loopAST):
+                temp_parent = temp_parent.parent
+            else:
+                return temp_parent.blocks
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         """
         Generates the LLVM code for the global variables
@@ -936,7 +946,8 @@ class AssignAST(AST):
         return self.children[0]
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        return out, index
 
 
 class TermAST(AST):
@@ -1108,6 +1119,8 @@ class Scope_AST(AST):
             out += output[0]
             index = output[1]
         return out, index
+
+
 
 
 class If_CondAST(Scope_AST):
@@ -1306,13 +1319,13 @@ class While_loopAST(Scope_AST):
         return out, index
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[Any, Any]:
-        blocks = {"1": index, "2": index + 1, "3": index + 2}
+        self.blocks = {"1": index, "2": index + 1, "3": index + 2}
         index += 2
         out = f"\tbr label %{index}\n\n"
-        out, index = self.llvm_block1(out, index, blocks)
-        new_out, index = self.llvm_block2(out, index, blocks)
+        out, index = self.llvm_block1(out, index, self.blocks)
+        new_out, index = self.llvm_block2(out, index, self.blocks)
         out += new_out
-        new_out, index = self.llvm_block3(out, index, blocks)
+        new_out, index = self.llvm_block3(out, index, self.blocks)
         out += new_out
         return out, index
 
@@ -1345,13 +1358,22 @@ class BreakAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        blocks = self.searchBlocks()
+        name = blocks["3"]
+        out = f"br label %{name}"
+        return out, index
+
 
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        blocks = self.searchBlocks()
+        name = blocks["1"]
+        out = f"br label %{name}"
+        return out, index
 
 
 class FuncParametersAST(AST):
