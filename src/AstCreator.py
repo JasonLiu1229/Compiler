@@ -130,7 +130,7 @@ class AstCreator(MathVisitor):
                     isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
                     (isinstance(in_list[i], Node) and in_list[i].key == token) or \
                     isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
-                    isinstance(in_list[i], DeclrAST):
+                    isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST):
                 return i
         return -1
 
@@ -392,6 +392,7 @@ class AstCreator(MathVisitor):
                         if len(child.children) > 0:
                             continue
                         child.args = base.children[index - len(child.args): index]
+                        child.args.reverse()
                         child.children = base.children[index - len(child.args): index]
                         child.children.reverse()
                         base.children[index - len(child.args): index] = []
