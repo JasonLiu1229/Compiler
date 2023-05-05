@@ -141,12 +141,14 @@ def visited_list_DFS(ast) -> list:
     while len(not_visited) > 0:
         v = not_visited.pop()
         if v not in visited:
-            visited.append(v)
+            if not (isinstance(v, Node) or v is ast):
+                visited.append(v)
             if not isinstance(v, While_loopAST) or not isinstance(v, FuncDeclAST) \
                     or not isinstance(v, If_CondAST) \
                     or not isinstance(v, FuncDefnAST):
-                for i in v.children:
-                    not_visited.append(i)
+                if isinstance(v, AST):
+                    for i in v.children:
+                        not_visited.append(i)
     return visited
 
 
