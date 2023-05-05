@@ -31,7 +31,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             # ast.print(4, False, filename)
             # ast.symbolTable.print()
             visitor.warn()
-            dot = Dot.dot(ast)
+            dot = Dot.dot(ast, "../Output/" + filename + ".dot")
             dot.connect()
             # ast.dot_language(filename, visitor.symbol_table)
             # generator = LLVM(ast,  "../Output/" + filename + ".ll")
