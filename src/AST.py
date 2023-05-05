@@ -1190,7 +1190,7 @@ class Else_CondAST(Scope_AST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        visited = visited_list_DFS(self)
+        visited = visited_list_DFS(self.children[0])
         out = ""
         for current in visited:
             output = tuple
