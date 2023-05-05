@@ -191,6 +191,7 @@ class AstCreator(MathVisitor):
                     index -= 1
 
                 elif isinstance(child, ScanfAST):
+                    child.children = base.children[index - len(child.variables): index]
                     base.children[index-len(child.variables):index] = []
                     index -= len(child.variables)
 
@@ -386,11 +387,11 @@ class AstCreator(MathVisitor):
                     #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
 
-                elif child.root.key == "printf":
+                elif isinstance(child, PrintfAST):
                     if child.root.value is None:
-                        child.children = base.children[index - 1: index]
-                        base.children[index - 1: index] = []
-                        index -= 1
+                        child.children = base.children[index - len(child.args): index]
+                        base.children[index - len(child.args): index] = []
+                        index -= len(child.args)
                 elif child.root.key == "deref":
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
@@ -635,16 +636,6 @@ class AstCreator(MathVisitor):
                 print(f"Symbol table for {ast.root.key}:")
                 symbol_table.print()
                 # functions
-
-            elif isinstance(ast, ScanfAST):
-                for var in ast.variables:
-                    match , total = AST.getEntry(var)
-                    if total is None:
-                        raise ReferenceError(f"Variable {var.value} undeclared")
-                    elif total > 1:
-                        raise ReferenceError(f"Multiple matches for variable {var.value}")
-                    ast.variables[ast.variables.index(var)] = match
-                node = ast
             if isinstance(ast, IncludeAST):
                 continue
             if len(ast.children) == 0:
@@ -691,8 +682,17 @@ class AstCreator(MathVisitor):
                             ast.children[index] = copy.copy(matches[0].object)
                 if not handle:
                     continue
+            if isinstance(ast, ScanfAST):
+                for var in ast.variables:
+                    match , total = AST.getEntry(var)
+                    if total is -1:
+                        raise ReferenceError(f"Variable {var.value} undeclared")
+                    elif total > 1:
+                        raise ReferenceError(f"Multiple matches for variable {var.value}")
+                    ast.variables[ast.variables.index(var)] = match
+                node = ast
             # conditional cases
-            if isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
+            elif isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
                 ast.symbolTable = temp_symbol
                 self.resolve(ast.condition)
                 # handle for condition true
@@ -802,6 +802,7 @@ class AstCreator(MathVisitor):
                 updates_queue.append(node)
 
             elif isinstance(ast, AssignAST):
+
                 # check if assign value is of a valid type
                 if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode)):
                     raise RuntimeError(f"\'Invalid assignment for variable {ast.children[0].key}\'")
@@ -836,8 +837,21 @@ class AstCreator(MathVisitor):
                 assignee.value = ast.children[1].value
                 assignee.type = getType(assignee.value)
                 updates_queue.append(assignee)
-                # refresh symbol table
-                # self.symbol_table.refresh()
+                updates_queue.reverse()
+                for instance in incr_queue:
+                    instance = temp_symbol.lookup(instance)[0].object
+                    instance.value += 1
+                    temp_symbol.update(instance)
+                for instance in decr_queue:
+                    instance = temp_symbol.lookup(instance)[0].object
+                    instance.value -= 1
+                    temp_symbol.update(instance)
+                for instance in updates_queue:
+                    if not temp_symbol.exists(instance):
+                        temp_symbol.insert(SymbolEntry(instance))
+                    else:
+                        temp_symbol.update(instance)
+                temp_symbol.refresh()
                 node = assignee
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
@@ -936,8 +950,21 @@ class AstCreator(MathVisitor):
         if ctx.format_string is not None:
             out.format_string = ctx.format_string.text # printf
         # split the format string into a list of strings and variables
-        out.format_string = out.format_string.replace("\\n", "\n")
-        out.format_specifiers += re.findall("%[disc]", out.format_string)
+        format_string = out.format_string
+        format_string = format_string.replace("\\n", "\n")
+        format_string = format_string.replace("\\t", "\t")
+        format_string = format_string.replace("\\r", "\r")
+        format_string = format_string.replace("\\v", "\v")
+        format_string = format_string.replace("\\b", "\b")
+        format_string = format_string.replace("\\a", "\a")
+        format_string = format_string.replace("\\f", "\f")
+        format_string = format_string.replace("\\\\", "\\")
+        format_string = format_string.replace("\\\'", "\'")
+        format_string = format_string.replace("\\\"", "\"")
+        format_string = format_string.replace("\\\?", "\?")
+        format_string = format_string.replace("\\\0", "\0")
+        format_string = format_string.replace(" ", "")
+        out.format_specifiers += re.findall("%[0-9]*[disc]", format_string)
         out.args = [None] * len(ctx.vars_) # printf
         if len(out.args) != len(out.format_specifiers):
             raise AttributeError("Wrong number of arguments for printf")
@@ -1172,10 +1199,27 @@ class AstCreator(MathVisitor):
     def visitScanf(self, ctx: MathParser.ScanfContext):
         ast = ScanfAST(Node("scanf", None))
         # ast.variables = ctx.vars_
-        ast.variables = [self.visit_child(var) for var in ctx.vars_]
+        ast.variables = [Node] * len(ctx.vars_)
+        ast.format_string = ctx.format_string.text
+        # split the format string into a list of strings and variables
+        format_string = ast.format_string
+        format_string = format_string.replace("\\n", "\n")
+        format_string = format_string.replace("\\t", "\t")
+        format_string = format_string.replace("\\r", "\r")
+        format_string = format_string.replace("\\v", "\v")
+        format_string = format_string.replace("\\b", "\b")
+        format_string = format_string.replace("\\a", "\a")
+        format_string = format_string.replace("\\f", "\f")
+        format_string = format_string.replace("\\\\", "\\")
+        format_string = format_string.replace("\\\'", "\'")
+        format_string = format_string.replace("\\\"", "\"")
+        format_string = format_string.replace("\\\?", "\?")
+        format_string = format_string.replace("\\\0", "\0")
+        format_string = format_string.replace(" ", "")
+        ast.format_specifiers += re.findall("%[0-9]*[disc]", format_string) # find all format specifiers
+        ast.variables = [self.visit_child(var.children[0]) for var in ctx.vars_]  # scanf can have multiple variables
         for var in ast.variables:
             var.parent = ast
-        ast.format_string = ctx.format_string.text
         return ast
 
     def visitArray_decl(self, ctx: MathParser.Array_declContext):
