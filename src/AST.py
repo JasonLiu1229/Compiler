@@ -205,7 +205,6 @@ class AST:
         else:
             indexL = leftChild.value
 
-
         operand = current.root.value
         currenType = None
         if isinstance(leftChild, VarNode):
@@ -694,9 +693,9 @@ class ExprAST(AST):
 
         # perform the operation
         if self.root.value == '&&':
-            node = Node("int", int(temp_val1 != 0 and temp_val2 != 0) )
+            node = Node("int", int(temp_val1 != 0 and temp_val2 != 0))
         elif self.root.value == '||':
-            node = Node("int", int(temp_val1 != 0 or temp_val2 != 0) )
+            node = Node("int", int(temp_val1 != 0 or temp_val2 != 0))
         node.parent = self.parent
         return node
 
@@ -717,6 +716,9 @@ class PrintfAST(AST):
 
     def handle(self):
         return self
+
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        pass
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         pass
@@ -1446,8 +1448,28 @@ class ScanfAST(AST):
     def handle(self):
         return self
 
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        out = ""
+        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_specifiers) * 3} x i8] c\"{self.format_string}\\00\", align 1\n"
+        entry, length = self.getEntry(self.root)
+        entry.register = index
+        index += 1
+        return out, index
+
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        var_string = ""
+        count = 0
+        for var in self.variables:
+            if isinstance(var, Node):
+                var_string += f"{getLLVMType(getType(var.value))} noundef %{var.value}"
+            else:
+                entry, length = self.getEntry(var)
+                var += f"{getLLVMType(entry.type)} noundef %{entry.register}"
+            if count + 1 != len(self.variables):
+                var_string += ', '
+        out += f"call i32 (ptr, ...) @__isoc99_scanf(ptr noundef @.str.{index}, {var_string})\n"
+        return out, index
 
 
 class ArrayDeclAST(AST):
