@@ -5,6 +5,7 @@ from AstCreator import *
 from LLVM import *
 import os
 import argparse
+import Dot
 
 
 def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
@@ -30,10 +31,12 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             # ast.print(4, False, filename)
             # ast.symbolTable.print()
             visitor.warn()
+            dot = Dot.dot(ast)
+            dot.connect()
             # ast.dot_language(filename, visitor.symbol_table)
-            generator = LLVM(ast,  "../Output/" + filename + ".ll")
-            generator.convert()
-            generator.execute()
+            # generator = LLVM(ast,  "../Output/" + filename + ".ll")
+            # generator.convert()
+            # generator.execute()
             print(">>> Finished execution with exit code 0\n")
         except Exception as e:
             print(f'Excepted with error \"{e}\"\n')
