@@ -149,7 +149,8 @@ def visited_list_DFS(ast) -> list:
                     or not isinstance(v, FuncDefnAST):
                 if isinstance(v, AST):
                     for i in v.children:
-                        not_visited.append(i)
+                        if i is not ast:
+                            not_visited.append(i)
     return visited
 
 
@@ -1143,7 +1144,7 @@ class If_CondAST(Scope_AST):
             index = output_in
 
         # if block
-        visited = visited_list_DFS(self)
+        visited = visited_list_DFS(self.children[0])
 
         for current in visited:
             output = tuple
@@ -1250,7 +1251,7 @@ class While_loopAST(Scope_AST):
 
     def llvm_block1(self, out, index, blocks):
         name = blocks["1"]
-        out += f"{name}:\n"
+        out += f"{name}: ; preds = %{blocks['2']}, %0\n"
         index += 1
 
         # DFS the condition
@@ -1277,10 +1278,10 @@ class While_loopAST(Scope_AST):
 
     def llvm_block2(self, out, index, blocks):
         name = blocks["2"]
-        out += f"{name}:\n"
+        out += f"{name}: ; preds = %{blocks['1']}\n"
 
         # DFS
-        visited = visited_list_DFS(self)
+        visited = visited_list_DFS(self.children[0])
 
         # Handle
         for current in visited:
@@ -1299,7 +1300,7 @@ class While_loopAST(Scope_AST):
     @staticmethod
     def llvm_block3(out, index, blocks):
         name = blocks["3"]
-        out += f"{name}:\n"
+        out += f"{name}: ; preds = %{blocks['1']}\n"
         out += f"\t%ret i32 0"
         index += 1
         return out, index
