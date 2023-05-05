@@ -635,8 +635,8 @@ class AstCreator(MathVisitor):
                 ast.children[-1].symbolTable = ast.symbolTable
                 symbol_table = self.resolve(ast.children[-1]).symbolTable
                 # print symbol table
-                print(f"Symbol table for {ast.root.key}:")
-                symbol_table.print()
+                # print(f"Symbol table for {ast.root.key}:")
+                # symbol_table.print()
                 # functions
             if isinstance(ast, IncludeAST):
                 continue
@@ -948,9 +948,9 @@ class AstCreator(MathVisitor):
 
         out = PrintfAST(Node("printf", None))
         if ctx.print_val is not None:
-            out.format_string = ctx.print_val.text # printf
+            out.format_string = ctx.print_val.text[1:-1] # printf
         if ctx.format_string is not None:
-            out.format_string = ctx.format_string.text # printf
+            out.format_string = ctx.format_string.text[1:-1] # printf
         # split the format string into a list of strings and variables
         format_string = out.format_string
         format_string = format_string.replace("\\n", "\n")
@@ -967,6 +967,7 @@ class AstCreator(MathVisitor):
         format_string = format_string.replace("\\\0", "\0")
         format_string = format_string.replace(" ", "")
         out.format_specifiers += re.findall("%[0-9]*[discf]", format_string)
+        out.format_string = format_string
         out.args = [None] * len(ctx.vars_) # printf
         if len(out.args) != len(out.format_specifiers):
             raise AttributeError("Wrong number of arguments for printf")

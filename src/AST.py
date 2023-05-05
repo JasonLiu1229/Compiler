@@ -164,6 +164,7 @@ class AST:
         self.parent: AST | None = parent
         self.dic_count = {"instr": 0, "expr": 0}
         self.symbolTable: SymbolTable | None = symbolTable
+        self.register = None
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
@@ -812,9 +813,9 @@ class PrintfAST(AST):
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""
-        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)} x i8] c\"{self.format_string}\\00\", align 1\n"
-        entry, length = self.getEntry(self.root)
-        entry.register = index
+        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)+1} x i8] c\"{self.format_string}\\00\", align 1\n"
+        # entry, length = self.getEntry(self.root)
+        self.register = index
         index += 1
         return out, index
 
@@ -822,15 +823,16 @@ class PrintfAST(AST):
         out = ""
         var_string = ""
         count = 0
-        for var in self.variables:
+        for var in self.children:
+            temp_type = getLLVMType(getType(var.value))
             if isinstance(var, Node):
-                var_string += f"{getLLVMType(getType(var.value))} noundef %{var.value}"
+                var_string += f"{temp_type if temp_type != 'float' else 'double'} noundef {var.value}"
             else:
                 entry, length = self.getEntry(var)
-                var += f"{getLLVMType(entry.type)} noundef %{entry.register}"
-            if count + 1 != len(self.variables):
+                var += f"{temp_type if temp_type != 'float' else 'double'} noundef %{entry.register}"
+            if count + 1 != len(self.children):
                 var_string += ', '
-        out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{index}, {var_string})\n"
+        out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{self.register if self.register is not None else ''}, {var_string})\n"
         return out, index
 
 
@@ -1371,7 +1373,7 @@ class FuncDeclAST(AST):
         # Begin
         out += f"define dso_local {getLLVMType(self.type)} @{self.root.key}"
         # Parameters
-        paramaters = self.params.parameters
+        paramaters = self.params
         param_string = ""
         default_exist = False
         if len(paramaters) > 0:
@@ -1421,9 +1423,9 @@ class FuncDefnAST(AST):
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = f""
         # Begin
-        out += f"define dso_local {getLLVMType(self.type)} @{self.root.key}"
+        out += f"\ndefine dso_local {getLLVMType(self.type)} @{self.root.key}"
         # Parameters
-        parameters = self.params.parameters
+        parameters = self.params
         param_string = ""
         default_exist = False
         if len(parameters) > 0:
@@ -1448,7 +1450,7 @@ class FuncDefnAST(AST):
         # Scope
         output = self.children[0].llvm(True, local_index)
         out += output[0]
-        out += "}\n"
+        out += "\n"
         return out, index
 
 
@@ -1500,14 +1502,17 @@ class FuncScopeAST(AST):
         while len(not_visited) > 0:
             current = not_visited.pop()
             if current not in visited:
-                visited.append(current)
+                if current is not self:
+                    visited.append(current)
                 if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
                         or not isinstance(current, If_CondAST) \
-                        or not isinstance(current, FuncDefnAST):
+                        or not isinstance(current, FuncDefnAST) and not isinstance(current, FuncScopeAST):
                     for i in current.children:
-                        not_visited.append(i)
+                        if not isinstance(i, Node):
+                            not_visited.append(i)
 
         out = ""
+        visited.reverse()
         for current in visited:
             output = tuple
             if current.root.value in tokens:
@@ -1529,12 +1534,18 @@ class ReturnInstr(InstrAST):
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
-        if isinstance(self.root, Node):
-            out += f"ret {getLLVMType(getType(self.root.value))} {self.root.value}\n"
-        elif isinstance(self.root, VarNode):
-            entry, length = self.getEntry(self.root)
-            out += f"%{index} = load {getLLVMType(entry.type)}, ptr %{entry.register}, align {'4' if not entry.ptr else '8'}\n"
-            out += f"ret {getLLVMType(self.root.type)} %{entry.register}\n"
+        temp_type = ""
+        child = self.children[0]
+        if isinstance(child, Node):
+            temp_type = getLLVMType(child.key)
+            if temp_type == "float":
+                temp_type = "double"
+            out += f"ret {temp_type if child.key is not None else 'i32'} {child.value if child.value is not Node else 0}\n"
+        elif isinstance(child, VarNode):
+            temp_type = getLLVMType(child.key)
+            entry, length = self.getEntry(child)
+            out += f"%{index} = load {temp_type}, ptr %{entry.register}, align {'4' if not child.ptr else '8'}\n"
+            out += f"ret {temp_type} %{entry.register}\n"
         return out, index
 
 
@@ -1654,3 +1665,6 @@ class IncludeAST(AST):
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         pass
+
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        return f"declare i32 @printf(ptr noundef, ...) #2\n\ndeclare i32 @__isoc99_scanf(ptr noundef, ...) #2\n\n", index

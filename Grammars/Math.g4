@@ -55,6 +55,7 @@ func_arg        :   rvar
                 |   deref
                 |   func_call
                 |   rtype
+                |   expr
                 ;
 
 func_call       :   name=VAR_NAME '(' args=arg_list? ')'
@@ -131,7 +132,11 @@ assign          :   rvar ASSIGN expr
                 |   array_el ASSIGN expr
                 ;
 
-array_el        :   lvar '[' INT ']';
+array_el        :   lvar '[' INT ']'
+                |   lvar '[' expr ']'
+                |   deref '[' INT ']'
+                |   deref '[' expr ']'
+                ;
 
 deref           :   STR deref
                 |   STR rvar

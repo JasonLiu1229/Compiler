@@ -403,29 +403,35 @@ class LLVM:
         # get all the nodes via DFS
         # DFS the condition
         visited = list()
-        not_visited = list()
-        not_visited.append(self.ast)
+        not_visited = [self.ast]
         while len(not_visited) > 0:
             temp = not_visited.pop()
-            if temp not in visited or isinstance(temp, CondAST):
+            if temp not in visited:
                 # if a scope, skip
                 # if include instruction, skip
-                if isinstance(temp, InstrAST):
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or \
+                        isinstance(temp, PrintfAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
+                    isinstance(temp, IncludeAST):
                     visited.append(temp)
-                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST):
-                    visited.append(temp)
+                if isinstance(temp, AST):
+                    for child in temp.children:
+                        not_visited.append(child)
         visited.reverse()
+        string_global = ""
+        string_local = ""
+        index = 1
         for instruction in visited:
-            # declare for the symbol table
-            if instruction.symbolTable is not None:
-                for symbol in instruction.symbolTable.table:
-                    out , latest_index = symbol.object.llvm(False, latest_index)
-                    f.write(out)
-            for child in instruction.children:
-                if not isinstance(child, Node):
-                    out , latest_index = child.llvm(False, latest_index)
-                    f.write(out)
 
+            if isinstance(instruction, PrintfAST) or isinstance(instruction, ScanfAST) or isinstance(instruction, IncludeAST):
+                temp_global , index = instruction.llvm_global(index)
+            else:
+                temp_global , index = instruction.llvm(False, index)
+                # write the llvm code for all global variables for the instruction
+                # temp_local, index = instruction.llvm(True, index)
+                # string_local += temp_local
+            string_global += temp_global
+        f.write(string_global)
+        f.write(string_local)
         print("Done!!!")
         # for entry in self.symbol_table.table:
         #     node = copy.copy(entry.object)
