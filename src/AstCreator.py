@@ -192,6 +192,7 @@ class AstCreator(MathVisitor):
 
                 elif isinstance(child, ScanfAST):
                     child.children = base.children[index - len(child.variables): index]
+                    child.children.reverse()
                     base.children[index-len(child.variables):index] = []
                     index -= len(child.variables)
 
@@ -390,6 +391,7 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, PrintfAST):
                     if child.root.value is None:
                         child.children = base.children[index - len(child.args): index]
+                        child.children.reverse()
                         base.children[index - len(child.args): index] = []
                         index -= len(child.args)
                 elif child.root.key == "deref":
@@ -964,7 +966,7 @@ class AstCreator(MathVisitor):
         format_string = format_string.replace("\\\?", "\?")
         format_string = format_string.replace("\\\0", "\0")
         format_string = format_string.replace(" ", "")
-        out.format_specifiers += re.findall("%[0-9]*[disc]", format_string)
+        out.format_specifiers += re.findall("%[0-9]*[discf]", format_string)
         out.args = [None] * len(ctx.vars_) # printf
         if len(out.args) != len(out.format_specifiers):
             raise AttributeError("Wrong number of arguments for printf")

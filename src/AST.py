@@ -1,3 +1,6 @@
+import random
+import string
+import uuid
 from math import floor
 from pprint import pprint
 from typing import Any, Tuple
@@ -734,6 +737,8 @@ class PrintfAST(AST):
                             current_child.value = int(current_child.value)
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.randint(0,10**length) if length > 0 else random.randint(0, 10)
                         else:
                             raise TypeError("Invalid type for printf")
                 elif isinstance(current_child, VarNode):
@@ -742,28 +747,57 @@ class PrintfAST(AST):
                             current_child.value = int(current_child.value)
                         elif current_child.type == 'char':
                             current_child.value = ord(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.randint(0, 10 ** length) if length > 0 else random.randint(0, 10)
                         else:
                             raise TypeError("Invalid type for printf")
                 current_child.type = 'int'
             if current_specifier[-1] == 'i':
-                pass
+                # type can accept hexa, octal, decimal and binary
+                if isinstance(current_child, Node):
+                    if not isinstance(current_child.value, int):
+                        if isinstance(current_child.value, float):
+                            current_child.value = int(current_child.value)
+                        elif isinstance(current_child.value, str) and len(current_child.value) == 1:
+                            current_child.value = ord(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.randint(0,10**length)
+                        else:
+                            raise TypeError("Invalid type for printf")
+                elif isinstance(current_child, VarNode):
+                    if not current_child.type == 'int':
+                        if current_child.type == 'float':
+                            current_child.value = int(current_child.value)
+                        elif current_child.type == 'char':
+                            current_child.value = ord(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.randint(0, 10 ** length)
+                        else:
+                            raise TypeError("Invalid type for printf")
+                current_child.type = 'int'
             if current_specifier[-1] == 'c':
                 if isinstance(current_child, Node):
                     if not isinstance(current_child.value, str) or len(current_child.value) != 1:
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.choice(string.ascii_letters)
                         else:
                             raise TypeError("Invalid type for printf")
                 elif isinstance(current_child, VarNode):
                     if not current_child.type == 'char':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.choice(string.ascii_letters)
                         else:
                             raise TypeError("Invalid type for printf")
                 current_child.type = 'char'
 
             if current_specifier[-1] == 's':
                 if isinstance(current_child, Node):
+                    if current_child.value is None:
+                        current_child.value = str(uuid.uuid1())
                     if not isinstance(current_child.value, str):
                         raise TypeError("Invalid type for printf")
                 if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
