@@ -181,24 +181,30 @@ class AST:
         out = ""
         indexL, indexR = 0, 0
         leftChild = current.children[0]
-        rightChild = current.children[1]
+        rightChild = None
+        rentry = None
+        lentry = None
+        if len(current.children) > 1:
+            rightChild = current.children[1]
+
+            if isinstance(rightChild, VarNode):
+                rentry, length = self.getEntry(rightChild)
+                if rentry is not None:
+                    indexR = rentry.register
+                    out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
+                    index += 1
+            else:
+                indexR = rightChild.value
+
         if isinstance(leftChild, VarNode):
-            entry, length = self.getEntry(leftChild)
-            if entry is not None:
-                indexL = entry.register
+            lentry, length = self.getEntry(leftChild)
+            if lentry is not None:
+                indexL = lentry.register
                 out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
                 index += 1
         else:
             indexL = leftChild.value
 
-        if isinstance(rightChild, VarNode):
-            entry, length = self.getEntry(rightChild)
-            if entry is not None:
-                indexR = entry.register
-                out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
-                index += 1
-        else:
-            indexR = rightChild.value
 
         operand = current.root.value
         currenType = None
@@ -210,51 +216,65 @@ class AST:
             currenType = leftChild.key
         convertedType = getLLVMType(currenType)
         if operand == '<':
-            out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '>':
-            out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '==':
-            out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '!=':
-            out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '<=':
-            out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '>=':
-            out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '&&':
-            out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '||':
-            out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '+':
-            pass
+            out += f"\t%{index} = " + self.add(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '-':
-            pass
+            out += f"\t%{index} = " + self.sub(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '/':
-            pass
+            out += f"\t%{index} = " + self.div(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '*':
-            pass
+            out += f"\t%{index} = " + self.mul(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '%':
-            pass
+            out += f"\t%{index} = " + self.mod(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '++':
-            pass
+            out += f"\t%{index} = " + self.incr(convertedType, f"%{indexL}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '--':
-            pass
+            out += f"\t%{index} = " + self.decr(convertedType, f"%{indexL}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         return out, index
 
     @staticmethod
@@ -507,6 +527,16 @@ class AST:
         return f"udiv {var_type} {op1}, {op2}"
 
     @staticmethod
+    def div(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return AST.sdiv(var_type, op1, op2)
+
+    @staticmethod
     def mod(var_type: str, op1: str, op2: str):
         """
         Writes LLVM code for a modulo operation (unsigned)
@@ -749,6 +779,9 @@ class AssignAST(AST):
     def handle(self):
         # check if there are conversions needed
         return self.children[0]
+
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
 
 
 class TermAST(AST):
