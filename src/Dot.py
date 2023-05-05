@@ -2,9 +2,10 @@ from AST import *
 
 
 class dot:
-    def __init__(self, in_ast: AST) -> None:
+    def __init__(self, in_ast: AST, in_filename: str = "../Output/ast.dor") -> None:
         self.dot = {}
         self.ast: AST = in_ast
+        self.filename = in_filename
 
     def connect(self):
         visited = []
@@ -21,7 +22,7 @@ class dot:
                     self.dot[child].append(current)
 
         # write as dot file
-        with open("ast.dot", "w") as f:
+        with open(self.filename, "w") as f:
             f.write("digraph {\n")
             for key in self.dot:
                 for value in self.dot[key]:
