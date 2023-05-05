@@ -673,10 +673,66 @@ class InstrAST(AST):
 
 class PrintfAST(AST):
 
-    def __init__(self, root: Node = None, children: list = None, parent=None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, format_string: str = None, args=None,
+                 format_specifiers: list = None):
         super().__init__(root, children, parent)
+        if args is None:
+            args = []
+        self.format_string: str = format_string
+        self.format_specifiers: list = []
+        self.args: list = args
 
     def handle(self):
+        for i in range(len(self.format_specifiers)):
+            current_specifier = self.format_specifiers[i]
+            current_child = self.children[i]
+            # check the child's type
+            if current_specifier[-1] == 'd':
+                # check if the child is a node
+                if isinstance(current_child, Node):
+                    if not isinstance(current_child.value, int):
+                        if isinstance(current_child.value, float):
+                            current_child.value = int(current_child.value)
+                        elif isinstance(current_child.value, str) and len(current_child.value) == 1:
+                            current_child.value = ord(current_child.value)
+                        else:
+                            raise TypeError("Invalid type for printf")
+                elif isinstance(current_child, VarNode):
+                    if not current_child.type == 'int':
+                        if current_child.type == 'float':
+                            current_child.value = int(current_child.value)
+                        elif current_child.type == 'char':
+                            current_child.value = ord(current_child.value)
+                        else:
+                            raise TypeError("Invalid type for printf")
+                current_child.type = 'int'
+            if current_specifier[-1] == 'i':
+                pass
+            if current_specifier[-1] == 'c':
+                if isinstance(current_child, Node):
+                    if not isinstance(current_child.value, str) or len(current_child.value) != 1:
+                        if isinstance(current_child.value, int):
+                            current_child.value = chr(current_child.value)
+                        elif isinstance(current_child.value, float):
+                            current_child.value = chr(int(current_child.value))
+                        else:
+                            raise TypeError("Invalid type for printf")
+                elif isinstance(current_child, VarNode):
+                    if not current_child.type == 'char':
+                        if current_child.type == 'int':
+                            current_child.value = chr(current_child.value)
+                        elif current_child.type == 'float':
+                            current_child.value = chr(int(current_child.value))
+                        else:
+                            raise TypeError("Invalid type for printf")
+                current_child.type = 'char'
+
+            if current_specifier[-1] == 's':
+                if isinstance(current_child, Node):
+                    if not isinstance(current_child.value, str):
+                        raise TypeError("Invalid type for printf")
+                if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
+                    raise TypeError("Invalid type for printf")
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
@@ -882,7 +938,9 @@ class DerefAST(AST):
             raise AttributeError(f"Attempting to dereference a non-pointer type variable")
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
-        child.deref_level += 1
+        child = child.value
+        if isinstance(child, VarNode) and child.ptr:
+            child.deref_level += 1
         return child
 
 

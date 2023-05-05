@@ -12,7 +12,7 @@ from SymbolTable import *
 from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
 from decimal import *
-
+import re
 
 class AstCreator(MathVisitor):
 
@@ -572,8 +572,11 @@ class AstCreator(MathVisitor):
                                     match_found = False
                                     break
                                 if current_param.type != current_arg.type:
-                                    match_found = False
-                                    break
+                                    if (current_param.type, current_arg.type) not in conversions:
+                                        match_found = False
+                                        break
+                                    if (current_arg.type, current_param.type) not in conv_promotions:
+                                        self.warnings.append(f"Conversion from {current_arg.type} to {current_param.type} may cause loss of data")
                             else:
                                 if current_param.type != getType(current_arg.value):
                                     if (getType(current_arg.value), current_param.type) not in conversions:
@@ -836,17 +839,6 @@ class AstCreator(MathVisitor):
                 # refresh symbol table
                 # self.symbol_table.refresh()
                 node = assignee
-            elif isinstance(ast, PrintfAST):
-                # insert function into symbol table
-                # hard code the parameters for this particular function
-                if not isinstance(ast.children[0], VarNode):
-                    continue
-                new_param = FunctionParameter(getType(ast.children[0].value))
-                new_entry = FuncSymbolEntry(ast.root, in_parameters=[new_param])
-                ast.root.type = new_param.type
-                temp_symbol.insert(new_entry)
-                temp_symbol.refresh()
-                node = ast
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
                 updates_queue.reverse()
@@ -938,11 +930,17 @@ class AstCreator(MathVisitor):
         :return: Node
         """
 
-        out = PrintfAST(FunctionNode(key="printf"))
+        out = PrintfAST(Node("printf", None))
         if ctx.print_val is not None:
-            out.root.value = ctx.print_val.text
-        # PrintfAST root is the definition of the function
-        # PrintfAST children are the parameters given to the function
+            out.format_string = ctx.print_val.text # printf
+        if ctx.format_string is not None:
+            out.format_string = ctx.format_string.text # printf
+        # split the format string into a list of strings and variables
+        out.format_string = out.format_string.replace("\\n", "\n")
+        out.format_specifiers += re.findall("%[disc]", out.format_string)
+        out.args = [None] * len(ctx.vars_) # printf
+        if len(out.args) != len(out.format_specifiers):
+            raise AttributeError("Wrong number of arguments for printf")
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):
@@ -1014,8 +1012,9 @@ class AstCreator(MathVisitor):
             root = VarNode(ctx.children[-1].getText(), None, "")
             return root
         # If more than 1 element: it's a pointer
-        root = VarNode(ctx.children[-1].getText(), None, "", ptr=(len(ctx.children) - 1 > 0),
-                       total_deref=len(ctx.children) - 1)
+        ptr_len = len(ctx.ptr) if ctx.ptr is not None else 0
+        is_ptr = ptr_len > 0
+        root = VarNode(ctx.name.text, None, "", ptr=is_ptr, total_deref=ptr_len)
         return root
 
     def visitDeref(self, ctx: MathParser.DerefContext):
