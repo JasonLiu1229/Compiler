@@ -352,15 +352,14 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, Scope_AST) or isinstance(child, FuncScopeAST):
                     # Parent of scope is base itself, if no parent is already found
                     # indexes["scope_depth"] += 1
-                    if len(indexes["last_scope"]) < indexes["scope_depth"]:
-                        indexes["last_scope"].append(0)
                     if child.parent is None:
                         child.parent = base
                     new_index = self.searchPrevToken(index=index, token="}", in_list=base.children)
                     base.children[new_index:new_index + 1] = []
+                    index = base.children.index(child)
                     child.children = base.children[new_index: index - 1]
                     child.children.reverse()
-                    base.children[new_index: index - 1] = []
+                    base.children[new_index: index] = []
                     index = base.children.index(child)
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
                     indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
@@ -390,6 +389,9 @@ class AstCreator(MathVisitor):
 
                 elif isinstance(child, PrintfAST):
                     if child.root.value is None:
+                        if len(child.children) > 0:
+                            continue
+                        child.args = base.children[index - len(child.args): index]
                         child.children = base.children[index - len(child.args): index]
                         child.children.reverse()
                         base.children[index - len(child.args): index] = []
@@ -411,14 +413,14 @@ class AstCreator(MathVisitor):
             elif isinstance(child, Node):
                 if child.key == "}":
                     indexes["scope_depth"] += 1
-                    indexes["last_scope_open"] = index
+                    # indexes["last_scope_open"] = index
                     # base.children[index:index+1] = []
                     # index -= 1
 
                 if child.key == "{":
                     indexes["scope_depth"] -= 1
-                    base.children[index:index + 1] = []
-                    index -= 1
+                    # base.children[index:index + 1] = []
+                    # index -= 1
 
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index - 1].value
@@ -508,6 +510,7 @@ class AstCreator(MathVisitor):
         # flags
         conditional = False
         evaluate = True
+        temp_symbol = None
         for ast in list_ast:
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
@@ -899,9 +902,10 @@ class AstCreator(MathVisitor):
             else:
                 if isinstance(ast.parent, Else_CondAST):
                     ast.last_eval = not ast.last_eval
-        for instance in updates_queue:
-            temp_symbol.update(instance)
-        temp_symbol.refresh()
+        if temp_symbol is not None:
+            for instance in updates_queue:
+                temp_symbol.update(instance)
+            temp_symbol.refresh()
         symbol_table = temp_symbol
         return symbol_table
 
@@ -960,17 +964,30 @@ class AstCreator(MathVisitor):
         format_string = format_string.replace("\\b", "\b")
         format_string = format_string.replace("\\a", "\a")
         format_string = format_string.replace("\\f", "\f")
-        format_string = format_string.replace("\\\\", "\\")
-        format_string = format_string.replace("\\\'", "\'")
-        format_string = format_string.replace("\\\"", "\"")
-        format_string = format_string.replace("\\\?", "\?")
-        format_string = format_string.replace("\\\0", "\0")
+        # format_string = format_string.replace("\\\\", "\\")
+        # format_string = format_string.replace("\\\'", "\'")
+        # format_string = format_string.replace("\\\"", "\"")
+        # format_string = format_string.replace("\\\?", "\?")
+        # format_string = format_string.replace("\\\0", "\0")
         format_string = format_string.replace(" ", "")
         out.format_specifiers += re.findall("%[0-9]*[discf]", format_string)
-        out.format_string = format_string
+        # remove escape characters
+        out.format_string = out.format_string.replace("\\n", "\\0A")
+        out.format_string = out.format_string.replace("\\t", "\\09")
+        out.format_string = out.format_string.replace("\\r", "\\0D")
+        out.format_string = out.format_string.replace("\\v", "\\0B")
+        out.format_string = out.format_string.replace("\\b", "\\08")
+        out.format_string = out.format_string.replace("\\a", "\\07")
+        out.format_string = out.format_string.replace("\\f", "\\0C")
+
         out.args = [None] * len(ctx.vars_) # printf
         if len(out.args) != len(out.format_specifiers):
             raise AttributeError("Wrong number of arguments for printf")
+        for i in range(len(ctx.vars_)):
+            if isinstance(ctx.vars_[i].children[0], antlr4.tree.Tree.TerminalNodeImpl):
+                new_node = Node("string", ctx.vars_[i].children[0].getText()[1:-1])
+                out.args[i] = new_node
+                out.children.append(new_node)
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):

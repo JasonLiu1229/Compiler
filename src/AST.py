@@ -1,4 +1,5 @@
 import random
+import re
 import string
 import uuid
 from math import floor
@@ -725,6 +726,13 @@ class PrintfAST(AST):
         self.args: list = args
 
     def handle(self):
+        # replace all the arguments
+        for i in range(len(self.args)):
+            if isinstance(self.args[i], Node) and self.args[i].key == "string":
+                continue
+            last_register = self.children[i].register
+            self.args[i] = self.children[i]
+            self.args[i].register = last_register
         for i in range(len(self.format_specifiers)):
             current_specifier = self.format_specifiers[i]
             current_child = self.children[i]
@@ -801,8 +809,9 @@ class PrintfAST(AST):
                         current_child.value = str(uuid.uuid1())
                     if not isinstance(current_child.value, str):
                         raise TypeError("Invalid type for printf")
-                if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
-                    raise TypeError("Invalid type for printf")
+                if isinstance(current_child, VarNode):
+                    if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
+                        raise TypeError("Invalid type for printf")
             # check the length of format specifiers and child
             if length != 0:
                 # convert child value to string
@@ -813,26 +822,43 @@ class PrintfAST(AST):
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""
-        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)+1} x i8] c\"{self.format_string}\\00\", align 1\n"
+        extra_length = len(re.findall("\\\.*", self.format_string)) * 2
+        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)+1 - extra_length} x i8] c\"{self.format_string}\\00\", align 1\n"
         # entry, length = self.getEntry(self.root)
         self.register = index
         index += 1
+        for i in range(len(self.args)):
+            if self.args[i].key == "string":
+                extra_length = len(re.findall("\\\.*", self.args[i].value)) * 2
+                out += f"@str.{index} = private unnamed_addr constant [{len(self.args[i].value)+1 - extra_length} x i8] c\"{self.args[i].value}\\00\", align 1\n"
+                self.args[i].register = index
+                self.children[i].register = index
+                index += 1
         return out, index
+
+    def updateRegisters(self):
+        for i in range(len(self.args)):
+            self.args[i].register = self.children[i].register
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
         var_string = ""
         count = 0
-        for var in self.children:
+        self.updateRegisters()
+        for var in self.args:
             temp_type = getLLVMType(getType(var.value))
+
             if isinstance(var, Node):
-                var_string += f"{temp_type if temp_type != 'float' else 'double'} noundef {var.value}"
+                if var.key == "string":
+                    temp_type = "ptr"
+                var_string += f"{temp_type if temp_type != 'float' else 'double'} noundef {'@str.' if var.key == 'string' else ''}{var.register if var.register is not None else var.value}"
             else:
                 entry, length = self.getEntry(var)
                 var += f"{temp_type if temp_type != 'float' else 'double'} noundef %{entry.register}"
-            if count + 1 != len(self.children):
+            if count + 1 != len(self.args):
                 var_string += ', '
-        out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{self.register if self.register is not None else ''}, {var_string})\n"
+            count += 1
+        out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{self.register if self.register is not None else ''}{', ' if len(var_string) > 0 else ''}{var_string})\n"
         return out, index
 
 
@@ -1498,6 +1524,7 @@ class FuncScopeAST(AST):
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         # DFS the whole scope and llvm every part of them
         visited = []
+        has_return = False
         not_visited = [self]
         while len(not_visited) > 0:
             current = not_visited.pop()
@@ -1514,6 +1541,8 @@ class FuncScopeAST(AST):
         out = ""
         visited.reverse()
         for current in visited:
+            if isinstance(current, ReturnInstr):
+                has_return = True
             output = tuple
             if current.root.value in tokens:
                 output = self.visitLLVMOp(current, index)
@@ -1521,6 +1550,9 @@ class FuncScopeAST(AST):
                 output = current.llvm(True, index)
             out += output[0]
             index = output[1]
+        if not has_return:
+            ret_type = getLLVMType(self.parent.type)
+            out += f"ret {ret_type if self.parent.type != 'void' else ''} {0 if self.parent.type != 'void' else '' } \n"
         out += "}\n"
         return out, index
 
