@@ -691,7 +691,7 @@ class AstCreator(MathVisitor):
             if isinstance(ast, ScanfAST):
                 for var in ast.variables:
                     match , total = AST.getEntry(var)
-                    if total is -1:
+                    if total == -1:
                         raise ReferenceError(f"Variable {var.value} undeclared")
                     elif total > 1:
                         raise ReferenceError(f"Multiple matches for variable {var.value}")
