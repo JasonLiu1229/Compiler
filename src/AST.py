@@ -3,6 +3,7 @@ import re
 import string
 import uuid
 from math import floor
+from array import array
 from pprint import pprint
 from typing import Any, Tuple
 from Node import Node, VarNode, FunctionNode, FuncParameter
@@ -221,64 +222,41 @@ class AST:
         else:
             currenType = leftChild.key
         convertedType = getLLVMType(currenType)
+
         if operand == '<':
             out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '>':
             out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '==':
             out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '!=':
             out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '<=':
             out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '>=':
             out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '&&':
             out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '||':
             out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '+':
             out += f"\t%{index} = " + self.add(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '-':
             out += f"\t%{index} = " + self.sub(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '/':
             out += f"\t%{index} = " + self.div(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '*':
             out += f"\t%{index} = " + self.mul(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '%':
             out += f"\t%{index} = " + self.mod(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '++':
             out += f"\t%{index} = " + self.incr(convertedType, f"%{indexL}") + "\n"
-            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
-            index += 1
         elif operand == '--':
             out += f"\t%{index} = " + self.decr(convertedType, f"%{indexL}") + "\n"
+
+        if isinstance(current, CondAST):
+            pass
+        else:
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         return out, index
@@ -742,17 +720,7 @@ class PrintfAST(AST):
             # check the child's type
             if current_specifier[-1] == 'd':
                 # check if the child is a node
-                if isinstance(current_child, Node):
-                    if not isinstance(current_child.value, int):
-                        if isinstance(current_child.value, float):
-                            current_child.value = int(current_child.value)
-                        elif isinstance(current_child.value, str) and len(current_child.value) == 1:
-                            current_child.value = ord(current_child.value)
-                        elif current_child.value is None:
-                            current_child.value = random.randint(0,10**length) if length > 0 else random.randint(0, 10)
-                        else:
-                            raise TypeError("Invalid type for printf")
-                elif isinstance(current_child, VarNode):
+                if isinstance(current_child, VarNode):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
@@ -762,20 +730,23 @@ class PrintfAST(AST):
                             current_child.value = random.randint(0, 10 ** length) if length > 0 else random.randint(0, 10)
                         else:
                             raise TypeError("Invalid type for printf")
-                current_child.type = 'int'
-            if current_specifier[-1] == 'i':
-                # type can accept hexa, octal, decimal and binary
-                if isinstance(current_child, Node):
+                elif isinstance(current_child, Node):
                     if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
-                            current_child.value = random.randint(0,10**length)
+                            current_child.value = random.randint(0,10**length) if length > 0 else random.randint(0, 10)
                         else:
                             raise TypeError("Invalid type for printf")
-                elif isinstance(current_child, VarNode):
+                if isinstance(current_child, VarNode):
+                    current_child.type = "int"
+                else:
+                    current_child.key = "int"
+            if current_specifier[-1] == 'i':
+                # type can accept hexa, octal, decimal and binary
+                if isinstance(current_child, VarNode):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
@@ -785,17 +756,23 @@ class PrintfAST(AST):
                             current_child.value = random.randint(0, 10 ** length)
                         else:
                             raise TypeError("Invalid type for printf")
-                current_child.type = 'int'
-            if current_specifier[-1] == 'c':
-                if isinstance(current_child, Node):
-                    if not isinstance(current_child.value, str) or len(current_child.value) != 1:
+                elif isinstance(current_child, Node):
+                    if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
+                        elif isinstance(current_child.value, str) and len(current_child.value) == 1:
+                            current_child.value = ord(current_child.value)
                         elif current_child.value is None:
-                            current_child.value = random.choice(string.ascii_letters)
+                            current_child.value = random.randint(0,10**length)
                         else:
                             raise TypeError("Invalid type for printf")
-                elif isinstance(current_child, VarNode):
+
+                if isinstance(current_child, VarNode):
+                    current_child.type = "int"
+                else:
+                    current_child.key = "int"
+            if current_specifier[-1] == 'c':
+                if isinstance(current_child, VarNode):
                     if not current_child.type == 'char':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
@@ -803,19 +780,52 @@ class PrintfAST(AST):
                             current_child.value = random.choice(string.ascii_letters)
                         else:
                             raise TypeError("Invalid type for printf")
-                if current_child.type == "char":
+                elif isinstance(current_child, Node):
+                    if not isinstance(current_child.value, str) or len(current_child.value) != 1:
+                        if isinstance(current_child.value, float):
+                            current_child.value = int(current_child.value)
+                        elif current_child.value is None:
+                            current_child.value = random.choice(string.ascii_letters)
+                        else:
+                            raise TypeError("Invalid type for printf")
+
+                if isinstance(current_child, VarNode):
+                    if current_child.type == "char":
+                        current_child.value = str(ord(current_child.value))
+                else:
                     current_child.value = str(ord(current_child.value))
-                current_child.type = 'char'
+            if current_specifier[-1] == 'f':
+                if isinstance(current_child, VarNode):
+                    if not current_child.type == 'float':
+                        if current_child.type == 'int':
+                            current_child.value = array('f', [current_child.value])[0]
+                        elif current_child.type == 'char':
+                            current_child.value = array('f', [ord(current_child.value)])[0]
+                        elif current_child.value is None:
+                            current_child.value = random.uniform(0, 10 ** length)
+                        else:
+                            raise TypeError("Invalid type for printf")
+                elif isinstance(current_child, Node):
+                    if not isinstance(current_child.value, float):
+                        if isinstance(current_child.value, int):
+                            current_child.value = array('f', [current_child.value])[0]
+                        elif isinstance(current_child.value, str) and len(current_child.value) == 1:
+                            current_child.value = array('f', [ord(current_child.value)])[0]
+                        elif current_child.value is None:
+                            current_child.value = random.uniform(0, 10 ** length)
+                        else:
+                            raise TypeError("Invalid type for printf")
 
             if current_specifier[-1] == 's':
+                if isinstance(current_child, VarNode):
+                    if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
+                        raise TypeError("Invalid type for printf")
                 if isinstance(current_child, Node):
                     if current_child.value is None:
                         current_child.value = str(uuid.uuid1())
                     if not isinstance(current_child.value, str):
                         raise TypeError("Invalid type for printf")
-                if isinstance(current_child, VarNode):
-                    if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
-                        raise TypeError("Invalid type for printf")
+
             # check the length of format specifiers and child
             if length != 0:
                 # convert child value to string
@@ -1093,7 +1103,7 @@ class Scope_AST(AST):
             if current.root.value in tokens:
                 output = self.visitLLVMOp(current, index)
             else:
-                output = current.llvm()
+                output = current.llvm(True, index)
             out += output[0]
             index = output[1]
         return out, index
@@ -1240,7 +1250,7 @@ class While_loopAST(Scope_AST):
 
     def llvm_block1(self, out, index, blocks):
         name = blocks["1"]
-        out += f"{name}:"
+        out += f"{name}:\n"
         index += 1
 
         # DFS the condition
@@ -1267,20 +1277,10 @@ class While_loopAST(Scope_AST):
 
     def llvm_block2(self, out, index, blocks):
         name = blocks["2"]
-        out += f"{name}:"
+        out += f"{name}:\n"
 
         # DFS
-        visited = []
-        not_visited = [self.children[0]]
-        while len(not_visited) > 0:
-            current = not_visited.pop()
-            if current not in visited:
-                visited.append(current)
-                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
-                        or not isinstance(current, If_CondAST) \
-                        or not isinstance(current, FuncDefnAST):
-                    for i in current.children:
-                        not_visited.append(i)
+        visited = visited_list_DFS(self)
 
         # Handle
         for current in visited:
@@ -1299,7 +1299,7 @@ class While_loopAST(Scope_AST):
     @staticmethod
     def llvm_block3(out, index, blocks):
         name = blocks["3"]
-        out += f"{name}:"
+        out += f"{name}:\n"
         out += f"\t%ret i32 0"
         index += 1
         return out, index
@@ -1309,8 +1309,10 @@ class While_loopAST(Scope_AST):
         index += 2
         out = f"\tbr label %{index}\n\n"
         out, index = self.llvm_block1(out, index, blocks)
-        out, index = self.llvm_block2(out, index, blocks)
-        out, index = self.llvm_block3(out, index, blocks)
+        new_out, index = self.llvm_block2(out, index, blocks)
+        out += new_out
+        new_out, index = self.llvm_block3(out, index, blocks)
+        out += new_out
         return out, index
 
 
