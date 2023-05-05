@@ -863,11 +863,21 @@ class AstCreator(MathVisitor):
                 node = ast.handle()
                 updates_queue.reverse()
                 for instance in incr_queue:
-                    instance = temp_symbol.lookup(instance)[0].object
+                    match, length = AST.getEntry(instance)
+                    if length == 0:
+                        raise ReferenceError(f"Variable {instance.key} not found")
+                    if length > 1:
+                        raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                    instance = match
                     instance.value += 1
                     temp_symbol.update(instance)
                 for instance in decr_queue:
-                    instance = temp_symbol.lookup(instance)[0].object
+                    match, length = AST.getEntry(instance)
+                    if length == 0:
+                        raise ReferenceError(f"Variable {instance.key} not found")
+                    if length > 1:
+                        raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                    instance = match
                     instance.value -= 1
                     temp_symbol.update(instance)
                 for instance in updates_queue:
