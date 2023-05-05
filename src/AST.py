@@ -1370,7 +1370,14 @@ class ReturnInstr(InstrAST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        if isinstance(self.root, Node):
+            out += f"ret {getLLVMType(getType(self.root.value))} {self.root.value}\n"
+        elif isinstance(self.root, VarNode):
+            entry, length = self.getEntry(self.root)
+            out += f"%{index} = load {getLLVMType(entry.type)}, ptr %{entry.register}, align {'4' if not entry.ptr else '8'}\n"
+            out += f"ret {getLLVMType(self.root.type)} %{entry.register}\n"
+        return out, index
 
 
 class ScanfAST(AST):
@@ -1412,7 +1419,8 @@ class ArrayDeclAST(AST):
         out = ""
         if scope:
             # local
-            out += f"%{index} = alloca [ {self.size} x {getLLVMType(self.root.type)}], align {min(self.size * 4, 16)}\n"
+            out += f"%{index} = alloca [ {self.size} x {getLLVMType(getType(self.root.value))}], align {min(self.size * 4, 16)}\n"
+            out += f"\n"
             index += 1
 
         else:
@@ -1426,7 +1434,7 @@ class ArrayDeclAST(AST):
                 for i in range(self.size - count):
                     vals += f"{getLLVMType(getType(self.root.value))} 0 {', ' if count + 1 != len(self.values) else ''}"
             vals += "]"
-            out += f"@{self.root.key} = dso_local global [ {self.size} x {getLLVMType(getType(self.root.value))}] {'zeroinitializer' if len(self.values) == 0 else vals}, align {min(self.size * 4, 16)}\n"
+            out += f"@{self.root.key} = dso_local global [ {self.size if self.size > 1 else 1} x {getLLVMType(getType(self.root.value))}] {'zeroinitializer' if len(self.values) == 0 else vals}, align {min(self.size * 4, 16)}\n"
         return out, index
 
 
