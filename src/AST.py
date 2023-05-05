@@ -811,10 +811,27 @@ class PrintfAST(AST):
         return self
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)} x i8] c\"{self.format_string}\\00\", align 1\n"
+        entry, length = self.getEntry(self.root)
+        entry.register = index
+        index += 1
+        return out, index
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        var_string = ""
+        count = 0
+        for var in self.variables:
+            if isinstance(var, Node):
+                var_string += f"{getLLVMType(getType(var.value))} noundef %{var.value}"
+            else:
+                entry, length = self.getEntry(var)
+                var += f"{getLLVMType(entry.type)} noundef %{entry.register}"
+            if count + 1 != len(self.variables):
+                var_string += ', '
+        out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{index}, {var_string})\n"
+        return out, index
 
 
 class DeclrAST(AST):
@@ -1406,14 +1423,14 @@ class FuncDefnAST(AST):
         # Begin
         out += f"define dso_local {getLLVMType(self.type)} @{self.root.key}"
         # Parameters
-        paramaters = self.params.parameters
+        parameters = self.params.parameters
         param_string = ""
         default_exist = False
-        if len(paramaters) > 0:
+        if len(parameters) > 0:
             count = 0
-            for i in paramaters:
+            for i in parameters:
                 param_string += f"{getLLVMType(i.type)} noundef %{i.key}"
-                if count + 1 != len(paramaters):
+                if count + 1 != len(parameters):
                     param_string += ', '
                 count += 1
         out += f" ({param_string})"
@@ -1421,8 +1438,8 @@ class FuncDefnAST(AST):
         out += " #0 {\n"
 
         local_index = 1
-        if len(paramaters) > 0:
-            for child in paramaters:
+        if len(parameters) > 0:
+            for child in parameters:
                 out += f"%{local_index} = alloca {getLLVMType(child.type)}, align {'4' if not child.ptr else '8'}\n"
                 out += f"%store {getLLVMType(child.type)} %{child.key}, ptr %{local_index}, align {'4' if not child.ptr else '8'}\n"
                 entry, length = self.getEntry(child)
@@ -1546,7 +1563,7 @@ class ScanfAST(AST):
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""
-        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_specifiers) * 3} x i8] c\"{self.format_string}\\00\", align 1\n"
+        out += f"@.str.{index} = private unnamed_addr constant [{len(self.format_string)} x i8] c\"{self.format_string}\\00\", align 1\n"
         entry, length = self.getEntry(self.root)
         entry.register = index
         index += 1
