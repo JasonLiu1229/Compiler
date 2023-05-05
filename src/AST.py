@@ -168,28 +168,43 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        """
+        Generates the LLVM code for the global variables
+        :param index: index of the current variable
+        :return: tuple of the LLVM code and the index
+        """
+        out = ""
+        return out, index
+
     def visitLLVMOp(self, current, index: int) -> tuple[str, int]:
         out = ""
         indexL, indexR = 0, 0
         leftChild = current.children[0]
-        rightChild = current.children[1]
+        rightChild = None
+        rentry = None
+        lentry = None
+        if len(current.children) > 1:
+            rightChild = current.children[1]
+
+            if isinstance(rightChild, VarNode):
+                rentry, length = self.getEntry(rightChild)
+                if rentry is not None:
+                    indexR = rentry.register
+                    out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
+                    index += 1
+            else:
+                indexR = rightChild.value
+
         if isinstance(leftChild, VarNode):
-            entry, length = self.getEntry(leftChild)
-            if entry is not None:
-                indexL = entry.register
+            lentry, length = self.getEntry(leftChild)
+            if lentry is not None:
+                indexL = lentry.register
                 out += f"\t%{index} load {getLLVMType(leftChild.type)}, ptr %{indexL}, align 4\n"
                 index += 1
         else:
             indexL = leftChild.value
 
-        if isinstance(rightChild, VarNode):
-            entry, length = self.getEntry(rightChild)
-            if entry is not None:
-                indexR = entry.register
-                out += f"\t%{index} load {getLLVMType(rightChild.type)}, ptr %{indexR}, align 4\n"
-                index += 1
-        else:
-            indexR = rightChild.value
 
         operand = current.root.value
         currenType = None
@@ -201,51 +216,65 @@ class AST:
             currenType = leftChild.key
         convertedType = getLLVMType(currenType)
         if operand == '<':
-            out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_lt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '>':
-            out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_gt(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '==':
-            out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_eq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '!=':
-            out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_neq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '<=':
-            out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_leq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '>=':
-            out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.comp_geq(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '&&':
-            out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.and_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '||':
-            out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}" + "\n")
+            out += f"\t%{index} = " + self.or_op(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         elif operand == '+':
-            pass
+            out += f"\t%{index} = " + self.add(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '-':
-            pass
+            out += f"\t%{index} = " + self.sub(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '/':
-            pass
+            out += f"\t%{index} = " + self.div(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '*':
-            pass
+            out += f"\t%{index} = " + self.mul(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '%':
-            pass
+            out += f"\t%{index} = " + self.mod(convertedType, f"%{indexL}", f"%{indexR}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '++':
-            pass
+            out += f"\t%{index} = " + self.incr(convertedType, f"%{indexL}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         elif operand == '--':
-            pass
+            out += f"\t%{index} = " + self.decr(convertedType, f"%{indexL}") + "\n"
+            current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
+            index += 1
         return out, index
 
     @staticmethod
@@ -496,6 +525,16 @@ class AST:
         :param op2: the second operand
         """
         return f"udiv {var_type} {op1}, {op2}"
+
+    @staticmethod
+    def div(var_type: str, op1: str, op2: str):
+        """
+        Writes LLVM code for a division operation (unsigned)
+        :param var_type: the type of return value
+        :param op1: the first operand
+        :param op2: the second operand
+        """
+        return AST.sdiv(var_type, op1, op2)
 
     @staticmethod
     def mod(var_type: str, op1: str, op2: str):
@@ -797,6 +836,9 @@ class AssignAST(AST):
         # check if there are conversions needed
         return self.children[0]
 
+    def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
+        pass
+
 
 class TermAST(AST):
 
@@ -949,6 +991,7 @@ class Scope_AST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, symbolTable=SymbolTable())
         self.condition: AST | Node | None = condition
+        self.symbolTable.owner = self.root.key
 
     def handle(self):
         return self
@@ -1389,6 +1432,7 @@ class FuncCallAST(AST):
 class FuncScopeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, SymbolTable())
+        self.symbolTable.owner = self.root.key
 
     def handle(self):
         return self
@@ -1428,7 +1472,14 @@ class ReturnInstr(InstrAST):
         return self
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
-        pass
+        out = ""
+        if isinstance(self.root, Node):
+            out += f"ret {getLLVMType(getType(self.root.value))} {self.root.value}\n"
+        elif isinstance(self.root, VarNode):
+            entry, length = self.getEntry(self.root)
+            out += f"%{index} = load {getLLVMType(entry.type)}, ptr %{entry.register}, align {'4' if not entry.ptr else '8'}\n"
+            out += f"ret {getLLVMType(self.root.type)} %{entry.register}\n"
+        return out, index
 
 
 class ScanfAST(AST):
@@ -1466,11 +1517,35 @@ class ArrayDeclAST(AST):
     def handle(self):
         return self
 
+    def llvm_global(self, index: int = 1) -> tuple[str, int]:
+        out = ""
+        entry, length = self.getEntry(self.root)
+        out += f"@__const.{entry.symbol_table.owner}.{entry.name} = private unnamed_addr constant " \
+               f"[{self.size if self.size > 1 else 1} x {getLLVMType(getType(self.root.value))}] ["
+        count = 0
+        vals = ""
+        for val in self.values:
+            vals += f"{getLLVMType(entry.type)} {val.value} " \
+                    f"{', ' if count + 1 != len(self.values) else ''}"
+            count += 1
+        if count < self.size != 0:
+            for i in range(self.size - count):
+                vals += f"{getLLVMType(entry.type)} 0 {', ' if count + 1 != len(self.values) else ''}"
+        out += vals
+        out += f"], align {4 if self.size < 4 else 16}\n"
+        return out, index
+
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
+        entry, length = self.getEntry(self.root)
         if scope:
             # local
-            out += f"%{index} = alloca [ {self.size} x {getLLVMType(self.root.type)}], align {min(self.size * 4, 16)}\n"
+            out += f"%{index} = alloca [ {self.size} x {getLLVMType(entry.type)}], align {4 if self.size < 4 else 16}\n"
+            entry.register = index
+            out += f"call void @llvm.memcpy.p0.p0.i64(ptr allign {4 if self.size < 4 else 16} %{index}, " \
+                   f"ptr align {4 if self.size < 4 else 16} " \
+                   f"@__const.{entry.symbol_table.owner}.{entry.name}, i64 {self.size * 4}, i1 false)"
+            out += f"\n"
             index += 1
 
         else:
@@ -1478,13 +1553,15 @@ class ArrayDeclAST(AST):
             vals = "["
             count = 0
             for val in self.values:
-                vals += f"{getLLVMType(getType(self.root.value))} {val.value} {', ' if count + 1 != len(self.values) else ''}"
+                vals += f"{getLLVMType(getType(entry.type))} {val.value} {', ' if count + 1 != len(self.values) else ''}"
                 count += 1
             if count < self.size != 0:
                 for i in range(self.size - count):
-                    vals += f"{getLLVMType(getType(self.root.value))} 0 {', ' if count + 1 != len(self.values) else ''}"
+                    vals += f"{getLLVMType(getType(entry.type))} 0 {', ' if count + 1 != len(self.values) else ''}"
             vals += "]"
-            out += f"@{self.root.key} = dso_local global [ {self.size} x {getLLVMType(getType(self.root.value))}] {'zeroinitializer' if len(self.values) == 0 else vals}, align {min(self.size * 4, 16)}\n"
+            out += f"@{self.root.key} = dso_local global [ " \
+                   f"{self.size if self.size > 1 else 1} x {getLLVMType(getType(entry.type))}] " \
+                   f"{'zeroinitializer' if len(self.values) == 0 else vals}, align {4 if self.size < 4 else 16}\n"
         return out, index
 
 
