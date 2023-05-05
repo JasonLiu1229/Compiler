@@ -1428,14 +1428,32 @@ class ArrayDeclAST(AST):
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""
-
+        entry, length = self.getEntry(self.root)
+        out += f"@__const.{entry.symbol_table.owner}.{entry.name} = private unnamed_addr constant " \
+               f"[{self.size if self.size > 1 else 1} x {getLLVMType(getType(self.root.value))}] ["
+        count = 0
+        vals = ""
+        for val in self.values:
+            vals += f"{getLLVMType(entry.type)} {val.value} " \
+                    f"{', ' if count + 1 != len(self.values) else ''}"
+            count += 1
+        if count < self.size != 0:
+            for i in range(self.size - count):
+                vals += f"{getLLVMType(entry.type)} 0 {', ' if count + 1 != len(self.values) else ''}"
+        out += vals
+        out += f"], align {4 if self.size < 4 else 16}\n"
         return out, index
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
+        entry, length = self.getEntry(self.root)
         if scope:
             # local
-            out += f"%{index} = alloca [ {self.size} x {getLLVMType(getType(self.root.value))}], align {min(self.size * 4, 16)}\n"
+            out += f"%{index} = alloca [ {self.size} x {getLLVMType(entry.type)}], align {4 if self.size < 4 else 16}\n"
+            entry.register = index
+            out += f"call void @llvm.memcpy.p0.p0.i64(ptr allign {4 if self.size < 4 else 16} %{index}, " \
+                   f"ptr align {4 if self.size < 4 else 16} " \
+                   f"@__const.{entry.symbol_table.owner}.{entry.name}, i64 {self.size * 4}, i1 false)"
             out += f"\n"
             index += 1
 
@@ -1444,13 +1462,15 @@ class ArrayDeclAST(AST):
             vals = "["
             count = 0
             for val in self.values:
-                vals += f"{getLLVMType(getType(self.root.value))} {val.value} {', ' if count + 1 != len(self.values) else ''}"
+                vals += f"{getLLVMType(getType(entry.type))} {val.value} {', ' if count + 1 != len(self.values) else ''}"
                 count += 1
             if count < self.size != 0:
                 for i in range(self.size - count):
-                    vals += f"{getLLVMType(getType(self.root.value))} 0 {', ' if count + 1 != len(self.values) else ''}"
+                    vals += f"{getLLVMType(getType(entry.type))} 0 {', ' if count + 1 != len(self.values) else ''}"
             vals += "]"
-            out += f"@{self.root.key} = dso_local global [ {self.size if self.size > 1 else 1} x {getLLVMType(getType(self.root.value))}] {'zeroinitializer' if len(self.values) == 0 else vals}, align {min(self.size * 4, 16)}\n"
+            out += f"@{self.root.key} = dso_local global [ " \
+                   f"{self.size if self.size > 1 else 1} x {getLLVMType(getType(entry.type))}] " \
+                   f"{'zeroinitializer' if len(self.values) == 0 else vals}, align {4 if self.size < 4 else 16}\n"
         return out, index
 
 
