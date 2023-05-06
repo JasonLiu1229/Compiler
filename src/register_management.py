@@ -1,10 +1,10 @@
-class manager:
+class Manager:
     pass
 
 
-class structure:
+class Structure:
     pass
 
 
-class register:
+class Register:
     pass
