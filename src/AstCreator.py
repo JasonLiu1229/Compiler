@@ -1,10 +1,10 @@
-import decimal
-import socket
-import struct
-from math import floor
-
-from colorama import Fore
-import copy
+# import decimal
+# import socket
+# import struct
+# from math import floor
+#
+# from colorama import Fore
+# import copy
 
 import antlr4.tree.Tree
 from AST import *
@@ -97,6 +97,8 @@ class AstCreator(MathVisitor):
             return self.visitReturn_instr(ctx)
         elif isinstance(ctx, MathParser.Array_declContext):
             return self.visitArray_decl(ctx)
+        elif isinstance(ctx, MathParser.Array_elContext):
+            return self.visitArray_el(ctx)
         elif isinstance(ctx, MathParser.Incl_statContext):
             return self.visitIncl_stat(ctx)
         elif isinstance(ctx, MathParser.ScanfContext):
@@ -190,6 +192,24 @@ class AstCreator(MathVisitor):
                     base.children[index - 1: index] = []
                     index -= 1
 
+                elif isinstance(child, ArrayElementAST):
+                    child.children = base.children[index - 1: index]
+                    child.root.key = child.children[0].key
+                    base.children[index - 1: index] = []
+                    index -= 1
+                    if child.root.value is None:
+                        child.root.value = base.children[index-1]
+                        child.children.append(base.children[index-1])
+                        base.children[index-1:index] = []
+                        index -= 1
+
+                elif isinstance(child, ArrayDeclAST):
+                    child.children = base.children[index - 1 - len(child.values): index - 1]
+                    child.children.reverse()
+                    if len(child.values) > 0:
+                        base.children[index - 1 - len(child.values) - 1: index] = []
+                    index = base.children.index(child)
+
                 elif isinstance(child, ScanfAST):
                     child.children = base.children[index - len(child.variables): index]
                     child.children.reverse()
@@ -199,13 +219,6 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, IncludeAST):
                     child.parent = base
 
-                elif isinstance(child, ArrayDeclAST):
-                    last_inst = self.lastInstruction(index=index, in_list=base.children)
-                    child.children = base.children[last_inst + 1: index]
-                    base.children[last_inst + 1: index] = []
-                    child.children.reverse()
-                    index = base.children.index(child)
-
                 elif isinstance(child, FuncDeclAST):
                     if isinstance(base.children[index-1], FuncParametersAST):
                         child.children = base.children[index - 1: index]
@@ -214,9 +227,24 @@ class AstCreator(MathVisitor):
                     if len(child.children) > 0:
                         if isinstance(child.children[0], FuncParametersAST):
                             child.params = child.children[0].parameters
+                            child.children = child.children[1:]
                         for param in child.params:
                             if param.value is not None:
                                 child.has_defaults.append(param)
+                    index = base.children.index(child)
+                    child.parent = base
+
+                elif isinstance(child, FuncDefnAST):
+                    last_func = self.lastFuncScope(index=index, in_list=base.children)
+                    child.children = base.children[last_func: index]
+                    base.children[last_func: index] = []
+                    child.children.reverse()
+                    if isinstance(child.children[0], FuncParametersAST):
+                        child.params = child.children[0].parameters
+                        child.children = child.children[1:]
+                    for param in child.params:
+                        if param.value is not None:
+                            child.has_defaults.append(param)
                     index = base.children.index(child)
                     child.parent = base
 
@@ -240,19 +268,6 @@ class AstCreator(MathVisitor):
                     base.children[last_token: index] = []
                     index = base.children.index(child)
 
-                elif isinstance(child, FuncDefnAST):
-                    last_func = self.lastFuncScope(index=index, in_list=base.children)
-                    child.children = base.children[last_func: index]
-                    base.children[last_func: index] = []
-                    child.children.reverse()
-                    if isinstance(child.children[0], FuncParametersAST):
-                        child.params = child.children[0].parameters
-                    for param in child.params:
-                        if param.value is not None:
-                            child.has_defaults.append(param)
-                    index = base.children.index(child)
-                    child.parent = base
-
                 elif isinstance(child, FuncParametersAST):
                     # last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
                     # last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
@@ -260,9 +275,11 @@ class AstCreator(MathVisitor):
                     child.parameters = base.children[index - len(child.parameters): index]
                     base.children[index - len(child.parameters): index] = []
                     child.parameters.reverse()
+                    child.children = child.parameters
                     # check default parameters order
                     default_found = False
                     for param in child.parameters:
+                        param.parent = child
                         if param.value is not None:
                             default_found = True
                         elif param.value is None and default_found:
@@ -405,6 +422,11 @@ class AstCreator(MathVisitor):
                 child = base.children[index]
                 for n in child.children:
                     n.parent = child
+                    if isinstance(child, AST) and child.symbolTable is not None and \
+                            child.symbolTable.parent is None and n.symbolTable is not None:
+                        # add child symbol table as parent symbol table of n symbol table
+                        if isinstance(n, AST):
+                            n.symbolTable.parent = child.symbolTable
                     if child.root.key == "declr" and child.root.value is not None:
                         if isinstance(n, AST):
                             n.root.value = child.root.value
@@ -561,8 +583,6 @@ class AstCreator(MathVisitor):
                         if len(entry.parameters) != len(ast.args):
                             continue
                         for i in range(len(entry.parameters)):
-                            # name , const , ptr , ptr_level, array , type
-                            # key , const , ptr , total_deref - deref_level , array, type
                             current_param = entry.parameters[i]
                             current_arg = ast.args[i]
                             if isinstance(current_arg, VarNode):
@@ -597,6 +617,8 @@ class AstCreator(MathVisitor):
                     raise AttributeError(f"Function {ast.root.key} not found")
 
             if isinstance(ast, FuncDeclAST):
+                # add parent symbol table as parent of current symbol table
+                ast.symbolTable.parent = ast.parent.symbolTable
                 # check function was previously declared
                 if ast.parent.symbolTable.exists(ast.root):
                     raise AttributeError(f"Redefinition of function {ast.root.key}")
@@ -609,10 +631,16 @@ class AstCreator(MathVisitor):
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
                         param_names.append(param.key)
+                    # add symbol table of ast to function entry in symbol table
+                    new_entry.symbolTable = ast.symbolTable
+                    # insert function into symbol table
                     ast.parent.symbolTable.insert(new_entry)
+                ast.symbolTable.parent = ast.parent.symbolTable
                 node = ast
                 continue
             elif isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
+                # add parent symbol table as parent of current symbol table
+                ast.symbolTable.parent = ast.parent.symbolTable
                 temp_exists = False
                 match = None
                 if ast.parent.symbolTable.exists(ast.root):
@@ -632,6 +660,9 @@ class AstCreator(MathVisitor):
                         ast.symbolTable.insert(SymbolEntry(param))
                         param_names.append(param.key)
                     new_entry.defined = True
+                    # add symbol table of ast to function entry in symbol table
+                    new_entry.symbol_table = ast.symbolTable
+                    # insert function into symbol table
                     ast.parent.symbolTable.insert(new_entry)
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
@@ -650,12 +681,96 @@ class AstCreator(MathVisitor):
                 # handle what's in the function scope
                 ast.children[-1].symbolTable = ast.symbolTable
                 symbol_table = self.resolve(ast.children[-1]).symbolTable
+                ast.symbolTable.parent = ast.parent.symbolTable
                 # print symbol table
                 # print(f"Symbol table for {ast.root.key}:")
                 # symbol_table.print()
                 # functions
             if isinstance(ast, IncludeAST):
-                continue
+                # declare printf and scanf on the symbol table
+                # printf
+                printf = FuncSymbolEntry(VarNode("printf", None, "int"))
+                printf.parameters.append(FunctionParameter(FuncParameter("format", None,  "string")))
+                printf.parameters.append(FunctionParameter(FuncParameter("...", None,  "void")))
+                printf.defined = True
+                ast.parent.symbolTable.insert(printf)
+                # scanf
+                scanf = FuncSymbolEntry(VarNode("scanf", None, "int"))
+                scanf.parameters.append(FunctionParameter(FuncParameter("format", None,  "string")))
+                scanf.parameters.append(FunctionParameter(FuncParameter("...", None,  "void")))
+                scanf.defined = True
+                ast.parent.symbolTable.insert(scanf)
+
+            # if isinstance(ast, ArrayElementAST):
+            #     # search for the array in the symbol table
+            #     if temp_symbol is not None:
+            #         exists_state = temp_symbol.exists(ast.root.key)
+            #     elif symbol_table is not None:
+            #         exists_state = symbol_table.exists(ast.root.key)
+            #     else:
+            #         exists_state = False
+            #     if not exists_state:
+            #         raise AttributeError(f"Array {ast.root.key} not found")
+            #     else:
+            #         matches = symbol_table.lookup(ast.root.key)
+            #         if len(matches) == 1:
+            #             temp_symbol = matches[0]
+            #             # check index
+            #             if ast.root.value < 0 or ast.root.value >= temp_symbol.size:
+            #                 raise AttributeError(f"Index {ast.root.key} out of bounds for array {ast.root.key}")
+            #             # check if the array is a pointer - for now, assume it's not
+            #             # get the index-th element of the array
+            #             node = temp_symbol.object.values[ast.root.value]
+            #         else:
+            #             raise AttributeError(f"Multiple definitions of array {ast.root.key}")
+
+            if isinstance(ast, ArrayDeclAST):
+                # check if the array was previously declared
+                # if not, declare it
+                # if yes, throw error
+                # check if the array size is valid
+                # if not, throw error
+                # if yes, return the type of the array
+                # if the array is a pointer, dereference it
+                # if the array is not a pointer, return the type
+                if temp_symbol is not None:
+                    exists_state = temp_symbol.exists(ast.root.key[:-2])
+                elif symbol_table is not None:
+                    exists_state = symbol_table.exists(ast.root.key[:-2])
+                else:
+                    exists_state = False
+                if exists_state:
+                    raise AttributeError(f"Redefinition of array {ast.root.key}")
+                else:
+                    if ast.size < 0:
+                        raise AttributeError(f"Array {ast.root.key} has invalid size")
+                    # declare the array
+                    new_array = ArrayNode(ast.root.key[:-2], None, ast.type, in_size=ast.size, in_values=ast.values,
+                                          const=ast.root.const, ptr=ast.root.ptr,
+                                          deref_level=ast.root.deref_level,total_deref=ast.root.total_deref,
+                                          is_array=True, const_ptr=ast.root.const and ast.root.ptr)
+                    new_array.parent = ast.parent
+                    new_array.values = ast.values
+                    if len(new_array.values) > new_array.size:
+                        raise AttributeError(f"Too many values in array {new_array.key}")
+                    if len(new_array.values) < new_array.size:
+                        # fill the missing values with zeros
+                        for i in range(new_array.size - len(new_array.values)):
+                            new_array.values.append(Node(ast.type, self.convert(0, new_array.type)))
+                    for value in new_array.values:
+                        if isinstance(value, Node):
+                            value.parent = new_array
+                            if value.key != new_array.type:
+                                self.warnings.append(f"Implicit conversion from {value.key} to {new_array.type} in "
+                                                     f"array {new_array.key} for element {value.value}")
+                                value.value = self.convert(value.value, new_array.type)
+                                value.key = new_array.type
+                        if value is None:
+                            # initialize the value to zero with the correct type
+                            new_array.values[new_array.values.index(value)] = self.convert(0, new_array.type)
+                    temp_symbol.insert(SymbolEntry(new_array))
+                    temp_symbol.refresh()
+
             if len(ast.children) == 0:
                 continue
             if len(ast.children) > 0:
@@ -834,18 +949,30 @@ class AstCreator(MathVisitor):
                 if not evaluate:
                     node = ast
                     continue
-                if not isinstance(assignee, VarNode):
+                if not isinstance(assignee, VarNode) and not isinstance(assignee.parent, ArrayNode):
                     raise AttributeError(f"Attempting to assign to a non-variable type")
-                if assignee.const:
-                    raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
-                if rtype is None:
-                    raise AttributeError(f"Type {rtype} does not exist")
-                if rtype != assignee.type and not ast.children[1].cast:
-                    if (assignee.type, rtype) not in conversions:
-                        raise AttributeError("Variable assigned to wrong type")
-                    elif (assignee.type, rtype) not in conv_promotions:
-                        self.warnings.append(
-                            f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                if isinstance(assignee.parent, ArrayNode):
+                    if assignee.parent.const:
+                        raise AttributeError(f"Attempting to modify a const array {assignee.parent.key}")
+                    if rtype is None:
+                        raise AttributeError(f"Type {rtype} does not exist")
+                    if rtype != assignee.parent.type and not ast.children[1].cast:
+                        if (assignee.parent.type, rtype) not in conversions:
+                            raise AttributeError("Variable assigned to wrong type")
+                        elif (assignee.parent.type, rtype) not in conv_promotions:
+                            self.warnings.append(
+                                f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                else:
+                    if assignee.const:
+                        raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
+                    if rtype is None:
+                        raise AttributeError(f"Type {rtype} does not exist")
+                    if rtype != assignee.type and not ast.children[1].cast:
+                        if (assignee.type, rtype) not in conversions:
+                            raise AttributeError("Variable assigned to wrong type")
+                        elif (assignee.type, rtype) not in conv_promotions:
+                            self.warnings.append(
+                                f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
                 if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[
                     0].ptr and ast.children[1].ptr and ast.children[0].total_deref != ast.children[1].total_deref + 1:
                     raise AttributeError(
@@ -854,9 +981,17 @@ class AstCreator(MathVisitor):
                     if ast.children[0].total_deref - ast.children[0].deref_level != 0:
                         raise AttributeError(
                             f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
-                assignee.value = ast.children[1].value
-                assignee.type = getType(assignee.value)
-                updates_queue.append(assignee)
+                if not isinstance(assignee.parent, ArrayNode):
+                    assignee.value = ast.children[1].value
+                else:
+                    index = assignee.parent.values.index(assignee)
+                    assignee.parent.values[index].value = ast.children[1].value
+                    node = assignee.parent.values[index]
+                if isinstance(assignee, VarNode):
+                    assignee.type = getType(assignee.value)
+                    updates_queue.append(assignee)
+                else:
+                    updates_queue.append(assignee.parent)
                 updates_queue.reverse()
                 for instance in incr_queue:
                     instance = temp_symbol.lookup(instance)[0].object
@@ -872,7 +1007,11 @@ class AstCreator(MathVisitor):
                     else:
                         temp_symbol.update(instance)
                 temp_symbol.refresh()
-                node = assignee
+                updates_queue.clear()
+                incr_queue.clear()
+                decr_queue.clear()
+                if not isinstance(assignee.parent, ArrayNode):
+                    node = assignee
             elif isinstance(ast, InstrAST):
                 node = ast.handle()
                 updates_queue.reverse()
@@ -944,6 +1083,7 @@ class AstCreator(MathVisitor):
         """
         math_ast = self.DFS(None, ctx)
         math_ast.symbolTable = SymbolTable()
+        math_ast.symbolTable.owner = math_ast
         return math_ast
 
     def visitInstr(self, ctx: MathParser.InstrContext):
@@ -954,6 +1094,8 @@ class AstCreator(MathVisitor):
         """
         instr_ast = InstrAST()
         instr_ast.root = Node("instr", None)
+        instr_ast.column = ctx.start.column
+        instr_ast.line = ctx.start.line
         return instr_ast
 
     def visitExpr(self, ctx: MathParser.ExprContext):
@@ -968,6 +1110,8 @@ class AstCreator(MathVisitor):
             expr_ast.root.value = ctx.children[1].getText()
         else:
             return None
+        expr_ast.column = ctx.start.column
+        expr_ast.line = ctx.start.line
         return expr_ast
 
     def visitPrintf(self, ctx: MathParser.PrintfContext):
@@ -978,6 +1122,8 @@ class AstCreator(MathVisitor):
         """
 
         out = PrintfAST(Node("printf", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         if ctx.print_val is not None:
             out.format_string = ctx.print_val.text[1:-1] # printf
         if ctx.format_string is not None:
@@ -1045,7 +1191,11 @@ class AstCreator(MathVisitor):
         :param ctx: context
         :return: Node
         """
-        root = Node(keywords[8], ctx.children[0].getText())
+        root = Node(keywords[8], None)
+        if not isinstance(ctx.children[0], MathParser.Array_elContext):
+            root.value = ctx.children[0].getText()
+        else:
+            root.value = ctx.children[0].children[0].getText()
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
@@ -1055,6 +1205,8 @@ class AstCreator(MathVisitor):
         :return: AST
         """
         out = DeclrAST(Node("declr", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         index = 0
         if ctx.children[index].getText() == "const":
             out.const = True
@@ -1072,7 +1224,10 @@ class AstCreator(MathVisitor):
         :return: VarNode || AST
         """
         if len(ctx.children) == 3:
-            return VarDeclrAST(Node("assign", None))
+            out = VarDeclrAST(Node("assign", None))
+            out.column = ctx.start.column
+            out.line = ctx.start.line
+            return out
         else:
             return None
 
@@ -1100,10 +1255,14 @@ class AstCreator(MathVisitor):
         # STR rvar
         # STR deref
         out = DerefAST(Node("deref", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
     def visitTerm(self, ctx: MathParser.TermContext):
         ast = TermAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
         if len(ctx.children) == 3:
             ast.root = Node("term", ctx.children[1].getText())
         elif len(ctx.children) == 2:
@@ -1117,6 +1276,8 @@ class AstCreator(MathVisitor):
 
     def visitFactor(self, ctx: MathParser.FactorContext):
         ast = FactorAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
         if len(ctx.children) == 2:
             ast.root = Node("factor", ctx.children[0].getText())
         else:
@@ -1125,6 +1286,8 @@ class AstCreator(MathVisitor):
 
     def visitPrimary(self, ctx: MathParser.PrimaryContext):
         ast = PrimaryAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
         if len(ctx.children) == 2:
             ast.root = Node("primary", ctx.children[0].getText())
         else:
@@ -1132,25 +1295,41 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitScope(self, ctx: MathParser.ScopeContext):
-        return Scope_AST(Node("unnamed", None))
+        out = Scope_AST(Node("unnamed", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
-        return If_CondAST(Node("If_cond", None))
+        out = If_CondAST(Node("If_cond", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitElse_cond(self, ctx: MathParser.Else_condContext):
-        return Else_CondAST(Node("Else_cond", None))
+        out = Else_CondAST(Node("Else_cond", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitWhile_loop(self, ctx: MathParser.While_loopContext):
-        return While_loopAST(Node("While_loop", None))
+        out = While_loopAST(Node("While_loop", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitFor_loop(self, ctx: MathParser.For_loopContext):
-        return For_loopAST(Node("For_loop", None))
+        out =  For_loopAST(Node("For_loop", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitInit(self, ctx: MathParser.InitContext):
         if len(ctx.children) == 1:
             return Node(keywords[8], ctx.children[0].getText())
         else:
             out = InitAST(Node("init", None))
+            out.column = ctx.start.column
+            out.line = ctx.start.line
             index = 0
             if ctx.children[index].getText() in keywords_datatype:
                 out.type = ctx.children[index].getText()
@@ -1160,6 +1339,8 @@ class AstCreator(MathVisitor):
 
     def visitCond(self, ctx: MathParser.CondContext):
         ast = CondAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
         if len(ctx.children) == 3:
             ast.root = Node("cond", ctx.children[1].getText())
         elif len(ctx.children) == 1:
@@ -1169,19 +1350,30 @@ class AstCreator(MathVisitor):
     def visitIncr(self, ctx: MathParser.IncrContext):
         if isinstance(ctx.children[0], antlr4.tree.Tree.TerminalNodeImpl):
             # case for rvar INCR and rvar DECR
-            return TermAST(Node("term", ctx.children[0].getText()))
+            out = TermAST(Node("term", ctx.children[0].getText()))
         else:
             # case for INCR rvar and DECR rvar
-            return FactorAST(Node("factor", ctx.children[1].getText()))
+            out = FactorAST(Node("factor", ctx.children[1].getText()))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitCont_instr(self, ctx: MathParser.Cont_instrContext):
-        return ContAST(Node("cont", None))
+        out = ContAST(Node("cont", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitBreak_instr(self, ctx: MathParser.Break_instrContext):
-        return BreakAST(Node("break", None))
+        out = BreakAST(Node("break", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitParam_list(self, ctx: MathParser.Param_listContext):
-        out = FuncParametersAST(Node("parameter", None), parameters=list(None for p in ctx.params))
+        out = FuncParametersAST(Node("parameter", None), parameters=[None for _ in ctx.params])
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
     def visitParam_declr(self, ctx: MathParser.Param_declrContext):
@@ -1191,22 +1383,30 @@ class AstCreator(MathVisitor):
                             total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
                             const_ptr=(ctx.const is not None and ctx.ptr is not None),
                             reference=(ctx.reference is not None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
     def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
         out = FuncDefnAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
                            ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
                            symbolTable=SymbolTable())
+        out.symbolTable.owner = out
         out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
                            const_ptr=out.ptr and out.const)
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
     def visitFunc_decl(self, ctx: MathParser.Func_declContext):
         out = FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
                            ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
                            symbolTable=SymbolTable())
+        out.symbolTable.owner = out
         out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
                            const_ptr=out.ptr and out.const)
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
     def visitFunc_arg(self, ctx: MathParser.Func_argContext):
         return
@@ -1226,6 +1426,8 @@ class AstCreator(MathVisitor):
         out = FuncCallAST(Node(ctx.name.text, None))
         if ctx.args is not None:
             out.args = [None for arg in ctx.args.args]
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
     def visitFunc_scope(self, ctx: MathParser.Func_scopeContext):
@@ -1234,17 +1436,25 @@ class AstCreator(MathVisitor):
         The key is the name of the function it belongs to.
         The value is None.
         """
-        return FuncScopeAST(Node(ctx.parentCtx.name.text, None))
+        out = FuncScopeAST(Node(ctx.parentCtx.name.text, None), symbolTable=SymbolTable())
+        out.symbolTable.owner = out
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
         out = ReturnInstr(Node("return", None))
         if ctx.ret_val is None:
             out.root.value = "void"
+        out.column = ctx.start.column
+        out.line = ctx.start.line
         return out
 
 
     def visitScanf(self, ctx: MathParser.ScanfContext):
         ast = ScanfAST(Node("scanf", None))
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
         # ast.variables = ctx.vars_
         ast.variables = [Node] * len(ctx.vars_)
         ast.format_string = ctx.format_string.text
@@ -1270,18 +1480,50 @@ class AstCreator(MathVisitor):
         return ast
 
     def visitArray_decl(self, ctx: MathParser.Array_declContext):
-        ast = ArrayDeclAST(VarNode(vtype=ctx.type_.text, key=ctx.name.text, const=True if ctx.const is not None else False, value="", is_array=True))
+        ast = ArrayDeclAST(
+            VarNode(ctx.name.text + '[]', None, ctx.type_.text, const=(ctx.const is not None), ptr=(len(ctx.ptr) > 0),
+                    deref_level=0, total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                    const_ptr=(ctx.const is not None and len(ctx.ptr) > 0), is_array=True),
+            arr_type=ctx.type_.text
+        )
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        ast.root.parent = ast
         ast.values = [self.visit_child(value) for value in ctx.values]
         if ctx.size is not None:
             ast.size = int(ctx.size.text)
         else:
             ast.size = len(ast.values)
+        if len(ast.values) > ast.size:
+            raise RuntimeError(f"Too many values for array {ast.root.key} of size {ast.size} given in line "
+                               f"{ctx.start.line} column {ctx.start.column}")
+        # if len(ast.values) == 0:
+        #     ast.values = [None for i in range(ast.size)]
+        else:
+            for value in ast.values:
+                if value.key != ast.type:
+                    self.warnings.append(f"Implicit cast from {value.key} to {ast.type} in line {ctx.start.line} for "
+                                         f"array element '{value.value}' of array '{ast.root.key}' with index "
+                                         f"{ast.values.index(value)}. This element will be casted to {self.convert(value.value, ast.type)}")
+                value.parent = ast
         return ast
+
+    def visitArray_el(self, ctx: MathParser.Array_elContext):
+        element = ArrayElementAST(Node("array_element", None))
+        element.column = ctx.start.column
+        element.line = ctx.start.line
+        # get index
+        if ctx.index is not None:
+            element.root.value = int(ctx.index.text)
+        return element
 
     def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
         if ctx.library.text != "stdio":
             raise RuntimeError("Unsupported Library")
-        return IncludeAST(Node(f"{ctx.library.text}.h", None))
+        out = IncludeAST(Node(f"{ctx.library.text}.h", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     @staticmethod
     def convert(value, d_type):
