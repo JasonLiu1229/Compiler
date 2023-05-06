@@ -132,9 +132,9 @@ assign          :   rvar ASSIGN expr
                 |   array_el ASSIGN expr
                 ;
 
-array_el        :   lvar '[' INT ']'
+array_el        :   lvar '[' index=INT ']'
                 |   lvar '[' expr ']'
-                |   deref '[' INT ']'
+                |   deref '[' index=INT ']'
                 |   deref '[' expr ']'
                 ;
 

@@ -3935,6 +3935,7 @@ class MathParser ( Parser ):
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+            self.index = None # Token
 
         def lvar(self):
             return self.getTypedRuleContext(MathParser.LvarContext,0)
@@ -3986,7 +3987,7 @@ class MathParser ( Parser ):
                 self.state = 642
                 self.match(MathParser.T__6)
                 self.state = 643
-                self.match(MathParser.INT)
+                localctx.index = self.match(MathParser.INT)
                 self.state = 644
                 self.match(MathParser.T__7)
                 pass
@@ -4010,7 +4011,7 @@ class MathParser ( Parser ):
                 self.state = 652
                 self.match(MathParser.T__6)
                 self.state = 653
-                self.match(MathParser.INT)
+                localctx.index = self.match(MathParser.INT)
                 self.state = 654
                 self.match(MathParser.T__7)
                 pass
