@@ -22,4 +22,4 @@ class FunctionParameter:
         return f"{self.type} {self.name} = {self.default_value} "
 
     def __repr__(self):
-        return f"{self.type} {self.name} has a default value {self.default_value}"
+        return f"{self.type} {self.name} = {self.default_value}"
