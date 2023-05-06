@@ -6,7 +6,7 @@ from math import floor
 from array import array
 from pprint import pprint
 from typing import Any, Tuple
-from Node import Node, VarNode, FunctionNode, FuncParameter
+from Node import Node, VarNode, FunctionNode, FuncParameter, ArrayNode
 import antlr4.error.ErrorListener
 import antlr4.error.ErrorStrategy
 import json
@@ -171,6 +171,8 @@ class AST:
         self.symbolTable: SymbolTable | None = symbolTable
         self.register = None
         self.blocks = []
+        self.column = None
+        self.line = None
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
@@ -1108,13 +1110,43 @@ class DerefAST(AST):
             child.deref_level += 1
         return child
 
+class ArrayElementAST(AST):
+    def __init__(self, root: Node = None, children: list = None, parent=None):
+        super().__init__(root, children, parent)
+        self.array: ArrayNode | None = None
+
+    def handle(self):
+        # update root value
+        if len(self.children) == 2:
+            if isinstance(self.children[1], Node):
+                self.root.value = self.children[1].value
+        # get nearest symbol table
+        temp_symbol = self.symbolTable
+        temp_parent = self.parent
+        while temp_symbol is None and temp_parent is not None:
+            temp_symbol = temp_parent.symbolTable
+            temp_parent = temp_parent.parent
+        if temp_symbol is None:
+            raise AttributeError(f"Array {self.root.key} not found in symbol table")
+        while not temp_symbol.exists(self.root.key):
+            temp_symbol = temp_symbol.parent
+            if temp_symbol is None:
+                raise AttributeError(f"Array {self.root.key} not found in symbol table")
+        matches = temp_symbol.lookup(self.root.key)
+        if len(matches) != 1:
+            raise AttributeError(f"Multiple definitions of array {self.root.key}")
+        temp_symbol = matches[0]
+        if self.root.value < 0 or self.root.value >= temp_symbol.size:
+            raise AttributeError(f"Array index {self.root.value} out of bounds for array {self.root.key}")
+        return temp_symbol.object.values[self.root.value]
+
 
 class Scope_AST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, symbolTable=SymbolTable())
         self.condition: AST | Node | None = condition
-        self.symbolTable.owner = self.root.key
+        self.symbolTable.owner = self
 
     def handle(self):
         return self
@@ -1390,7 +1422,7 @@ class ContAST(InstrAST):
 class FuncParametersAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
-                 parameters: list[FuncParameter] = None):
+                 parameters: list[FuncParameter : None] = None):
         super().__init__(root, children, parent, symbolTable)
         if parameters is None:
             parameters = []
@@ -1408,7 +1440,8 @@ class FuncDeclAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
                  params=None):
-        super().__init__(root, children, parent, symbolTable)
+        super().__init__(root, children, parent, symbolTable=SymbolTable() if symbolTable is None else symbolTable)
+        self.symbolTable.owner = self
         self.type: str = return_type
         self.const: bool = const
         self.ptr: bool = ptr
@@ -1458,7 +1491,8 @@ class FuncDefnAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
                  return_type: str = None, const: bool = False, ptr: bool = False, ptr_level: int = 0,
                  params=None):
-        super().__init__(root, children, parent, symbolTable)
+        super().__init__(root, children, parent, symbolTable=SymbolTable() if symbolTable is None else symbolTable)
+        self.symbolTable.owner = self
         self.type: str = return_type
         self.const: bool = const
         self.ptr: bool = ptr
@@ -1669,10 +1703,15 @@ class ScanfAST(AST):
 
 
 class ArrayDeclAST(AST):
-    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
+                 size: int = 0, ptr_size: int = 0, arr_type: str = None, values=None):
         super().__init__(root, children, parent, symbolTable)
-        self.size = 0
-        self.values = []
+        if values is None:
+            values = []
+        self.size = size
+        self.values = values
+        self.ptr_size = ptr_size
+        self.type = arr_type
 
     def handle(self):
         return self

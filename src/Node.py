@@ -351,12 +351,32 @@ class VarNode(Node):
         self.register = index
         return out, index + 1
 
+class ArrayNode(VarNode):
+
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
+                 total_deref: int = 0, const_ptr: bool = False, is_array: bool = True, in_size: int = 0,
+                 in_values=None) -> None:
+        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
+        if in_values is None:
+            in_values = []
+        self.values: [VarNode | Node] = []
+        self.size = in_size
+
+    def __repr__(self) -> str:
+        return f"{self.type} {'*' * self.total_deref} {self.key} [{self.size if self.size > 0 else ''}] : " \
+               f"[{', '.join([v.value for v in self.values])}]" if self.values else f"{super().__repr__()}"
+
+    def save(self):
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)}" \
+                  f"[ {self.size if self.size > 0 else ''} ]{self.key}"
+        out = {out_key: [value.save() for value in self.values]}
+        return out
 
 class FuncParameter(VarNode):
 
     def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
-                 total_deref: int = 0, const_ptr: bool = False, reference: bool = False) -> None:
-        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr)
+                 total_deref: int = 0, const_ptr: bool = False, reference: bool = False, is_array = False) -> None:
+        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
         self.reference = reference
 
     def __repr__(self) -> str:
