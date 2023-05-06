@@ -1,4 +1,5 @@
 # Register Management
+> Register management is the process of assigning variables to registers in a program. This is an important step in the compilation process, as it can have a significant impact on the performance of the compiled program. Register management is a complex problem, and there are many different algorithms that can be used to solve it. This document provides an overview of the different algorithms that can be used for register management, and the data structures that are used to implement them.
 
 ## Data Structures
 | Data Structure | Advantages                                                                                                    | Disadvantages                                                                          |
