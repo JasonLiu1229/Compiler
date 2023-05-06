@@ -5,10 +5,10 @@ from Node import VarNode, FunctionNode
 
 
 class SymbolTable:
-    def __init__(self) -> None:
+    def __init__(self, in_owner= None) -> None:
         self.table: list[SymbolEntry] = []
         self.parent: SymbolTable | None = None
-        self.owner: str = ""
+        self.owner = in_owner
 
     def __repr__(self):
         out = f""

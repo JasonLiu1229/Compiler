@@ -2,7 +2,7 @@ from Parameter import *
 
 
 class SymbolEntry:
-    def __init__(self, in_object, in_name: str = None, in_type: str = None, in_const: bool = None) -> None:
+    def __init__(self, in_object, in_name: str = None, in_type: str = None, in_const: bool = None, in_array: bool = False) -> None:
         self.object = in_object
         if in_name is None:
             self.name = self.object.key
@@ -16,6 +16,10 @@ class SymbolEntry:
             self.type = self.object.type
         else:
             self.type = in_type
+
+        self.array = self.object.array
+        if self.array:
+            self.size = self.object.size
         self.register = None
         self.symbol_table = None
 
@@ -23,7 +27,12 @@ class SymbolEntry:
         return self.const is not None and self.type is not None
 
     def __repr__(self):
-        return f"{'const ' if self.const else ''}{self.type + ' '}{self.name}{'*'*(self.object.total_deref - self.object.deref_level) if self.object.ptr else ''} : {self.object.value if self.object is not None else None}"
+        repr = f"{'const ' if self.const else ''}{self.type + ' '}{self.name}" \
+               f"{'*'*(self.object.total_deref - self.object.deref_level) if self.object.ptr else ''}" \
+               f"{f'[{self.size}]' if self.array else ''} : "
+        if self.object is not None:
+            repr += f"{self.object.value if not self.array else self.object.values}"
+        return repr
 
     def __eq__(self, o: object):
         if not isinstance(o, SymbolEntry):
