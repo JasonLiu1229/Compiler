@@ -1299,6 +1299,7 @@ class AstCreator(MathVisitor):
         out = Scope_AST(Node("unnamed", None))
         out.column = ctx.start.column
         out.line = ctx.start.line
+        return out
 
     def visitIf_cond(self, ctx: MathParser.If_condContext):
         out = If_CondAST(Node("If_cond", None))
