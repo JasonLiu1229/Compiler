@@ -339,7 +339,9 @@ class AST:
         else:
             out["children"] = []
         if self.root.value is None:
-            out[name] = [child.save() for child in self.children]
+            out[name] = []
+            for child in self.children:
+                out[name].append(child.save())
         else:
             out["children"] = [child.save() for child in self.children]
         return out

@@ -1008,10 +1008,14 @@ class AstCreator(MathVisitor):
                 else:
                     index = assignee.parent.values.index(assignee)
                     assignee.parent.values[index].value = ast.children[1].value
-                    node = assignee.parent.values[index]
+                    node = copy.deepcopy(assignee.parent.values[index])
                 if isinstance(assignee, VarNode):
                     assignee.type = getType(assignee.value)
                     updates_queue.append(assignee)
+                elif isinstance(assignee.parent, ArrayNode):
+                    # directly update the array
+                    # index = assignee.parent.values.index(assignee)
+                    assignee.type = assignee.parent.type
                 else:
                     updates_queue.append(assignee.parent)
                 updates_queue.reverse()
