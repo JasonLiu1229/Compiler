@@ -125,6 +125,10 @@ class SymbolTable:
                 value = item.get_str()
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
             else:
+                # | Name           | Value
+                # |--------------- | ----------------
+                # | int a          | 1
+
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
         print(under)
 

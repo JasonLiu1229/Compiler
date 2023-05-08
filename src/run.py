@@ -24,7 +24,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             parser.removeErrorListeners()
             parser.addErrorListener(error_listener)
             parse_tree = parser.math()
-            visitor = AstCreator()
+            visitor = AstCreator(filename=directory + filename + file_type)
             ast = visitor.visit(parse_tree)
             # handle tree
             ast = visitor.resolve(ast)
