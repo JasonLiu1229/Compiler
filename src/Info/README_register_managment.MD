@@ -17,7 +17,7 @@
 | Linear Scan Register Allocation    | Faster than graph coloring for many programs, can handle programs that use more registers than are available, can be optimized for specific hardware architectures | Less efficient use of registers than graph coloring, more complex than simple register allocation | Any data structure that supports efficient searching for free registers |
 
 ### pseudocode for simple register allocation
-```python
+```
 for each variable v in the program:
     if there is a free register:
         assign it to v
@@ -27,14 +27,14 @@ for each variable v in the program:
 ```
 
 ### pseudocode for graph coloring register allocation
-```python
+```
 create a graph G where each node is a variable and each edge is a conflict between two variables
 color the nodes of G with a set of available registers such that no two adjacent nodes have the same color
 if no coloring is possible, spill a variable to memory and retry
 ```
 
 ### pseudocode for linear scan register allocation
-```python
+```
 for each variable v in the program:
     if there is a free register:
         assign it to v and mark it as live
