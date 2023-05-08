@@ -632,7 +632,7 @@ class AstCreator(MathVisitor):
                         ast.symbolTable.insert(SymbolEntry(param))
                         param_names.append(param.key)
                     # add symbol table of ast to function entry in symbol table
-                    new_entry.symbolTable = ast.symbolTable
+                    new_entry.symbol_table = ast.symbolTable
                     # insert function into symbol table
                     ast.parent.symbolTable.insert(new_entry)
                 ast.symbolTable.parent = ast.parent.symbolTable
@@ -663,7 +663,8 @@ class AstCreator(MathVisitor):
                     # add symbol table of ast to function entry in symbol table
                     new_entry.symbol_table = ast.symbolTable
                     # insert function into symbol table
-                    ast.parent.symbolTable.insert(new_entry)
+                    entry = ast.parent.symbolTable.insert(new_entry)
+                    entry.symbol_table = ast.symbolTable
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
                     for param in ast.params:
@@ -681,7 +682,7 @@ class AstCreator(MathVisitor):
                 # handle what's in the function scope
                 ast.children[-1].symbolTable = ast.symbolTable
                 symbol_table = self.resolve(ast.children[-1]).symbolTable
-                ast.symbolTable.parent = ast.parent.symbolTable
+                ast.symbolTable.parent = symbol_table
                 # print symbol table
                 # print(f"Symbol table for {ast.root.key}:")
                 # symbol_table.print()

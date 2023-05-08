@@ -48,8 +48,10 @@ class SymbolEntry:
             const = 'const'
         else:
             const = 'None'
-        if self.object.value is None:
+        if self.object.value is None and not self.array:
             value = "None"
+        elif self.array:
+            value = self.object.values
         else:
             value = self.object.value
         print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}".format('|', const, '|', self.type, '|', self.name, '|',

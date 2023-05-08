@@ -38,13 +38,14 @@ class SymbolTable:
             return False
         return True
 
-    def insert(self, in_object: SymbolEntry, index: int = 0) -> None:
+    def insert(self, in_object: SymbolEntry, index: int = 0):
         """
         Insert symbol table entry with default index 0
         :param index: indicates where to insert the object
         :type in_object: SymbolEntry
         """
         self.table.insert(index, copy.deepcopy(in_object))
+        return self.table[index]
 
     def update(self, in_object: VarNode | FunctionNode) -> bool:
         if not (isinstance(in_object, VarNode) or isinstance(in_object, FunctionNode)):
@@ -82,17 +83,27 @@ class SymbolTable:
         """
         self.table.remove(in_object)
 
-    def print(self):
-
+    def print(self, print_each: bool = False) -> None:
+        if len(self.table) == 0:
+            print(f"Symbol Table for {self.owner.root.key} is empty")
+            return
+        print(f"Symbol Table for {self.owner.root.key}:\n")
         # get larges entry
         max_width = 10
         for entry in self.table:
             if isinstance(entry, FuncSymbolEntry):
                 new_length = 0
                 for element in entry.parameters:
-                    new_length += len(element.get_str())
+                    new_length += len(element.get_str()) + 2
                 if new_length > max_width:
                     max_width = new_length
+            if entry.array:
+                new_length = 0
+                for value in entry.object.values:
+                    new_length += len(value.get_str()) + 2
+                    if new_length > max_width:
+                        max_width = new_length
+
         max_width += 1
         print(f"{'|':<2}{'Name':<15}{'|':<2}{'Value':<{max_width}}{'|':<2}")
         under = ""
@@ -103,8 +114,10 @@ class SymbolTable:
             Object = item.object
             name = item.name
             value = Object.value
-            if value is None:
+            if value is None and not item.array:
                 value = 'None'
+            elif item.array:
+                value = f"{Object.values}"
             elif isinstance(Object, VarNode) and Object.ptr:
                 while isinstance(value, VarNode):
                     value = value.value
@@ -113,3 +126,10 @@ class SymbolTable:
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
             else:
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
+        print(under)
+
+        # if print_each, print for each entry it's symbol table
+        if print_each:
+            for entry in self.table:
+                if entry.symbol_table is not None:
+                    entry.symbol_table.print(print_each)
