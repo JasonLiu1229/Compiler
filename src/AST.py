@@ -285,6 +285,9 @@ class AST:
 
     @staticmethod
     def getEntry(entry):
+        if isinstance(entry, Node):
+            if isinstance(entry.parent, ArrayNode):
+                return entry.parent, 1
         out = None
         temp_symbol = None if isinstance(entry, Node) else entry.symbolTable
         temp_parent = entry.parent
@@ -336,7 +339,9 @@ class AST:
         else:
             out["children"] = []
         if self.root.value is None:
-            out[name] = [child.save() for child in self.children]
+            out[name] = []
+            for child in self.children:
+                out[name].append(child.save())
         else:
             out["children"] = [child.save() for child in self.children]
         return out
@@ -993,19 +998,29 @@ class TermAST(AST):
             if len(self.children) != 1:
                 raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
             if not isinstance(self.children[0], VarNode):
-                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+                if not self.children[0].parent.array:
+                    raise AttributeError(f"\'Attempting to decrement a non-variable type object\'")
             node = self.children[0]
-            if node.const:
-                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            if isinstance(node, VarNode):
+                if node.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            else:
+                if node.parent.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
             node.value += 1
         elif self.root.value == "--":
             if len(self.children) != 1:
                 raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
             if not isinstance(self.children[0], VarNode):
-                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+                if not self.children[0].parent.array:
+                    raise AttributeError(f"\'Attempting to decrement a non-variable type object\'")
             node = self.children[0]
-            if node.const:
-                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            if isinstance(node, VarNode):
+                if node.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            else:
+                if node.parent.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
             node.value -= 1
         elif self.root.value == '<=':
             node = self.children[0] <= self.children[1]
@@ -1058,20 +1073,30 @@ class FactorAST(AST):
             if len(self.children) != 1:
                 raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
             if not isinstance(self.children[0], VarNode):
-                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+                if not self.children[0].parent.array:
+                    raise AttributeError(f"\'Attempting to decrement a non-variable type object\'")
             node = self.children[0]
-            if node.const:
-                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            if isinstance(node, VarNode):
+                if node.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            else:
+                if node.parent.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
             node.value += 1
             return node
         elif self.root.value == "--":
             if len(self.children) != 1:
                 raise RuntimeError(f"\'Expected one variable for increment operation, got multiple\'")
             if not isinstance(self.children[0], VarNode):
-                raise AttributeError(f"\'Attempting to increment a non-variable type object\'")
+                if not self.children[0].parent.array:
+                    raise AttributeError(f"\'Attempting to decrement a non-variable type object\'")
             node = self.children[0]
-            if node.const:
-                raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            if isinstance(node, VarNode):
+                if node.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
+            else:
+                if node.parent.const:
+                    raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
             node.value -= 1
             return node
 
@@ -1715,6 +1740,15 @@ class ArrayDeclAST(AST):
 
     def handle(self):
         return self
+
+    def save(self):
+        if len(self.children) > 0:
+            if isinstance(self.children[0], ArrayNode):
+                return self.children[0].save()
+            else:
+                return super().save()
+        else:
+            return super().save()
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""

@@ -5,6 +5,7 @@
 #
 # from colorama import Fore
 # import copy
+import copy
 
 import antlr4.tree.Tree
 from AST import *
@@ -16,7 +17,7 @@ import re
 
 class AstCreator(MathVisitor):
 
-    def __init__(self) -> None:
+    def __init__(self, filename: str = None) -> None:
         """
         Initializer function
         """
@@ -24,6 +25,7 @@ class AstCreator(MathVisitor):
         self.base_ast: AST = AST()
         self.symbol_table: SymbolTable = SymbolTable()
         self.warnings: list = []
+        self.file_name: str = filename
 
     def visit_child(self, ctx):
         """
@@ -771,6 +773,8 @@ class AstCreator(MathVisitor):
                             new_array.values[new_array.values.index(value)] = self.convert(0, new_array.type)
                     temp_symbol.insert(SymbolEntry(new_array))
                     temp_symbol.refresh()
+                    node = new_array
+                    ast.children = [node]
 
             if len(ast.children) == 0:
                 continue
@@ -922,10 +926,27 @@ class AstCreator(MathVisitor):
                     if (ast.children[0].type, ast.type) not in conversions:
                         raise AttributeError("Variable assigned to wrong type")
                     elif (ast.children[0].type, ast.type) not in conv_promotions:
-                        self.warnings.append(
-                            f"Implicit conversion from {ast.children[0].type} to {ast.type} for variable {ast.children[0].key}")
+                        # clang style warning (with warning in pink)
+                        warning_str = "\033[95mwarning: \033[0m"
+                        if ast.children[0].type == "float" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        if ast.children[0].type == "int" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        if ast.children[0].type == "char" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        # get instruction in the file where the warning is by using column and line number
+                        f = open(self.file_name, "r")
+                        lines = f.readlines()
+                        line = lines[ast.line - 1]
+                        f.close()
+                        # insert squiggly line
+                        line = line[:ast.column] + '\u0332' + line[ast.column:]
+                        warning_str += f"\n{ast.line}:{ast.column}: {line}"
+                        self.warnings.append(warning_str)
                 node = ast.children[0]
                 node.type = ast.type
+                if node.value is not None and not isinstance(node.value, Node):
+                    node.value = self.convert(node.value, ast.type)
                 # node.const = (ast.const is True)
                 if node.ptr and ast.const:
                     node.const_ptr = True
@@ -987,10 +1008,14 @@ class AstCreator(MathVisitor):
                 else:
                     index = assignee.parent.values.index(assignee)
                     assignee.parent.values[index].value = ast.children[1].value
-                    node = assignee.parent.values[index]
+                    node = copy.deepcopy(assignee.parent.values[index])
                 if isinstance(assignee, VarNode):
                     assignee.type = getType(assignee.value)
                     updates_queue.append(assignee)
+                elif isinstance(assignee.parent, ArrayNode):
+                    # directly update the array
+                    # index = assignee.parent.values.index(assignee)
+                    assignee.type = assignee.parent.type
                 else:
                     updates_queue.append(assignee.parent)
                 updates_queue.reverse()
@@ -1017,23 +1042,41 @@ class AstCreator(MathVisitor):
                 node = ast.handle()
                 updates_queue.reverse()
                 for instance in incr_queue:
-                    match, length = AST.getEntry(instance)
-                    if length == 0:
-                        raise ReferenceError(f"Variable {instance.key} not found")
-                    if length > 1:
-                        raise ReferenceError(f"Multiple matches for variable {instance.key}")
-                    instance = match
-                    instance.value += 1
-                    temp_symbol.update(instance)
+                    # get the match from the nearest symbol table
+                    if not isinstance(instance.parent, ArrayNode):
+                        matches = temp_symbol.lookup(instance)
+                        length = len(matches)
+                        match = matches[0].object
+                        if length == 0:
+                            raise ReferenceError(f"Variable {instance.key} not found")
+                        if length > 1:
+                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                        instance = match
+                        instance.value += 1
+                        temp_symbol.update(instance)
+                        temp_symbol.refresh()
+                    else:
+                        match = instance.parent
+                        match.values[match.values.index(instance)].value += 1
+
                 for instance in decr_queue:
-                    match, length = AST.getEntry(instance)
-                    if length == 0:
-                        raise ReferenceError(f"Variable {instance.key} not found")
-                    if length > 1:
-                        raise ReferenceError(f"Multiple matches for variable {instance.key}")
-                    instance = match
-                    instance.value -= 1
-                    temp_symbol.update(instance)
+                    # get the match from the nearest symbol table
+                    if not isinstance(instance.parent, ArrayNode):
+                        matches = temp_symbol.lookup(instance)
+                        length = len(matches)
+                        match = matches[0].object
+                        if length == 0:
+                            raise ReferenceError(f"Variable {instance.key} not found")
+                        if length > 1:
+                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                        instance = match
+                        instance.value -= 1
+                        temp_symbol.update(instance)
+                        temp_symbol.refresh()
+                    else:
+                        match = instance.parent
+                        match.values[match.values.index(instance)].value -= 1
+
                 for instance in updates_queue:
                     if not temp_symbol.exists(instance):
                         temp_symbol.insert(SymbolEntry(instance))
@@ -1059,7 +1102,36 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, TermAST) and ast.root.value == "++" and not evaluate:
                 continue
             elif ast is not None:
-                node = ast.handle()
+                if isinstance(ast, TermAST) and ast.root.value == "++":
+                    node = copy.copy(ast.children[0])
+                    instance = copy.copy(node)
+                    incr_queue.append(instance)
+                if isinstance(ast, TermAST) and ast.root.value == "--":
+                    node = copy.copy(ast.children[0])
+                    instance = copy.copy(node)
+                    decr_queue.append(instance)
+                if isinstance(ast, PrintfAST):
+                    # handle printf
+                    node = ast.handle()
+                    # handle increment and decrement
+                    for instance in incr_queue:
+                        temp_instance = copy.copy(instance)
+                        temp_instance.value += 1
+                        temp_symbol.update(temp_instance)
+                    for instance in decr_queue:
+                        temp_instance = copy.copy(instance)
+                        temp_instance.value -= 1
+                        temp_symbol.update(temp_instance)
+                    # update the symbol table
+                    for instance in updates_queue:
+                        temp_symbol.update(instance)
+                    temp_symbol.refresh()
+                    updates_queue = []
+                    incr_queue = []
+                    decr_queue = []
+
+                else:
+                    node = ast.handle()
             else:
                 continue
             # Replace node
@@ -1536,6 +1608,8 @@ class AstCreator(MathVisitor):
         :return: cast value
         """
         try:
+            if value is None:
+                return value
             if d_type == "int":
                 if isinstance(value, int):
                     return value

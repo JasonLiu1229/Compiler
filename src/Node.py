@@ -139,6 +139,11 @@ class Node:
         Saves the node in a json / dictionary format
         :return: dictionary
         """
+        # check if parent is an array, thus this node is an element of an array
+        if isinstance(self.parent, ArrayNode):
+            index = self.parent.values.index(self)
+            out_key = f"{self.parent.get_str()}[{index}]"  # key of the node
+            return {out_key: self.value}
         if isinstance(self.value, VarNode):
             return {self.key: self.value.save()}
         out = {self.key: self.value}
@@ -368,9 +373,13 @@ class ArrayNode(VarNode):
 
     def save(self):
         out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)}" \
-                  f"[ {self.size if self.size > 0 else ''} ]{self.key}"
+                  f" {self.key}[{self.size if self.size > 0 else ''}]"
         out = {out_key: [value.save() for value in self.values]}
         return out
+
+    def get_str(self):
+        # for example: out_key = "int*[5] a"
+        return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
 
 class FuncParameter(VarNode):
 
