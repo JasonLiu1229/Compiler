@@ -121,17 +121,6 @@ class savedManager(Manager):
         self.head.next = self.tail
 
 
-class globalManager(Manager):
-
-    def __init__(self) -> None:
-        super().__init__(4)
-        self.head = Register(in_name="gp")
-        self.tail = Register(in_prev=self.head, in_name="sp")
-        self.tail = Register(in_prev=self.tail, in_name="fp")
-        self.tail = Register(in_prev=self.tail, in_name="ra")
-        self.head.next = self.tail
-
-
 class reservedManager(Manager):
 
     def __init__(self) -> None:
@@ -149,6 +138,7 @@ class pointer:
         self.gp = Register(in_name="gp")
         self.sp = Register(in_name="sp")
         self.fp = Register(in_name="fp")
+        self.ra = Register(in_name="ra")
 
 
 class Register:
