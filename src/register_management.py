@@ -37,6 +37,9 @@ class Manager:  # Manager class for register management using LRU
             self.head.prev = None
             return register
 
+    def LRU(self, in_object):
+        return
+
 
 class zeroManager(Manager):
 
@@ -53,6 +56,30 @@ class returnManager(Manager):
         self.head = Register(in_name="v0")
         self.tail = Register(in_prev=self.head, in_name="v1")
         self.head.next = self.tail
+
+    def LRU(self, in_object):
+        # TODO: implement LRU
+        # check if the registers are in use
+        # if v0 not in use, replace object of register v0 with in_object
+        # if v1 not in use, replace object of register v1 with in_object
+        if self.head.used is False:
+            self.head.update(in_object)
+        elif self.tail.used is False:
+            self.tail.update(in_object)
+        # if v0 and v1 are in use and v0 is head, replace object of register v0 with in_object and move v0 to tail
+        # if v0 and v1 are in use and v1 is head, replace object of register v1 with in_object and move v1 to tail
+        elif self.head.used is True and self.tail.used is True:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.head.next = None
+            self.tail = self.head
+            self.head = newHead
+            self.head.prev = None
+            self.tail.prev = self.head
+            self.head.next = self.tail
+            self.tail.next = None
+
+
 
 
 class argumentManager(Manager):
@@ -134,3 +161,8 @@ class Register:
         self.next = in_next
         self.object = in_object
         self.register = in_register
+        self.used = False if self.object is None else True
+
+    def update(self, in_object):
+        self.object = in_object
+        self.used = True
