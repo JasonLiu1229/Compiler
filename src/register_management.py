@@ -41,14 +41,6 @@ class Manager:  # Manager class for register management using LRU
         return
 
 
-class zeroManager(Manager):
-
-    def __init__(self) -> None:
-        super().__init__(1)
-        self.head = Register(in_name="zero")
-        self.tail = self.head
-
-
 class returnManager(Manager):
 
     def __init__(self) -> None:
@@ -132,13 +124,15 @@ class reservedManager(Manager):
         self.head.next = self.tail
 
 
-class pointer:
+class singleManager:
 
     def __init__(self) -> None:
         self.gp = Register(in_name="gp")
         self.sp = Register(in_name="sp")
         self.fp = Register(in_name="fp")
         self.ra = Register(in_name="ra")
+        self.zero = Register(in_name="zero")
+        self.at = Register(in_name="at")
 
 
 class Register:
