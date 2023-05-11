@@ -53,7 +53,6 @@ class returnManager(Manager):
         self.head.next = self.tail
 
     def LRU(self, in_object):
-        # TODO: implement LRU
         # check if the registers are in use
         # if v0 not in use, replace object of register v0 with in_object
         # if v1 not in use, replace object of register v1 with in_object
