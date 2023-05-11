@@ -29,8 +29,138 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#printf_arg.
+    def visitPrintf_arg(self, ctx:MathParser.Printf_argContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#scanf.
+    def visitScanf(self, ctx:MathParser.ScanfContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#scanf_arg.
+    def visitScanf_arg(self, ctx:MathParser.Scanf_argContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#param_list.
+    def visitParam_list(self, ctx:MathParser.Param_listContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#param_declr.
+    def visitParam_declr(self, ctx:MathParser.Param_declrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_defn.
+    def visitFunc_defn(self, ctx:MathParser.Func_defnContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_decl.
+    def visitFunc_decl(self, ctx:MathParser.Func_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#arg_list.
+    def visitArg_list(self, ctx:MathParser.Arg_listContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_arg.
+    def visitFunc_arg(self, ctx:MathParser.Func_argContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_call.
+    def visitFunc_call(self, ctx:MathParser.Func_callContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#func_scope.
+    def visitFunc_scope(self, ctx:MathParser.Func_scopeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#return_instr.
+    def visitReturn_instr(self, ctx:MathParser.Return_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#scope.
+    def visitScope(self, ctx:MathParser.ScopeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#cont_instr.
+    def visitCont_instr(self, ctx:MathParser.Cont_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#break_instr.
+    def visitBreak_instr(self, ctx:MathParser.Break_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#array_decl.
+    def visitArray_decl(self, ctx:MathParser.Array_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#incl_stat.
+    def visitIncl_stat(self, ctx:MathParser.Incl_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#if_cond.
+    def visitIf_cond(self, ctx:MathParser.If_condContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#else_cond.
+    def visitElse_cond(self, ctx:MathParser.Else_condContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#while_loop.
+    def visitWhile_loop(self, ctx:MathParser.While_loopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#for_loop.
+    def visitFor_loop(self, ctx:MathParser.For_loopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#init.
+    def visitInit(self, ctx:MathParser.InitContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#cond.
+    def visitCond(self, ctx:MathParser.CondContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#incr.
+    def visitIncr(self, ctx:MathParser.IncrContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#var_decl.
     def visitVar_decl(self, ctx:MathParser.Var_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#assign.
+    def visitAssign(self, ctx:MathParser.AssignContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#array_el.
+    def visitArray_el(self, ctx:MathParser.Array_elContext):
         return self.visitChildren(ctx)
 
 
@@ -54,63 +184,23 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathParser#cast.
-    def visitCast(self, ctx:MathParser.CastContext):
+    # Visit a parse tree produced by MathParser#term.
+    def visitTerm(self, ctx:MathParser.TermContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#factor.
+    def visitFactor(self, ctx:MathParser.FactorContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#primary.
+    def visitPrimary(self, ctx:MathParser.PrimaryContext):
         return self.visitChildren(ctx)
 
 
     # Visit a parse tree produced by MathParser#rtype.
     def visitRtype(self, ctx:MathParser.RtypeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#addr_op.
-    def visitAddr_op(self, ctx:MathParser.Addr_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#binary_op.
-    def visitBinary_op(self, ctx:MathParser.Binary_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#unary_op.
-    def visitUnary_op(self, ctx:MathParser.Unary_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#incr.
-    def visitIncr(self, ctx:MathParser.IncrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#decr.
-    def visitDecr(self, ctx:MathParser.DecrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#comp_op.
-    def visitComp_op(self, ctx:MathParser.Comp_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#comp_eq.
-    def visitComp_eq(self, ctx:MathParser.Comp_eqContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#bin_log_op.
-    def visitBin_log_op(self, ctx:MathParser.Bin_log_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#un_log_op.
-    def visitUn_log_op(self, ctx:MathParser.Un_log_opContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathParser#assign.
-    def visitAssign(self, ctx:MathParser.AssignContext):
         return self.visitChildren(ctx)
 
 

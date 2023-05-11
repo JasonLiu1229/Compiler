@@ -1,54 +1,73 @@
 import sys
 from antlr4 import *
 from output.MathLexer import MathLexer
-from AstCreator import  *
+from AstCreator import *
 from LLVM import *
 import os
-def run(directory: str , file_type: str , filenames: list , verbose: bool = False , no_warning: bool = False):
-    for filename in filenames:
-        input_stream = FileStream(directory + filename + file_type)
-        # Create error listener
-        error_listener = ErrorListener()
-        lexer = MathLexer(input_stream)
-        # Remove previous error listener and add new error listener to lexer
-        lexer.removeErrorListeners()
-        lexer.addErrorListener(error_listener)
-        parser = MathParser(CommonTokenStream(lexer))
-        # Remove previous error listener and add new error listener to parser
-        parser.removeErrorListeners()
-        parser.addErrorListener(error_listener)
-        parse_tree = parser.math()
-        visitor = AstCreator()
-        ast = visitor.visit(parse_tree)
-        # ast.print()
-        ast = visitor.optimise(ast)
-        ast.print()
-        ast.dot_language(filename, visitor.symbol_table)
-        generator = LLVM(ast, visitor.symbol_table, "../Output/" + filename + ".ll")
-        generator.convert()
-        generator.execute()
+import argparse
+import Dot
 
-def main(argv):
+
+def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
+    for filename in filenames:
+        try:
+            print(f">>> Parsing {directory}{filename}{file_type}\n")
+            input_stream = FileStream(directory + filename + file_type)
+            # Create error listener
+            error_listener = ErrorListener()
+            lexer = MathLexer(input_stream)
+            # Remove previous error listener and add new error listener to lexer
+            lexer.removeErrorListeners()
+            lexer.addErrorListener(error_listener)
+            parser = MathParser(CommonTokenStream(lexer))
+            # Remove previous error listener and add new error listener to parser
+            parser.removeErrorListeners()
+            parser.addErrorListener(error_listener)
+            parse_tree = parser.math()
+            visitor = AstCreator(filename=directory + filename + file_type)
+            ast = visitor.visit(parse_tree)
+            # handle tree
+            ast = visitor.resolve(ast)
+            ast.print(4, False, filename)
+            ast.symbolTable.print(True)
+            visitor.warn()
+            # dot = Dot.dot(ast, "../Output/" + filename + ".dot")
+            # dot.connect()
+            # ast.dot_language(filename, visitor.symbol_table)
+            # generator = LLVM(ast,  "../Output/" + filename + ".ll")
+            # generator.convert()
+            # generator.execute()
+            print(">>> Finished execution with exit code 0\n")
+        except Exception as e:
+            print(f'Excepted with error \"{str(e)}\"\n')
+            continue
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
+    parser.add_argument('-d', '--directory', help='directory of the file that needs to be parsed', required=True)
+    parser.add_argument('-t', '--type', help='file type that needs to be checked', required=True)
+    parser.add_argument('-a', '--all', action='store_true', help='this flag defines that all files will be checked')
+    parser.add_argument('-f', '--files', nargs='+', help='this flag will define which specific files we want to test')
+    parser.add_argument('-i', '--index', help='index of which file it is in the directory')
+
     try:
-        # argv = -d ../input_files/ -t .c -f Project3 Project2 ...
-        # argv = -d ../input_files/ -t .c -i
-        directory = ""
-        file_type = ""
+        args = parser.parse_args()
         filenames = []
-        if argv[1] == "-d":
-            directory = argv[2]
-        if argv[3] == "-t":
-            file_type = argv[4]
-        if argv[5] == "-f":
-            run(directory= directory , file_type= file_type , filenames=argv[6:])
-        elif argv[5] == "-i":
-            for file in os.listdir(directory):
-                if file.endswith(file_type):
-                    filenames.append(file[:len(file) - len(file_type)])
-            run(directory= directory , file_type= file_type , filenames= filenames)
+        if args.files is not None:
+            run(directory=args.directory, file_type=args.type, filenames=args.files)
+        elif args.index is not None:
+            files = os.listdir(args.directory)
+            files_one = [files[int(args.index) - 1][:len(files[int(args.index) - 1]) - len(args.type)]]
+            run(directory=args.directory, file_type=args.type, filenames=files_one)
+        else:
+            for file in os.listdir(args.directory):
+                if file.endswith(args.type):
+                    filenames.append(file[:len(file) - len(args.type)])
+            run(directory=args.directory, file_type=args.type, filenames=filenames)
     except Exception as e:
-        print(f'Excepted with error {e}')
-    # print(parse_tree.toStringTree(recog=parser))
+        print(f'Excepted with error \"{e}\"')
+
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()

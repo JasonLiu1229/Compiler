@@ -1,142 +1,246 @@
 grammar Math;
 
-math        :   instr* EOF
-            ;
-instr       :   declr ';'
-            |   expr ';'
-            |   printf ';'
-//            |   scope
-//            |   if_cond
-//            |   else_cond
-//            |   while_loop
-//            |   for_loop
-            ;
-declr       :   CONST? TYPE (var_decl ',')* var_decl
-            ;
+math            :   incl_stat*  (instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
+                ;
 
-printf      :   PRINTF '(' (rvar | rtype | deref) ')';
+instr           :   declr ((';')+ | DELIM)
+                |   array_decl ((';')+ | DELIM)
+                |   expr ((';')+ | DELIM)
+                |   assign ((';')+ | DELIM)
+                |   scope
+                ;
 
-// TODO: scopes (unnamed)
-//scope       :   '{' instr* '}';
+declr           :   CONST? TYPE (var_decl ',')* var_decl
+                ;
 
-// TODO: if , else
-//if_cond     :   IF expr scope;
-//else_cond   :   ELSE scope;
-//while_loop  :   WHILE expr scope;
-//for_loop    :   FOR (expr ';' expr ';' (incr | decr) ) scope;
+// TODO: printf (modified) and scanf
+printf          :   PRINTF '(' (rvar | rtype | print_val=STRING) ')'
+                |   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
+                ;
 
-// TODO: for , while , break and continue -> translate while to for
+printf_arg      :   rvar
+                |   rtype
+                |   array_el
+                |   deref
+                |   expr
+                |   STRING;
 
+scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? (vars+=scanf_arg) ',')* ADDR? vars+=scanf_arg ')'
+                ;
+
+scanf_arg       :   rvar
+                |   deref
+                |   array_el
+                |   ADDR rvar
+                |   ADDR deref
+                ;
+
+// Functions
+param_list      :   params+=param_declr (',' params+=param_declr)*
+                ;
+
+param_declr     :   const=CONST? type=TYPE reference=ADDR? ptr+=STR* var=VAR_NAME (ASSIGN default=expr)?
+                |   const=CONST? type=TYPE ptr+=STR* reference=ADDR? var=VAR_NAME (ASSIGN default=expr)?
+                ;
+
+func_defn       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')' func_scope
+                ;
+
+func_decl       :   const=CONST? (type=TYPE | type=VOID) ptr+=STR* name=VAR_NAME '(' params=param_list? ')'
+                ;
+
+arg_list        :   args+=func_arg (',' args+=func_arg)*?
+                ;
+func_arg        :   rvar
+                |   deref
+                |   func_call
+                |   rtype
+                |   expr
+                ;
+
+func_call       :   name=VAR_NAME '(' args=arg_list? ')'
+                ;
+
+func_scope      :   '{'(
+                        printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
+                        | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
+                           )* '}'
+                ;
+
+return_instr    :   RETURN (ret_val=expr)? ';' (instr | return_instr)*
+                ;
+
+
+scope           :   '{' (
+                        printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
+                        | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
+                        | break_instr | cont_instr | instr
+                        )* '}'
+                ;
+
+cont_instr      :   CONTINUE (';' | DELIM) instr*
+                ;
+
+break_instr     :   BREAK (';' | DELIM) instr*
+                ;
+
+array_decl      :   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT? ']' ASSIGN '{' (values+=rtype ',')* values+=rtype '}'
+                |   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT ']'
+                ;
+
+incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
+                ;
+
+
+// TODO: break and continue
 // TODO: switch(case, break, default) -> translate switch to if
 
+if_cond         :   IF '(' condition=cond ')' scope else_cond?
+                ;
+
+else_cond       :   ELSE scope
+                ;
+
+while_loop      :   WHILE '(' condition=cond ')' scope
+                ;
+
+for_loop        :   FOR '(' initialization=init ';' condition=cond ';' increment=incr ')' scope
+                ;
+
+init            :   TYPE lvar ASSIGN expr
+                |   assign;
+
+cond            :   term (GEQ | LEQ | NEQ) factor
+                |   term (GT | LT | EQ) factor
+                |   expr (AND_OP | OR_OP) term
+                |   expr
+                ;
+
+incr            :   INCR rvar
+                |   DECR rvar
+                |   rvar INCR
+                |   rvar DECR
+                ;
+
 // Right-hand side variable use
-var_decl    :   lvar assign addr_op
-            |   lvar assign expr
-            |   lvar
-            ;
+var_decl        :   lvar ASSIGN expr
+                |   lvar
+                ;
 
-deref       :   STR deref
-            |   STR rvar
-            ;
+assign          :   rvar ASSIGN expr
+                |   deref ASSIGN expr
+                |   array_el ASSIGN expr
+                ;
 
-lvar        :   STR* VAR_NAME;
-rvar        :   VAR_NAME;
+array_el        :   lvar '[' index=INT ']'
+                |   lvar '[' expr ']'
+                |   deref '[' index=INT ']'
+                |   deref '[' expr ']'
+                ;
 
-expr        :   '(' expr ')'
-            |   cast expr
-            |   expr binary_op expr
-            |   expr unary_op expr
-            |   expr comp_op expr
-            |   expr comp_eq expr
-            |   expr bin_log_op expr
-            |   un_log_op expr
-            |   unary_op expr
-            |   decr rvar
-            |   incr rvar
-            |   rvar decr
-            |   rvar incr
-            |   rvar assign expr
-            |   rvar assign rvar
-            |   rvar assign rtype
-            |   rvar assign addr_op
-            |   rvar assign deref
-            |   deref assign expr
-            |   deref assign rvar
-            |   deref assign rtype
-            |   deref assign deref
-            |   deref assign addr_op
-            |   deref
-            |   rtype
-            |   rvar
-            ;
+deref           :   STR deref
+                |   STR rvar
+                ;
 
-cast        :   CAST;
+lvar            :   ptr+=STR* name=VAR_NAME
+                ;
 
-rtype       :   INT
-            |   FLOAT
-            |   CHAR
-            |   STRING
-            ;
-addr_op     :   ADDR rvar;
-binary_op   :   (STR  | DIV | MOD);
-unary_op    :   (SUM | DIF);
-incr        :   INCR;
-decr        :   DECR;
-comp_op     :   (GT | LT | EQ);
-comp_eq     :   (GEQ | LEQ | NEQ);
-bin_log_op  :   (AND_OP | OR_OP);
-un_log_op   :   (NOT_OP);
-assign      :   ASSIGN;
+rvar            :   VAR_NAME
+                ;
+
+expr            :   term
+                |   expr SUM term
+                |   expr DIF term
+                |   expr (AND_OP | OR_OP) term
+                ;
+
+term            :   factor
+                |   term (STR | DIV | MOD) factor
+                |   term (GT | LT | EQ) factor
+                |   term (GEQ | LEQ | NEQ) factor
+                |   (NOT_OP) factor
+                |   term (INCR | DECR)
+                ;
+
+factor          :   primary
+                |   DIF factor
+                |   SUM factor
+                |   (INCR | DECR) factor
+                ;
+
+primary         :   rvar
+                |   rtype
+                |   ADDR rvar
+                |   deref
+                |   '(' expr ')'
+                |   CAST primary
+                |   func_call
+                |   array_el
+                ;
+
+rtype           :   INT
+                |   FLOAT
+                |   CHAR
+//                |   STRING
+                ;
+
 
 // Keywords
-CAST        :   '(' TYPE ')';
-CONST       :   'const';
-IF          :   'if';
-ELSE        :   'else';
-FOR         :   'for';
-WHILE       :   'while';
-BREAK       :   'break';
-CONTINUE    :   'continue';
-SWITCH      :   'switch';
-CASE        :   'case';
-DEFAULT     :   'default';
-PRINTF      :   'printf';
+CAST            :   '(' TYPE ')';
+CONST           :   'const';
+IF              :   'if';
+ELSE            :   'else';
+FOR             :   'for';
+WHILE           :   'while';
+BREAK           :   'break';
+CONTINUE        :   'continue';
+SWITCH          :   'switch';
+CASE            :   'case';
+DEFAULT         :   'default';
+PRINTF          :   'printf';
+RETURN          :   'return';
+SCANF           :   'scanf';
+INCLUDE         :   '#include';
 // Identifiers and data types
-TYPE        :   'char'
-            |   'float'
-            |   'int'
-            ;
-VAR_NAME    :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
-INT         :   [0-9]+;
-FLOAT       :   INT '.' INT;
-CHAR        :   '\'' . '\'';
-STRING      :   '"' (.)*? '"';
+TYPE            :   'char'
+                |   'float'
+                |   'int'
+                ;
+VOID            :   'void' ;
+VAR_NAME        :   ([a-z] | [A-Z] | '_')([a-z] | [A-Z] | [0-9] | '_')*;             // match lower-case identifiers
+INT             :   ([1-9][0-9]*) | [0];
+FLOAT           :   [0-9]+ '.' [0-9]+;
+CHAR            :   ('\'' . '\'')
+                |   ('\'\\' . '\'');
+SCANF_STRING    :   '"' ('%' ('-' | '+')? (INT)? [discf])* '"';
+STRING          :   '"' (.)*? '"';
 // Operations
-STR         :   '*';
-DIV         :   '/';
-MOD         :   '%';
-SUM         :   '+';
-DIF         :   '-';
-LT          :   '<';
-LEQ         :   '<=';
-GT          :   '>';
-GEQ         :   '>=';
-EQ          :   '==';
-NEQ         :   '!=';
-OR_OP       :   '||';
-AND_OP      :   '&&';
-NOT_OP      :   '!';
-ASSIGN      :   '=';
-ADDR        :   '&';
-INCR        :   '++';
-DECR        :   '--';
+STR             :   '*';
+DIV             :   '/';
+MOD             :   '%';
+SUM             :   '+';
+DIF             :   '-';
+LT              :   '<';
+LEQ             :   '<=';
+GT              :   '>';
+GEQ             :   '>=';
+EQ              :   '==';
+NEQ             :   '!=';
+OR_OP           :   '||';
+AND_OP          :   '&&';
+NOT_OP          :   '!';
+ASSIGN          :   '=';
+ADDR            :   '&';
+INCR            :   '++';
+DECR            :   '--';
 // Redundant characters to be removed
-SP          :   [ ]+ -> skip;
-NEWLINE     :   [\r\n]+ -> skip;
-WS          :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
-LN          :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
-
+SP              :   [ ]+ -> skip;
+NEWLINE         :   [\r\n]+ -> skip;
+WS              :   [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+UNICODE_WS      :   [\p{White_Space}] -> skip; // match all Unicode whitespace
+LN              :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
+DELIM           :   [;]+;
 // Comments
 // Ref : https://stackoverflow.com/a/23414078
-COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);
-LCOMMENT    : '//' ~[\r\n]* -> channel(HIDDEN);
+COMMENT         :   '/*' .*? '*/' -> channel(HIDDEN);
+LCOMMENT        :   '//' ~[\r\n]* -> channel(HIDDEN);

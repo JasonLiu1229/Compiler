@@ -1,5 +1,11 @@
+from array import array
+from math import floor
+from pprint import pprint
+from typing import Tuple
+
+
 class Node:
-    def __init__(self, key: str, value) -> None:
+    def __init__(self, key: str, value, parent=None) -> None:
         """
         Initializer function
         :param key: key value of the node
@@ -8,6 +14,18 @@ class Node:
         super().__init__()
         self.key = key
         self.value = value
+        self.parent = parent
+        self.cast = False
+        self.register = None
+
+    # def __eq__(self, o: object) -> bool:
+    #     return (self.key == o.key) and (self.value == o.value)
+    #
+    # def __ne__(self, o: object) -> bool:
+    #     return not self.__eq__(o)
+
+    def __repr__(self) -> str:
+        return f'{self.key} : {self.value}'
 
     def print(self):
         """
@@ -16,11 +34,116 @@ class Node:
         """
         print(self.get_str())
 
+    def __mul__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("", self.value * other.value)
+
+    def __floordiv__(self, other):
+        if other.value != 0:
+            if isinstance(self.value, str):
+                self.value = ord(self.value)
+            if isinstance(other.value, str):
+                other.value = ord(other.value)
+            return Node("int", floor(self.value / other.value))
+        else:
+            raise ZeroDivisionError
+
+    def __truediv__(self, other):
+        if other.value != 0:
+            if isinstance(self.value, str):
+                self.value = ord(self.value)
+            if isinstance(other.value, str):
+                other.value = ord(other.value)
+            return Node(f"{'float' if not (isinstance(self.value, int) or isinstance(other.value, int)) else 'int'}", self.value / other.value)
+        else:
+            raise ZeroDivisionError
+
+    def __add__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        if isinstance(other, int) or isinstance(other, float):
+            return Node("", self.value + other)
+        return Node("", self.value + other.value)
+
+    def __sub__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        if isinstance(other, int) or isinstance(other, float):
+            return Node("", self.value - other)
+        return Node("", self.value - other.value)
+
+    def __mod__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("", self.value % other.value)
+
+    def __neg__(self):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        return Node("", -self.value)
+
+    def __lt__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("int", self.value < other.value)
+
+    def __le__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("int", self.value <= other.value)
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        if isinstance(self.value, str) and self.key != "var":
+            self.value = ord(self.value)
+        if isinstance(other.value, str) and other.key != "var":
+            other.value = ord(other.value)
+        if not isinstance(self, VarNode) and not isinstance(other, VarNode):
+            return self.value == other.value and self.key == other.key
+        else:
+            return self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __gt__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("int", self.value > other.value)
+
+    def __ge__(self, other):
+        if isinstance(self.value, str):
+            self.value = ord(self.value)
+        if isinstance(other.value, str):
+            other.value = ord(other.value)
+        return Node("int", self.value >= other.value)
+
     def save(self):
         """
         Saves the node in a json / dictionary format
         :return: dictionary
         """
+        # check if parent is an array, thus this node is an element of an array
+        if isinstance(self.parent, ArrayNode):
+            index = self.parent.values.index(self)
+            out_key = f"{self.parent.get_str()}[{index}]"  # key of the node
+            return {out_key: self.value}
         if isinstance(self.value, VarNode):
             return {self.key: self.value.save()}
         out = {self.key: self.value}
@@ -31,7 +154,7 @@ class Node:
         converts Node in a string format
         :return:
         """
-        return self.key + '\t' + ':' + '\t' + str(self.value)
+        return f"{self.key}\t:\t{str(self.value)}"
 
     def save_dot(self):
         """
@@ -63,11 +186,14 @@ class Node:
         else:
             dictionary[name].add(self.value)
 
+    def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
+        return f" ", index
+
 
 class VarNode(Node):
 
-    def __init__(self, key: str, value, vtype: str, const: bool = False, ptr: bool = False, deref_level: int = 0,
-                 total_deref: int = 0) -> None:
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
+                 total_deref: int = 0, const_ptr: bool = False, is_array: bool = False) -> None:
         """
         Initializer function for VarNode
         """
@@ -77,6 +203,21 @@ class VarNode(Node):
         self.ptr = ptr
         self.deref_level = deref_level
         self.total_deref = total_deref
+        self.const_ptr = const_ptr
+        self.array = is_array
+
+    def __repr__(self) -> str:
+        rep = f"{self.type} {'*' * self.total_deref} {self.key} : {self.value}"
+        return rep
+
+    def __eq__(self, o):
+        if not isinstance(o, VarNode):
+            return False
+        return self.key == o.key and (
+                self.const == o.const or (self.const is None and o.const is not None)) and self.ptr == o.ptr
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
 
     def print(self):
         """
@@ -90,14 +231,7 @@ class VarNode(Node):
         Converts VarNode in a json / dictionary format
         :return: dictionary
         """
-        out_key = ""
-        if self.type != "":
-            out_key += self.type
-            if self.type != "":
-                out_key += " "
-        out_key += str('*' * self.deref_level) + self.key
-        if self.const:
-            out_key = "const " + out_key
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
         if isinstance(self.value, VarNode):
             # out_key = str('*'*(self.deref_level+1)) + out_key
             out = {out_key: self.value.save()}
@@ -107,7 +241,7 @@ class VarNode(Node):
 
     def assign_type(self, vtype):
         """
-        assign type to VarNode
+        assign a type to VarNode
         :param vtype: variable type
         :return: None
         """
@@ -120,7 +254,7 @@ class VarNode(Node):
         string format of VarNode
         :return: string
         """
-        return self.type + ' ' + self.key + '\t' + ':' + '\t' + str(self.value)
+        return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key} : {self.value}"
 
     def save_dot(self):
         """
@@ -136,16 +270,147 @@ class VarNode(Node):
             out += str(self.value)
         return out
 
+    def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
+        """
+        converts VarNode in to llvm
+        :param scope: global, local --> True is local
+        :return: str
+        """
+        """
+        @y = global i32 4, align 4
+        @x = global ptr @y, align 8
+        @z = global ptr @x, align 8
+        """
+
+        if self.value is None:
+            if self.type == "int":
+                self.value = 0
+            elif self.type == "float":
+                self.value = 0.0
+            elif self.type == "char":
+                self.value = ord('\0')
+        # Scope and constant
+        if scope and not self.const:
+            out = f"%{index} = "
+        else:
+            out = f"@{index} = "
+
+        if self.const:
+            out += 'constant '
+        elif not scope:
+            out += "global "
+        elif scope:
+            out += "alloca "
+        var_type = ""
+        # type
+        if not self.ptr:
+            if self.type == "int":
+                var_type = "i32"
+                out += "i32 "
+            elif self.type == "char":
+                var_type = "i32"
+                out += "i8 "
+            elif self.type == "float":
+                var_type = "i32"
+                out += "float "
+            out += f" , align 4\n"
+        else:
+            out += f"ptr @{index}, align 8\n"
+        # align
+        out_val = ""
+        # convert the value if needed
+        if not self.ptr:
+            if self.type == "float" and not self.ptr:
+                if self.value is None:
+                    self.value = 0.0
+                val = array('f', [self.value])
+                self.value = val[0]
+                out_val = str(val[0])
+            elif isinstance(self.value, str) and not self.ptr:
+                if self.value is None:
+                    self.value = '\0'
+                out_val = str(ord(self.value))
+            else:
+                if self.value is None:
+                    self.value = 0
+                out_val = self.value
+
+        # allocate the value
+        if not scope:
+            out += f"{out_val if not self.ptr else ''} , align {'4' if not self.ptr else '8'}\n"
+        else:
+            if scope and not self.const:
+                out += f"store {var_type} {out_val}, ptr %{index}, align 4\n"
+            else:
+                if isinstance(self.value, float):
+                    val = array('f', [self.value])
+                    self.value = val[0]
+                    out += out_val + "\n"
+                elif isinstance(self.value, str):
+                    out += str(ord(self.value))
+                elif isinstance(self.value, VarNode):
+                    out += f"@{self.value.key} , align 8"
+                else:
+                    out += str(self.value) + "\n"
+            out += "\n"
+        self.register = index
+        return out, index + 1
+
+class ArrayNode(VarNode):
+
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
+                 total_deref: int = 0, const_ptr: bool = False, is_array: bool = True, in_size: int = 0,
+                 in_values=None) -> None:
+        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
+        if in_values is None:
+            in_values = []
+        self.values: [VarNode | Node] = []
+        self.size = in_size
+
+    def __repr__(self) -> str:
+        return f"{self.type} {'*' * self.total_deref} {self.key} [{self.size if self.size > 0 else ''}] : " \
+               f"[{', '.join([v.value for v in self.values])}]" if self.values else f"{super().__repr__()}"
+
+    def save(self):
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)}" \
+                  f" {self.key}[{self.size if self.size > 0 else ''}]"
+        out = {out_key: [value.save() for value in self.values]}
+        return out
+
+    def get_str(self):
+        # for example: out_key = "int*[5] a"
+        return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
+
+class FuncParameter(VarNode):
+
+    def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
+                 total_deref: int = 0, const_ptr: bool = False, reference: bool = False, is_array = False) -> None:
+        super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
+        self.reference = reference
+
+    def __repr__(self) -> str:
+        return f"{'& ' if self.reference else ''}{super().__repr__()}"
+
+    def save(self):
+        out_key = f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)}" \
+                  f"{' &' if self.reference else ' '}{self.key}"
+        if isinstance(self.value, VarNode):
+            out = {out_key: self.value.save()}
+        else:
+            out = {out_key: self.value}
+        return out
+
 
 class FunctionNode(Node):
 
-    def __init__(self, key: str, value: dict, ret_type: str = None) -> None:
+    def __init__(self, key: str, ret_type: str = None, in_const: bool = False) -> None:
         """
         Initializer
         """
-        super().__init__(key, value)
+        super().__init__(key, None)
         self.body = None
-        self.ret_type = ret_type
+        self.type = ret_type
+        self.const = in_const
 
     def print(self):
         """

@@ -1,97 +1,24 @@
+import copy
 import subprocess
 from array import array
 from AST import *
+from SymbolTable import *
+
 
 class LLVM:
 
-    def __init__(self, input_ast: AST = None, symbol_table=None, file_name: str = "../Output/Output.ll") -> None:
+    def __init__(self, input_ast: AST = None,
+                 file_name: str = "../Output/Output.ll") -> None:
         """
 
         :param input_ast: the AST to be converted
-        :param symbol_table: the symbol table of the AST
         :param file_name: the file in which to write the LLVM code
         """
         super().__init__()
         self.ast = input_ast
         self.nodes = list()
-        self.symbol_table = symbol_table
         self.file_name = file_name
         self.index_queue = []
-
-    def var_node_convert(self, node: VarNode, scope_toggle: bool):
-        """
-        Writes LLVM code for a VarNode type object
-        :param node: the node
-        :param scope_toggle: true if scope is global
-        """
-        with open(self.file_name, 'a') as f:
-            var_type = ""
-            ll_string = ""
-            if not scope_toggle and node.const:
-                return ""
-            if scope_toggle or node.const:  # true global @
-                ll_string += "@" + str(node.key) + " = "
-            else:  # false local %
-                ll_string += "\t%" + str(node.key) + " = "
-            # const or global
-            if node.const:
-                ll_string += "constant "
-            elif scope_toggle:
-                ll_string += "global "
-            elif not scope_toggle:
-                ll_string += "alloca "
-            # get type
-            if node.type == "int":
-                var_type = "i32"
-            elif node.type == "char":
-                var_type = "i8"
-            elif node.type == "float":
-                var_type = "float"
-            ll_string += var_type
-            if node.ptr:
-                ll_string += "*" * node.total_deref + " "
-            else:
-                ll_string += " "
-            # allocate the value
-            if not scope_toggle:
-                ll_string += "\n"
-            # while isinstance(node.value, Node):
-            #     node = node.value
-            else:
-                # match type
-                if node.value is None:
-                    if node.type == "int":
-                        node.value = 0
-                    elif node.type == "float":
-                        node.value = 0.0
-                    elif node.type == "char":
-                        node.value = ord('\0')
-                if not scope_toggle and not node.const:
-                    ll_string += "\tstore " + var_type + " "
-                    if isinstance(node.value, float):
-                        val = array('f', [node.value])
-                        node.value = val[0]
-                        ll_string += str(val[0])
-                    elif isinstance(node.value, str):
-                        ll_string += str(ord(node.value))
-                    else:
-                        ll_string += str(node.value)
-                    ll_string += "," + var_type + "* %" + str(node.key) + "\n"
-                else:
-                    if isinstance(node.value, float):
-                        val = array('f', [node.value])
-                        node.value = val[0]
-                        ll_string += str(val[0]) + "\n"
-                    elif isinstance(node.value, str):
-                        ll_string += str(ord(node.value))
-                    elif isinstance(node.value , VarNode):
-                        ll_string += f"@{node.value.key} , align 8"
-                    else:
-                        ll_string += str(node.value) + "\n"
-            ll_string += "\n"
-            if node.const or scope_toggle:
-                f.write(ll_string)
-            return ll_string
 
     def printf_int(self, value: int, index: int = 1):
         """
@@ -346,7 +273,7 @@ class LLVM:
         ll_out: the LLVM code generated
         index: local index if in the tuple, global index if separate
         """
-        # Output string , declared as empty
+        # Output string, declared as empty
         ll_out = ""
         # Write the llvm code
         if declr:
@@ -357,27 +284,32 @@ class LLVM:
             with open(self.file_name, 'a') as f:
                 # Check the function name
                 if func.key == "printf":
-                    # Get the function parameters
-                    print_val = func.value["par0"]
+                    # # Get the function parameters
+                    # print_val = func.value["par0"]
                     # Define our string
                     std_decl = "@.str" + str(index_global) + " = private unnamed_addr constant ["
                     std_decl += '4'
                     std_decl += " x i8] c" + "\""
-                    if isinstance(print_val, VarNode):
-                        if print_val.type == "int":
-                            std_decl += "%d\\0A\\00\""
-                        elif print_val.type == "float":
-                            std_decl += "%f\\0A\\00\""
-                        elif print_val.type == "char":
-                            std_decl += "%c\\0A\\00\""
-                    else:
-                        if print_val.key == "int":
-                            std_decl += "%d\\0A\\00\""
-                        elif print_val.key == "float":
-                            std_decl += "%f\\0A\\00\""
-                        elif print_val.type == "char":
-                            std_decl += "%c\\0A\\00\""
-
+                    # if isinstance(print_val, VarNode):
+                    #     if print_val.type == "int":
+                    #         std_decl += "%d\\0A\\00\""
+                    #     elif print_val.type == "float":
+                    #         std_decl += "%f\\0A\\00\""
+                    #     elif print_val.type == "char":
+                    #         std_decl += "%c\\0A\\00\""
+                    # else:
+                    #     if print_val.key == "int":
+                    #         std_decl += "%d\\0A\\00\""
+                    #     elif print_val.key == "float":
+                    #         std_decl += "%f\\0A\\00\""
+                    #     elif print_val.type == "char":
+                    #         std_decl += "%c\\0A\\00\""
+                    if func.type == "int":
+                        std_decl += "%d\\0A\\00\""
+                    elif func.type == "float":
+                        std_decl += "%f\\0A\\00\""
+                    elif func.type == "char":
+                        std_decl += "%c\\0A\\00\""
                     ll_out += std_decl + " align 1\n\n"
                 f.write(ll_out)
                 return index_global
@@ -386,18 +318,18 @@ class LLVM:
                 pass
         else:
             # Get function parameters
-            print_val = func.value["par0"]
-            if isinstance(print_val.value, float):
-                print_val.value = array("f", [print_val.value])[0]
-                ret = self.printf_float(print_val.value, index_local)
+            print_val = func.value
+            if isinstance(print_val, float):
+                print_val = array("f", [print_val])[0]
+                ret = self.printf_float(print_val, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
-            elif isinstance(print_val.value, int):
-                ret = self.printf_int(print_val.value, index_local)
+            elif isinstance(print_val, int):
+                ret = self.printf_int(print_val, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
-            elif isinstance(print_val.value, str):
-                ret = self.printf_char(print_val.value, index_local)
+            elif isinstance(print_val, str):
+                ret = self.printf_char(print_val, index_local)
                 ll_out += ret[0]
                 index_local = ret[1]
             return ll_out, index_local
@@ -410,6 +342,8 @@ class LLVM:
         check = True
         while check:
             for child in list1:
+                if isinstance(child, PrintfAST):
+                    continue
                 if isinstance(child, AST):
                     index = list1.index(child)
                     list1.remove(child)
@@ -417,6 +351,8 @@ class LLVM:
                         list1.insert(index, _child)
             check = False
             for child in list1:
+                if isinstance(child, PrintfAST):
+                    continue
                 if isinstance(child, AST):
                     check = True
         list1.reverse()
@@ -440,6 +376,14 @@ class LLVM:
         with open(self.file_name, 'a') as f:
             # if isinstance(input_node , VarNode):
             #     f.write(self.var_node_convert(input_node , global_scope))
+            if isinstance(input_node, PrintfAST):
+                node = input_node.root
+                node.value = input_node.children[0].value
+                if len(self.index_queue) == 0:
+                    self.index_queue.append(index)
+                ret = self.functionNodeConvert(node, index_local=index)
+                f.write(ret[0])
+                index = ret[1]
             if isinstance(input_node, FunctionNode):
                 if len(self.index_queue) == 0:
                     self.index_queue.append(index)
@@ -454,32 +398,77 @@ class LLVM:
         Converts the AST given in the constructor to LLVM code and writes the code to file
         """
         # clear file
-        open(self.file_name , 'w')
-        for val in self.symbol_table.values():
-            if isinstance(val, VarNode):
-                self.var_node_convert(val, True)
-            elif isinstance(val, list):
-                i = 1
-                defn = True
-                declr = True
-                for entry in val:
-                    if isinstance(entry, FunctionNode):
-                        self.index_queue.append(i)
-                        i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
-                        defn = False
-                        declr = False
-        # begin of main function
-        with open(self.file_name, 'a') as f:
-            f.write("define dso_local i32 @main () {\n")
+        f = open(self.file_name, 'w')
+        # indexes = {"printf": 1}
+        # get all the nodes via DFS
+        # DFS the condition
+        visited = list()
+        not_visited = [self.ast]
+        while len(not_visited) > 0:
+            temp = not_visited.pop()
+            if temp not in visited:
+                # if a scope, skip
+                # if include instruction, skip
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or \
+                        isinstance(temp, PrintfAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
+                    isinstance(temp, IncludeAST):
+                    visited.append(temp)
+                if isinstance(temp, AST):
+                    for child in temp.children:
+                        not_visited.append(child)
+        visited.reverse()
+        string_global = ""
+        string_local = ""
+        index = 1
+        for instruction in visited:
 
-        self.ast_convert()
-        i = 1
-        for node in self.nodes:
-            i = self.convertNode(node, False, index=i)
-
-        # end of main
-        with open(self.file_name, 'a') as f:
-            f.write("\tret i32 0\n}")
+            if isinstance(instruction, PrintfAST) or isinstance(instruction, ScanfAST) or isinstance(instruction, IncludeAST):
+                temp_global , index = instruction.llvm_global(index)
+            else:
+                temp_global , index = instruction.llvm(False, index)
+                # write the llvm code for all global variables for the instruction
+                # temp_local, index = instruction.llvm(True, index)
+                # string_local += temp_local
+            string_global += temp_global
+        f.write(string_global)
+        f.write(string_local)
+        print("Done!!!")
+        # for entry in self.symbol_table.table:
+        #     node = copy.copy(entry.object)
+        #     if isinstance(entry, FuncSymbolEntry):
+        #         node.key = entry.name
+        #         if entry.name == "printf":
+        #             i = indexes["printf"]
+        #             defn = True
+        #             declr = (i == 1)
+        #             self.index_queue.append(i)
+        #             i = self.functionNodeConvert(entry.object, declr=declr, defn=defn, glob_decl=True,
+        #                                          index_global=i) + 1
+        #             indexes["printf"] = i
+        #     if isinstance(node, VarNode):
+        #         self.var_node_convert(node, True)
+        #     # elif isinstance(node, list):
+        #     #     i = 1
+        #     #     defn = True
+        #     #     declr = True
+        #     #     for val in node:
+        #     #         if isinstance(entry, FunctionNode):
+        #     #             self.index_queue.append(i)
+        #     #             i = self.functionNodeConvert(entry, declr=declr, defn=defn, glob_decl=True, index_global=i) + 1
+        #     #             defn = False
+        #     #             declr = False
+        # # begin of the main function
+        # with open(self.file_name, 'a') as f:
+        #     f.write("define dso_local i32 @main () {\n")
+        #
+        # self.ast_convert()
+        # i = 1
+        # for node in self.nodes:
+        #     i = self.convertNode(node, False, index=i)
+        #
+        # # end of main
+        # with open(self.file_name, 'a') as f:
+        #     f.write("\tret i32 0\n}")
 
     def execute(self):
         """

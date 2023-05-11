@@ -1,23 +1,31 @@
-import decimal
-import struct
-
-from colorama import Fore
+# import decimal
+# import socket
+# import struct
+# from math import floor
+#
+# from colorama import Fore
+# import copy
 import copy
+
+import antlr4.tree.Tree
 from AST import *
+from SymbolTable import *
 from output.MathParser import MathParser
 from output.MathVisitor import MathVisitor
 from decimal import *
+import re
 
-class AstCreator (MathVisitor):
+class AstCreator(MathVisitor):
 
-    def __init__(self) -> None:
+    def __init__(self, filename: str = None) -> None:
         """
         Initializer function
         """
         super().__init__()
-        self.base_ast : AST = AST()
-        self.symbol_table : dict = dict()
-        self.warnings : list = []
+        self.base_ast: AST = AST()
+        self.symbol_table: SymbolTable = SymbolTable()
+        self.warnings: list = []
+        self.file_name: str = filename
 
     def visit_child(self, ctx):
         """
@@ -25,9 +33,7 @@ class AstCreator (MathVisitor):
         :param ctx: the context to know what to visit
         :return: the given output given by every visit function (AST or Node)
         """
-        if isinstance(ctx, MathParser.MathContext):
-            return self.visitMath(ctx)
-        elif isinstance(ctx, MathParser.InstrContext):
+        if isinstance(ctx, MathParser.InstrContext):
             return self.visitInstr(ctx)
         elif isinstance(ctx, MathParser.ExprContext):
             return self.visitExpr(ctx)
@@ -35,39 +41,1112 @@ class AstCreator (MathVisitor):
             return self.visitRvar(ctx)
         elif isinstance(ctx, MathParser.RtypeContext):
             return self.visitRtype(ctx)
-        elif isinstance(ctx, MathParser.Binary_opContext):
-            return self.visitBinary_op(ctx)
-        elif isinstance(ctx, MathParser.Unary_opContext):
-            return self.visitUnary_op(ctx)
-        elif isinstance(ctx, MathParser.Comp_eqContext):
-            return self.visitComp_eq(ctx)
-        elif isinstance(ctx, MathParser.Comp_opContext):
-            return self.visitComp_op(ctx)
-        elif isinstance(ctx, MathParser.Bin_log_opContext):
-            return self.visitBin_log_op(ctx)
-        elif isinstance(ctx, MathParser.Un_log_opContext):
-            return self.visitUn_log_op(ctx)
         elif isinstance(ctx, MathParser.AssignContext):
             return self.visitAssign(ctx)
+        elif isinstance(ctx, MathParser.LvarContext):
+            return self.visitLvar(ctx)
+        elif isinstance(ctx, MathParser.DerefContext):
+            return self.visitDeref(ctx)
+        elif isinstance(ctx, MathParser.PrintfContext):
+            return self.visitPrintf(ctx)
         elif isinstance(ctx, MathParser.Var_declContext):
             return self.visitVar_decl(ctx)
-        elif isinstance(ctx , MathParser.LvarContext):
-            return self.visitLvar(ctx)
-        elif isinstance(ctx , MathParser.DeclrContext):
+        elif isinstance(ctx, MathParser.DeclrContext):
             return self.visitDeclr(ctx)
-        elif isinstance(ctx , MathParser.DerefContext):
-            return self.visitDeref(ctx)
-        elif isinstance(ctx , MathParser.Addr_opContext):
-            return self.visitAddr_op(ctx)
-        elif isinstance(ctx , MathParser.PrintfContext):
-            return self.visitPrintf(ctx)
-        elif isinstance(ctx , MathParser.IncrContext):
+        elif isinstance(ctx, MathParser.TermContext):
+            return self.visitTerm(ctx)
+        elif isinstance(ctx, MathParser.FactorContext):
+            return self.visitFactor(ctx)
+        elif isinstance(ctx, MathParser.PrimaryContext):
+            return self.visitPrimary(ctx)
+        elif isinstance(ctx, MathParser.ScopeContext):
+            return self.visitScope(ctx)
+        elif isinstance(ctx, MathParser.For_loopContext):
+            return self.visitFor_loop(ctx)
+        elif isinstance(ctx, MathParser.While_loopContext):
+            return self.visitWhile_loop(ctx)
+        elif isinstance(ctx, MathParser.If_condContext):
+            return self.visitIf_cond(ctx)
+        elif isinstance(ctx, MathParser.Else_condContext):
+            return self.visitElse_cond(ctx)
+        elif isinstance(ctx, MathParser.InitContext):
+            return self.visitInit(ctx)
+        elif isinstance(ctx, MathParser.CondContext):
+            return self.visitCond(ctx)
+        elif isinstance(ctx, MathParser.IncrContext):
             return self.visitIncr(ctx)
-        elif isinstance(ctx , MathParser.DecrContext):
-            return self.visitDecr(ctx)
-        elif isinstance(ctx , MathParser.CastContext):
-            return self.visitCast(ctx)
+        elif isinstance(ctx, MathParser.Cont_instrContext):
+            return self.visitCont_instr(ctx)
+        elif isinstance(ctx, MathParser.Break_instrContext):
+            return self.visitBreak_instr(ctx)
+        elif isinstance(ctx, MathParser.Func_defnContext):
+            return self.visitFunc_defn(ctx)
+        elif isinstance(ctx, MathParser.Func_declContext):
+            return self.visitFunc_decl(ctx)
+        elif isinstance(ctx, MathParser.Arg_listContext):
+            return self.visitArg_list(ctx)
+        elif isinstance(ctx, MathParser.Func_callContext):
+            return self.visitFunc_call(ctx)
+        elif isinstance(ctx, MathParser.Func_scopeContext):
+            return self.visitFunc_scope(ctx)
+        elif isinstance(ctx, MathParser.Func_argContext):
+            return self.visitFunc_arg(ctx)
+        elif isinstance(ctx, MathParser.Param_declrContext):
+            return self.visitParam_declr(ctx)
+        elif isinstance(ctx, MathParser.Param_listContext):
+            return self.visitParam_list(ctx)
+        elif isinstance(ctx, MathParser.Return_instrContext):
+            return self.visitReturn_instr(ctx)
+        elif isinstance(ctx, MathParser.Array_declContext):
+            return self.visitArray_decl(ctx)
+        elif isinstance(ctx, MathParser.Array_elContext):
+            return self.visitArray_el(ctx)
+        elif isinstance(ctx, MathParser.Incl_statContext):
+            return self.visitIncl_stat(ctx)
+        elif isinstance(ctx, MathParser.ScanfContext):
+            return self.visitScanf(ctx)
+        elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
+            if ctx.getText() in ["{", "}"]:
+                return Node(ctx.getText(), None)
 
+    @staticmethod
+    def searchPrevToken(index: int, in_list, token: str = '}'):
+        # index = len(in_list)
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], Node) and in_list[i].key == token:
+                return i
+        return -1
+
+    @staticmethod
+    def lastInstruction(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
+                isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
+                isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or \
+                isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastDeclaration(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], PrintfAST) or \
+                    isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
+                    (isinstance(in_list[i], Node) and in_list[i].key == token) or \
+                    isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
+                    isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastInit(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], CondAST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastElse(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], Else_CondAST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastFuncScope(index: int, in_list, token: str = '}'):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], FuncScopeAST):
+                return i
+        return -1
+
+    def resolveTree(self, base: AST):
+        """
+        visit the right visit function for the give context
+        :param base: The base AST given to resolve
+        :return: the given output given by every visit function (AST or Node)
+        """
+        # Terminals processing
+        index = 0
+        indexes = {"last_instr": 0, "last_declr": 0, "last_scope": [0], "last_scope_open": 0, "scope_depth": 0}
+        last_else = None
+        for child in base.children[:]:
+            if isinstance(child, AST):
+                if child.root.key in ["expr", "term"] and child.root.value is not None:
+                    if child.root.value in ["++", "--", "!"]:
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1: index] = []
+                        index -= 1
+                    else:
+                        child.children = base.children[index - 2: index]
+                        base.children[index - 2: index] = []
+                        index -= 2
+                    child.children.reverse()
+
+                elif child.root.key == "factor" and child.root.value is not None:
+                    if child.root.value in ["++", "+", "--", "-"]:
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1: index] = []
+                        index -= 1
+                    child.children.reverse()
+
+                elif child.root.key == "primary" and child.root.value is not None:
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    index -= 1
+
+                elif isinstance(child, ArrayElementAST):
+                    child.children = base.children[index - 1: index]
+                    child.root.key = child.children[0].key
+                    base.children[index - 1: index] = []
+                    index -= 1
+                    if child.root.value is None:
+                        child.root.value = base.children[index-1]
+                        child.children.append(base.children[index-1])
+                        base.children[index-1:index] = []
+                        index -= 1
+
+                elif isinstance(child, ArrayDeclAST):
+                    child.children = base.children[index - 1 - len(child.values): index - 1]
+                    child.children.reverse()
+                    if len(child.values) > 0:
+                        base.children[index - 1 - len(child.values) - 1: index] = []
+                    index = base.children.index(child)
+
+                elif isinstance(child, ScanfAST):
+                    child.children = base.children[index - len(child.variables): index]
+                    child.children.reverse()
+                    base.children[index-len(child.variables):index] = []
+                    index -= len(child.variables)
+
+                elif isinstance(child, IncludeAST):
+                    child.parent = base
+
+                elif isinstance(child, FuncDeclAST):
+                    if isinstance(base.children[index-1], FuncParametersAST):
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1: index] = []
+                    child.children.reverse()
+                    if len(child.children) > 0:
+                        if isinstance(child.children[0], FuncParametersAST):
+                            child.params = child.children[0].parameters
+                            child.children = child.children[1:]
+                        for param in child.params:
+                            if param.value is not None:
+                                child.has_defaults.append(param)
+                    index = base.children.index(child)
+                    child.parent = base
+
+                elif isinstance(child, FuncDefnAST):
+                    last_func = self.lastFuncScope(index=index, in_list=base.children)
+                    child.children = base.children[last_func: index]
+                    base.children[last_func: index] = []
+                    child.children.reverse()
+                    if isinstance(child.children[0], FuncParametersAST):
+                        child.params = child.children[0].parameters
+                        child.children = child.children[1:]
+                    for param in child.params:
+                        if param.value is not None:
+                            child.has_defaults.append(param)
+                    index = base.children.index(child)
+                    child.parent = base
+
+                elif isinstance(child, FuncCallAST):
+                    amt = len(child.args)
+                    for i in reversed(range(1, amt + 1)):
+                        child.args[i - 1] = base.children[index - i]
+                    base.children[index - amt:index] = []
+                    child.children = child.args
+                    index = base.children.index(child)
+
+                elif isinstance(child, ReturnInstr):
+                    if child.root.value is None:
+                        last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
+                        child.children = base.children[index-1:index]
+                        base.children[last_token : index] = []
+                        index = base.children.index(child)
+
+                elif isinstance(child, ContAST) or isinstance(child, BreakAST):
+                    last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
+                    base.children[last_token: index] = []
+                    index = base.children.index(child)
+
+                elif isinstance(child, FuncParametersAST):
+                    # last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
+                    # last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
+                    # last_det = max(last_inst, last_func)
+                    child.parameters = base.children[index - len(child.parameters): index]
+                    base.children[index - len(child.parameters): index] = []
+                    child.parameters.reverse()
+                    child.children = child.parameters
+                    # check default parameters order
+                    default_found = False
+                    for param in child.parameters:
+                        param.parent = child
+                        if param.value is not None:
+                            default_found = True
+                        elif param.value is None and default_found:
+                            raise AttributeError("Default value in the middle")
+                    index = base.children.index(child)
+
+                elif isinstance(child, CondAST):
+                    if child.root.value == "const":
+                        child.children = base.children[index - 1: index]
+                        base.children[index - 1:index] = []
+                    else:
+                        child.children = base.children[index - 2: index]
+                        base.children[index - 2:index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
+
+                elif isinstance(child, InitAST):
+                    last_decl = self.lastInit(index, base.children)
+                    last_decl += 1
+                    child.children = base.children[last_decl: index]
+                    child.children.reverse()
+                    base.children[last_decl: index] = []
+                    index = base.children.index(child)
+                    update_index = last_decl
+                    update_index += 1
+
+                elif isinstance(child, InstrAST):
+                    # Parent of instr is base itself, if no parent is already found
+                    if child.parent is None:
+                        child.parent = base
+                    if self.searchPrevToken(index=index, token="}", in_list=base.children) == -1:
+                        last_inst = self.lastInstruction(index, base.children)
+                        child.children = base.children[last_inst + 1: index]
+                        base.children[last_inst + 1: index] = []
+                    else:
+                        last_inst = self.lastInstruction(index, base.children)
+                        child.children = base.children[last_inst + 1:index]
+                        base.children[last_inst + 1: index] = []
+                    child.children.reverse()
+                    index = base.children.index(child)
+                    indexes["last_instr"] = index + 1
+
+                elif isinstance(child, If_CondAST) or isinstance(child, While_loopAST):
+                    if child.parent is None:
+                        child.parent = base
+                    number = len(base.children[index-1].children)
+                    else_child = None
+                    if isinstance(base.children[index - 3], Else_CondAST):
+                        number = 3
+                        else_child = base.children[index - 3]
+                    child.children = base.children[index - number: index]
+                    base.children[index - number: index] = []
+                    child.children.reverse()
+                    # assign condition
+                    child.condition = child.children[0]
+                    child.condition.parent = child
+                    child.children = child.children[1:]
+                    index = base.children.index(child)
+
+                elif isinstance(child, Else_CondAST):
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    child.children.reverse()
+                    last_else = child
+                    index = base.children.index(child)
+
+                elif isinstance(child, For_loopAST):
+                    if child.parent is None:
+                        child.parent = base
+                    child.children = base.children[index - 4: index]
+                    base.children[index - 4: index] = []
+                    child.children.reverse()
+                    # assign initialization
+                    child.initialization = child.children[0]
+                    child.initialization.parent = child
+                    # assign condition
+                    child.condition = child.children[1]
+                    child.condition.parent = child
+                    # assign increment
+                    child.incr = child.children[2]
+                    child.incr.parent = child
+                    child.children = child.children[3:]
+                    index = base.children.index(child)
+
+                elif isinstance(child, Scope_AST) or isinstance(child, FuncScopeAST):
+                    # Parent of scope is base itself, if no parent is already found
+                    # indexes["scope_depth"] += 1
+                    if child.parent is None:
+                        child.parent = base
+                    new_index = self.searchPrevToken(index=index, token="}", in_list=base.children)
+                    base.children[new_index:new_index + 1] = []
+                    index = base.children.index(child)
+                    child.children = base.children[new_index: index - 1]
+                    child.children.reverse()
+                    base.children[new_index: index] = []
+                    index = base.children.index(child)
+                    # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
+                    indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
+
+                elif isinstance(child, DeclrAST):
+                    last_decl = self.lastDeclaration(index, base.children)
+                    # last_decl += 1
+                    child.children = base.children[last_decl + 1: index]
+                    child.children.reverse()
+                    base.children[last_decl + 1: index] = []
+                    index = base.children.index(child)
+                    update_index = last_decl
+                    update_index += 1
+
+                elif child.root.key == "assign":
+                    child.children = base.children[index - 2: index]
+                    child.children.reverse()
+                    base.children[index - 2: index] = []
+                    # # Add first child to symbol table if it isn't already in
+                    # if not temp_symbol.exists(child.children[0].key):
+                    #     # make one
+                    #     new_object = child.children[0]
+                    #     temp_symbol.insert(SymbolEntry(new_object))
+                    # else:
+                    #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
+                    index -= 2
+
+                elif isinstance(child, PrintfAST):
+                    if child.root.value is None:
+                        if len(child.children) > 0:
+                            continue
+                        child.args = base.children[index - len(child.args): index]
+                        child.args.reverse()
+                        child.children = base.children[index - len(child.args): index]
+                        child.children.reverse()
+                        base.children[index - len(child.args): index] = []
+                        index -= len(child.args)
+                elif child.root.key == "deref":
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    index -= 1
+                # connect children to this node
+                child = base.children[index]
+                for n in child.children:
+                    n.parent = child
+                    if isinstance(child, AST) and child.symbolTable is not None and \
+                            child.symbolTable.parent is None and n.symbolTable is not None:
+                        # add child symbol table as parent symbol table of n symbol table
+                        if isinstance(n, AST):
+                            n.symbolTable.parent = child.symbolTable
+                    if child.root.key == "declr" and child.root.value is not None:
+                        if isinstance(n, AST):
+                            n.root.value = child.root.value
+                        elif isinstance(n, VarNode):
+                            n.type = child.root.value
+
+            elif isinstance(child, Node):
+                if child.key == "}":
+                    indexes["scope_depth"] += 1
+                    # indexes["last_scope_open"] = index
+                    # base.children[index:index+1] = []
+                    # index -= 1
+
+                if child.key == "{":
+                    indexes["scope_depth"] -= 1
+                    # base.children[index:index + 1] = []
+                    # index -= 1
+
+                if child.key == "term" and child.value is None:
+                    child.value = base.children[index - 1].value
+
+                if child.key == "assign_op":
+                    base.children[index] = AssignAST(Node("assign", None))
+                    base.children[index].children = base.children[index - 2:index]
+                    base.children[index].children.reverse()
+                    base.children[index - 2:index] = []
+                    index -= 2
+
+                if isinstance(base.children[index], AST):
+                    child = base.children[index]
+                    # connect children to this node
+                    for n in child.children:
+                        n.parent = child
+                        if child.root.key == "declr" and child.root.value is not None:
+                            if isinstance(n, AST):
+                                n.root.value = child.root.value
+                            elif isinstance(n, VarNode):
+                                n.type = child.root.value
+
+                elif isinstance(child, FuncParameter):
+                    if not isinstance(base.children[index - 1], FuncParameter) and isinstance(base.children[index - 1], Node):
+                        child.value = base.children[index - 1].value
+                        base.children[index-1: index] = []
+                        index = base.children.index(child)
+
+            index += 1
+        base.children.reverse()
+        return base
+
+    def DFS(self, visited, ctx, root_name: str = "math"):
+        if visited is None:
+            visited = []
+        s = list()
+        a = AST(root=Node(root_name, None))
+        s.append(ctx)
+        # while there are still nodes to visit in the tree
+        while len(s) > 0:
+            v = s.pop()
+            if v not in visited:
+                visited.append(v)
+                s.append(v)
+                if isinstance(v, antlr4.tree.Tree.TerminalNodeImpl):
+                    continue
+                for child in v.getChildren():
+                    s.append(child)
+            else:
+                v = self.visit_child(v)
+                if v is None:
+                    continue
+                a.add_child(v)
+        a = self.resolveTree(a)
+        return a
+
+    def resolve(self, ast_in: AST):
+        visited = list()
+        not_visited = list()
+        not_visited.append(ast_in)
+        while len(not_visited) > 0:
+            temp = not_visited.pop()
+            if temp not in visited or isinstance(temp, CondAST):
+                # if a scope, skip
+                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)):
+                    visited.append(temp)
+                if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
+                        temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
+                    for i in temp.children:
+                        if isinstance(i, AST) and not isinstance(i, Else_CondAST):
+                            not_visited.append(i)
+                else:
+                    if isinstance(temp, For_loopAST) and temp.initialization is not None:
+                        not_visited.append(temp.initialization)
+                    # if temp.condition is not None and not isinstance(temp.condition, Node):
+                    #     not_visited.append(temp.condition)
+        visited.reverse()
+        ast_in.symbolTable = self.handle(visited)
+        return ast_in
+
+    def handle(self, list_ast: list):
+        # TODO: handle function call
+        # initialize queues
+        updates_queue = []
+        incr_queue = []
+        decr_queue = []
+        # flags
+        conditional = False
+        evaluate = True
+        temp_symbol = None
+        for ast in list_ast:
+            temp_parent = ast.parent
+            symbol_table = ast.symbolTable
+            temp_symbol = ast.symbolTable
+            while symbol_table is None and temp_parent is not None:
+                symbol_table = temp_parent.symbolTable
+                temp_parent = temp_parent.parent
+            if symbol_table is None:
+                raise RuntimeError("No symbol table found")
+            temp_symbol = symbol_table
+            if isinstance(ast, ReturnInstr):
+                temp_parent = ast.parent
+                while temp_parent is not None:
+                    if isinstance(temp_parent, FuncDefnAST):
+                        if temp_parent.type == "void" and ast.root.value != "void" :
+                            raise AttributeError(f"void function '{temp_parent.root.key}' should not return a value")
+                        if temp_parent.type != "void" and ast.root.value == "void":
+                            raise AttributeError(f"non-void function '{temp_parent.root.key}' should return a value")
+                        break
+                    temp_parent = temp_parent.parent
+            if isinstance(ast, FuncCallAST):
+                # check whether function is in symbol table
+                match = None
+                temp_parent = ast
+                while temp_parent.parent is not None:
+                    temp_parent = temp_parent.parent
+                if temp_parent.symbolTable is None:
+                    raise RuntimeError("Symbol table not found")
+                if not temp_parent.symbolTable.exists(ast.root):
+                    raise AttributeError(f"Function {ast.root.key} not found in scope")
+                # replace args
+                for i in range(len(ast.args)):
+                    if isinstance(ast.args[i], Node) and ast.args[i].key != "var":
+                        continue
+                    match = AST.getEntry(ast.args[i])
+                    if match is None:
+                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                    if match[0] is None:
+                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                    ast.args[i] = match[0]
+                if temp_parent.symbolTable is None:
+                    raise RuntimeError("Symbol table not found")
+                match_found = True
+                for entry in temp_parent.symbolTable.table:
+                    # name match
+                    if entry.name == ast.root.key:
+                        if len(entry.parameters) != len(ast.args):
+                            continue
+                        for i in range(len(entry.parameters)):
+                            current_param = entry.parameters[i]
+                            current_arg = ast.args[i]
+                            if isinstance(current_arg, VarNode):
+                                # check all attributes
+                                if current_param.name != current_arg.key:
+                                    match_found = False
+                                    break
+                                if current_param.const != current_arg.const:
+                                    match_found = False
+                                    break
+                                if current_param.ptr != current_arg.ptr:
+                                    match_found = False
+                                    break
+                                if current_param.ptr_level != (current_arg.total_deref - current_arg.deref_level):
+                                    match_found = False
+                                    break
+                                if current_param.array != current_arg.array:
+                                    match_found = False
+                                    break
+                                if current_param.type != current_arg.type:
+                                    if (current_param.type, current_arg.type) not in conversions:
+                                        match_found = False
+                                        break
+                                    if (current_arg.type, current_param.type) not in conv_promotions:
+                                        self.warnings.append(f"Conversion from {current_arg.type} to {current_param.type} may cause loss of data")
+                            else:
+                                if current_param.type != getType(current_arg.value):
+                                    if (getType(current_arg.value), current_param.type) not in conversions:
+                                        match_found = False
+                                        break
+                if not match_found:
+                    raise AttributeError(f"Function {ast.root.key} not found")
+
+            if isinstance(ast, FuncDeclAST):
+                # add parent symbol table as parent of current symbol table
+                ast.symbolTable.parent = ast.parent.symbolTable
+                # check function was previously declared
+                if ast.parent.symbolTable.exists(ast.root):
+                    raise AttributeError(f"Redefinition of function {ast.root.key}")
+                else:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    param_names = []
+                    for param in ast.params:
+                        if param.key in param_names:
+                            raise AttributeError(f"Redefinition of parameter {param.key}")
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                        param_names.append(param.key)
+                    # add symbol table of ast to function entry in symbol table
+                    new_entry.symbol_table = ast.symbolTable
+                    # insert function into symbol table
+                    ast.parent.symbolTable.insert(new_entry)
+                ast.symbolTable.parent = ast.parent.symbolTable
+                node = ast
+                continue
+            elif isinstance(ast, FuncScopeAST) or isinstance(ast, FuncDefnAST):
+                # add parent symbol table as parent of current symbol table
+                ast.symbolTable.parent = ast.parent.symbolTable
+                temp_exists = False
+                match = None
+                if ast.parent.symbolTable.exists(ast.root):
+                    temp_exists = True
+                    matches = ast.parent.symbolTable.lookup(ast.root)
+                    if len(matches) == 1:
+                        if matches[0].defined:
+                            raise AttributeError(f"Redefinition of function {ast.root.key}")
+                        match = matches[0]
+                if not temp_exists:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    param_names = []
+                    for param in ast.params:
+                        if param.key in param_names:
+                            raise AttributeError(f"Redefinition of parameter {param.key}")
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                        param_names.append(param.key)
+                    new_entry.defined = True
+                    # add symbol table of ast to function entry in symbol table
+                    new_entry.symbol_table = ast.symbolTable
+                    # insert function into symbol table
+                    entry = ast.parent.symbolTable.insert(new_entry)
+                    entry.symbol_table = ast.symbolTable
+                else:
+                    new_entry = FuncSymbolEntry(ast.root)
+                    for param in ast.params:
+                        new_entry.parameters.append(FunctionParameter(param))
+                        ast.symbolTable.insert(SymbolEntry(param))
+                    if new_entry != match:
+                        raise AttributeError(f"Redeclaration of function {ast.root.key} with different signature")
+                    elif match.defined:
+                        raise AttributeError(f"Redefinition of function {ast.root.key}")
+                    match.defined = True
+                    # ast.parent.symbolTable.refresh()
+
+                    # check if entries match
+                # declare each parameter in your scope
+                # handle what's in the function scope
+                ast.children[-1].symbolTable = ast.symbolTable
+                symbol_table = self.resolve(ast.children[-1]).symbolTable
+                ast.symbolTable.parent = symbol_table
+                # print symbol table
+                # print(f"Symbol table for {ast.root.key}:")
+                # symbol_table.print()
+                # functions
+            if isinstance(ast, IncludeAST):
+                # declare printf and scanf on the symbol table
+                # printf
+                printf = FuncSymbolEntry(VarNode("printf", None, "int"))
+                printf.parameters.append(FunctionParameter(FuncParameter("format", None,  "string")))
+                printf.parameters.append(FunctionParameter(FuncParameter("...", None,  "void")))
+                printf.defined = True
+                ast.parent.symbolTable.insert(printf)
+                # scanf
+                scanf = FuncSymbolEntry(VarNode("scanf", None, "int"))
+                scanf.parameters.append(FunctionParameter(FuncParameter("format", None,  "string")))
+                scanf.parameters.append(FunctionParameter(FuncParameter("...", None,  "void")))
+                scanf.defined = True
+                ast.parent.symbolTable.insert(scanf)
+
+            # if isinstance(ast, ArrayElementAST):
+            #     # search for the array in the symbol table
+            #     if temp_symbol is not None:
+            #         exists_state = temp_symbol.exists(ast.root.key)
+            #     elif symbol_table is not None:
+            #         exists_state = symbol_table.exists(ast.root.key)
+            #     else:
+            #         exists_state = False
+            #     if not exists_state:
+            #         raise AttributeError(f"Array {ast.root.key} not found")
+            #     else:
+            #         matches = symbol_table.lookup(ast.root.key)
+            #         if len(matches) == 1:
+            #             temp_symbol = matches[0]
+            #             # check index
+            #             if ast.root.value < 0 or ast.root.value >= temp_symbol.size:
+            #                 raise AttributeError(f"Index {ast.root.key} out of bounds for array {ast.root.key}")
+            #             # check if the array is a pointer - for now, assume it's not
+            #             # get the index-th element of the array
+            #             node = temp_symbol.object.values[ast.root.value]
+            #         else:
+            #             raise AttributeError(f"Multiple definitions of array {ast.root.key}")
+
+            if isinstance(ast, ArrayDeclAST):
+                # check if the array was previously declared
+                # if not, declare it
+                # if yes, throw error
+                # check if the array size is valid
+                # if not, throw error
+                # if yes, return the type of the array
+                # if the array is a pointer, dereference it
+                # if the array is not a pointer, return the type
+                if temp_symbol is not None:
+                    exists_state = temp_symbol.exists(ast.root.key[:-2])
+                elif symbol_table is not None:
+                    exists_state = symbol_table.exists(ast.root.key[:-2])
+                else:
+                    exists_state = False
+                if exists_state:
+                    raise AttributeError(f"Redefinition of array {ast.root.key}")
+                else:
+                    if ast.size < 0:
+                        raise AttributeError(f"Array {ast.root.key} has invalid size")
+                    # declare the array
+                    new_array = ArrayNode(ast.root.key[:-2], None, ast.type, in_size=ast.size, in_values=ast.values,
+                                          const=ast.root.const, ptr=ast.root.ptr,
+                                          deref_level=ast.root.deref_level,total_deref=ast.root.total_deref,
+                                          is_array=True, const_ptr=ast.root.const and ast.root.ptr)
+                    new_array.parent = ast.parent
+                    new_array.values = ast.values
+                    if len(new_array.values) > new_array.size:
+                        raise AttributeError(f"Too many values in array {new_array.key}")
+                    if len(new_array.values) < new_array.size:
+                        # fill the missing values with zeros
+                        for i in range(new_array.size - len(new_array.values)):
+                            new_array.values.append(Node(ast.type, self.convert(0, new_array.type)))
+                    for value in new_array.values:
+                        if isinstance(value, Node):
+                            value.parent = new_array
+                            if value.key != new_array.type:
+                                self.warnings.append(f"Implicit conversion from {value.key} to {new_array.type} in "
+                                                     f"array {new_array.key} for element {value.value}")
+                                value.value = self.convert(value.value, new_array.type)
+                                value.key = new_array.type
+                        if value is None:
+                            # initialize the value to zero with the correct type
+                            new_array.values[new_array.values.index(value)] = self.convert(0, new_array.type)
+                    temp_symbol.insert(SymbolEntry(new_array))
+                    temp_symbol.refresh()
+                    node = new_array
+                    ast.children = [node]
+
+            if len(ast.children) == 0:
+                continue
+            if len(ast.children) > 0:
+                handle = True
+                for child in ast.children:
+                    # unhandled trees
+                    if isinstance(child, AST) and not isinstance(ast, Scope_AST):
+                        handle = False
+                        break
+                    # unreplaced rvars
+                    elif isinstance(child, Node) and child.key == "var":
+                        # temp_parent = child.parent
+                        # temp_symbol = child.parent.symbolTable
+                        # symbol_table = child.parent.symbolTable
+                        # search in symbol table
+                        if temp_symbol is not None:
+                            exists_state = temp_symbol.exists(child.value)
+                        elif symbol_table is not None:
+                            exists_state = symbol_table.exists(child.value)
+                        else:
+                            exists_state = False
+                        temp_ast = ast
+                        # search in parent scopes if not found
+                        while not exists_state and temp_ast is not None and temp_ast.parent is not None:
+                            temp_symbol = temp_ast.parent.symbolTable
+                            temp_ast = temp_ast.parent
+                            if temp_symbol is not None:
+                                exists_state = temp_symbol.exists(child.value)
+                        if temp_parent is not None:
+                            if evaluate:
+                                evaluate = not (
+                                            isinstance(temp_parent, While_loopAST) or isinstance(temp_parent,
+                                                                                                        For_loopAST)
+                                or isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent,For_loopAST))
+                        if not temp_symbol.exists(child.value):
+                            raise ReferenceError(f"Variable {child.value} was not declared in this scope")
+                        else:
+                            index = ast.children.index(child)
+                            matches = temp_symbol.lookup(child.value)
+                            if len(matches) == 0:
+                                raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
+                            if len(matches) > 1:
+                                raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                            ast.children[index] = copy.copy(matches[0].object)
+                if not handle:
+                    continue
+            if isinstance(ast, ScanfAST):
+                for var in ast.variables:
+                    match , total = AST.getEntry(var)
+                    if total == -1:
+                        raise ReferenceError(f"Variable {var.value} undeclared")
+                    elif total > 1:
+                        raise ReferenceError(f"Multiple matches for variable {var.value}")
+                    ast.variables[ast.variables.index(var)] = match
+                node = ast
+            # conditional cases
+            elif isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
+                ast.symbolTable = temp_symbol
+                self.resolve(ast.condition)
+                # handle for condition true
+                self.resolve(ast.children[0])
+                self.resolve(ast.children[-1])
+                node = ast
+
+            elif isinstance(ast, While_loopAST):
+                self.resolve(ast.condition)
+                ast.symbolTable = temp_symbol
+                self.resolve(ast.children[0])
+                node = ast
+
+            elif isinstance(ast, For_loopAST):
+                self.resolve(ast.condition)
+                entry = AST.getEntry(ast.incr.children[0])
+                if entry is None:
+                    raise ReferenceError(f"Variable {ast.incr.children[0].value} was not declared")
+                ast.incr.children[0] = entry
+                ast.children[0].children.append(InstrAST(Node("instr", None), [ast.incr]))
+                ast.children[0].children[-1].parent = ast.children[0]
+                # self.resolve(ast.initialization)
+                temp = While_loopAST(Node("while", None), ast.children, ast.parent)
+                temp.condition = ast.condition
+                index = ast.parent.children.index(ast)
+                ast.parent.children[index] = temp
+                ast = temp
+                for child in ast.children:
+                    child.parent = ast
+                node = ast
+            # Variable assignment handling
+            elif ast.root.key == "assign" and ast.root.value is not None:
+                if not isinstance(ast.children[0], VarNode):
+                    raise AttributeError(f"Attempting to assign to a non variable type object")
+                if not evaluate:
+                    node = ast
+                    continue
+                # assign the value to the variable if it is not constant
+                if not ast.children[0].const:
+                    ast.children[0].value = ast.children[1].value
+                    # get type
+                    if isinstance(ast.children[1].value, int):
+                        ast.children[0].type = "int"
+                    elif isinstance(ast.children[1].value, float):
+                        ast.children[0].type = "float"
+                    elif isinstance(ast.children[1].value, str) and len(ast.children[1].value) == 1:
+                        ast.children[0].type = "char"
+                    else:
+                        raise TypeError(f"Wrong type assigned to {ast.children[0]}")
+                    # Pointer depth check
+                    if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) \
+                            and ast.children[0].ptr and ast.children[1].ptr:
+                        if ast.children[0].total_deref != ast.children[1].total_deref + 1:
+                            raise AttributeError(
+                                f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                    updates_queue.append(ast.children[0])
+                    node = ast.children[0]
+                    # refresh symbol table
+                    # self.symbol_table.refresh()
+                else:
+                    raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
+            # declaration handling
+            elif isinstance(ast, InitAST):
+                # check if variable already exists
+                if symbol_table.exists(ast.children[0]):
+                    raise ReferenceError(f"Redeclaration of variable {ast.children[0].key}")
+                new_entry = ast.children[0]
+                new_entry.type = ast.type
+                new_entry.const = ast.const
+                new_entry.value = ast.children[1].value
+                temp_symbol.insert(SymbolEntry(new_entry))
+                updates_queue.append(new_entry)
+                old_parent = ast.parent
+                ast.parent = ast.parent.parent
+                ast.parent.children.insert(ast.parent.children.index(old_parent), ast.children[0])
+                node = InstrAST(Node("instr", None), [new_entry])
+            elif isinstance(ast, DeclrAST):
+                if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
+                    raise RuntimeError("Faulty declaration")
+                if symbol_table.exists(ast.children[0].key):
+                    matches = temp_symbol.lookup(ast.children[0].key)
+                    if len(matches) != 1:
+                        raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                    match = matches[0]
+                    if match.initialized():
+                        raise AttributeError(f"Redeclaration of variable {ast.children[0].key}")
+                    if not evaluate:
+                        node = ast
+                        continue
+                if ast.type != ast.children[0].type and ast.children[0].value is not None and not ast.children[0].cast:
+                    if (ast.children[0].type, ast.type) not in conversions:
+                        raise AttributeError("Variable assigned to wrong type")
+                    elif (ast.children[0].type, ast.type) not in conv_promotions:
+                        # clang style warning (with warning in pink)
+                        warning_str = "\033[95mwarning: \033[0m"
+                        if ast.children[0].type == "float" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        if ast.children[0].type == "int" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        if ast.children[0].type == "char" and ast.children[0].value is not None:
+                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
+                        # get instruction in the file where the warning is by using column and line number
+                        f = open(self.file_name, "r")
+                        lines = f.readlines()
+                        line = lines[ast.line - 1]
+                        f.close()
+                        # insert squiggly line
+                        line = line[:ast.column] + '\u0332' + line[ast.column:]
+                        warning_str += f"\n{ast.line}:{ast.column}: {line}"
+                        self.warnings.append(warning_str)
+                node = ast.children[0]
+                node.type = ast.type
+                if node.value is not None and not isinstance(node.value, Node):
+                    node.value = self.convert(node.value, ast.type)
+                # node.const = (ast.const is True)
+                if node.ptr and ast.const:
+                    node.const_ptr = True
+                else:
+                    node.const = (ast.const is True)
+                if not temp_symbol.exists(node):
+                    if not evaluate:
+                        node.value = None
+                    temp_symbol.insert(SymbolEntry(node))
+                updates_queue.append(node)
+
+            elif isinstance(ast, AssignAST):
+
+                # check if assign value is of a valid type
+                if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode)):
+                    raise RuntimeError(f"\'Invalid assignment for variable {ast.children[0].key}\'")
+                if isinstance(ast.children[1], VarNode):
+                    rtype = ast.children[1].type
+                else:
+                    rtype = ast.children[1].key
+                assignee = copy.copy(ast.children[0])
+                if not evaluate:
+                    node = ast
+                    continue
+                if not isinstance(assignee, VarNode) and not isinstance(assignee.parent, ArrayNode):
+                    raise AttributeError(f"Attempting to assign to a non-variable type")
+                if isinstance(assignee.parent, ArrayNode):
+                    if assignee.parent.const:
+                        raise AttributeError(f"Attempting to modify a const array {assignee.parent.key}")
+                    if rtype is None:
+                        raise AttributeError(f"Type {rtype} does not exist")
+                    if rtype != assignee.parent.type and not ast.children[1].cast:
+                        if (assignee.parent.type, rtype) not in conversions:
+                            raise AttributeError("Variable assigned to wrong type")
+                        elif (assignee.parent.type, rtype) not in conv_promotions:
+                            self.warnings.append(
+                                f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                else:
+                    if assignee.const:
+                        raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
+                    if rtype is None:
+                        raise AttributeError(f"Type {rtype} does not exist")
+                    if rtype != assignee.type and not ast.children[1].cast:
+                        if (assignee.type, rtype) not in conversions:
+                            raise AttributeError("Variable assigned to wrong type")
+                        elif (assignee.type, rtype) not in conv_promotions:
+                            self.warnings.append(
+                                f"Implicit conversion from {ast.root.value} to {ast.children[0].type} for variable {ast.children[0].key}")
+                if isinstance(ast.children[0], VarNode) and isinstance(ast.children[1], VarNode) and ast.children[0].ptr \
+                        and ast.children[1].ptr and ast.children[0].total_deref != ast.children[1].total_deref + 1:
+                    raise AttributeError(
+                        f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                if isinstance(ast.children[0], VarNode) and not isinstance(ast.children[1], VarNode):
+                    if ast.children[0].total_deref - ast.children[0].deref_level != 0:
+                        raise AttributeError(
+                            f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                if not isinstance(assignee.parent, ArrayNode):
+                    assignee.value = ast.children[1].value
+                else:
+                    index = assignee.parent.values.index(assignee)
+                    assignee.parent.values[index].value = ast.children[1].value
+                    node = copy.deepcopy(assignee.parent.values[index])
+                if isinstance(assignee, VarNode):
+                    assignee.type = getType(assignee.value)
+                    updates_queue.append(assignee)
+                elif isinstance(assignee.parent, ArrayNode):
+                    # directly update the array
+                    # index = assignee.parent.values.index(assignee)
+                    assignee.type = assignee.parent.type
+                else:
+                    updates_queue.append(assignee.parent)
+                updates_queue.reverse()
+                for instance in incr_queue:
+                    instance = temp_symbol.lookup(instance)[0].object
+                    instance.value += 1
+                    temp_symbol.update(instance)
+                for instance in decr_queue:
+                    instance = temp_symbol.lookup(instance)[0].object
+                    instance.value -= 1
+                    temp_symbol.update(instance)
+                for instance in updates_queue:
+                    if not temp_symbol.exists(instance):
+                        temp_symbol.insert(SymbolEntry(instance))
+                    else:
+                        temp_symbol.update(instance)
+                temp_symbol.refresh()
+                updates_queue.clear()
+                incr_queue.clear()
+                decr_queue.clear()
+                if not isinstance(assignee.parent, ArrayNode):
+                    node = assignee
+            elif isinstance(ast, InstrAST):
+                node = ast.handle()
+                updates_queue.reverse()
+                for instance in incr_queue:
+                    # get the match from the nearest symbol table
+                    if not isinstance(instance.parent, ArrayNode):
+                        matches = temp_symbol.lookup(instance)
+                        length = len(matches)
+                        match = matches[0].object
+                        if length == 0:
+                            raise ReferenceError(f"Variable {instance.key} not found")
+                        if length > 1:
+                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                        instance = match
+                        instance.value += 1
+                        temp_symbol.update(instance)
+                        temp_symbol.refresh()
+                    else:
+                        match = instance.parent
+                        match.values[match.values.index(instance)].value += 1
+
+                for instance in decr_queue:
+                    # get the match from the nearest symbol table
+                    if not isinstance(instance.parent, ArrayNode):
+                        matches = temp_symbol.lookup(instance)
+                        length = len(matches)
+                        match = matches[0].object
+                        if length == 0:
+                            raise ReferenceError(f"Variable {instance.key} not found")
+                        if length > 1:
+                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                        instance = match
+                        instance.value -= 1
+                        temp_symbol.update(instance)
+                        temp_symbol.refresh()
+                    else:
+                        match = instance.parent
+                        match.values[match.values.index(instance)].value -= 1
+
+                for instance in updates_queue:
+                    if not temp_symbol.exists(instance):
+                        temp_symbol.insert(SymbolEntry(instance))
+                    else:
+                        temp_symbol.update(instance)
+
+                temp_symbol.refresh()
+                # temp_symbol = old_symbol
+                updates_queue = []
+                incr_queue = []
+                decr_queue = []
+            elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and evaluate:
+                node = ast
+                if evaluate:
+                    node = ast.children[0]
+                    if ast.root.value == "++":
+                        incr_queue.append(node)
+                    if ast.root.value == "--":
+                        decr_queue.append(node)
+            elif isinstance(ast, CondAST):
+                if evaluate:
+                    ast.last_eval = copy.copy(ast).handle().value
+            elif isinstance(ast, TermAST) and ast.root.value == "++" and not evaluate:
+                continue
+            elif ast is not None:
+                if isinstance(ast, TermAST) and ast.root.value == "++":
+                    node = copy.copy(ast.children[0])
+                    instance = copy.copy(node)
+                    incr_queue.append(instance)
+                if isinstance(ast, TermAST) and ast.root.value == "--":
+                    node = copy.copy(ast.children[0])
+                    instance = copy.copy(node)
+                    decr_queue.append(instance)
+                if isinstance(ast, PrintfAST):
+                    # handle printf
+                    node = ast.handle()
+                    # handle increment and decrement
+                    for instance in incr_queue:
+                        temp_instance = copy.copy(instance)
+                        temp_instance.value += 1
+                        temp_symbol.update(temp_instance)
+                    for instance in decr_queue:
+                        temp_instance = copy.copy(instance)
+                        temp_instance.value -= 1
+                        temp_symbol.update(temp_instance)
+                    # update the symbol table
+                    for instance in updates_queue:
+                        temp_symbol.update(instance)
+                    temp_symbol.refresh()
+                    updates_queue = []
+                    incr_queue = []
+                    decr_queue = []
+
+                else:
+                    node = ast.handle()
+            else:
+                continue
+            # Replace node
+            if not isinstance(ast, CondAST) and not isinstance(ast, InitAST):
+                index = ast.parent.children.index(ast)
+                ast.parent.children[index] = node
+            else:
+                if isinstance(ast.parent, Else_CondAST):
+                    ast.last_eval = not ast.last_eval
+        if temp_symbol is not None:
+            for instance in updates_queue:
+                temp_symbol.update(instance)
+            temp_symbol.refresh()
+        symbol_table = temp_symbol
+        return symbol_table
 
     def visitMath(self, ctx: MathParser.MathContext):
         """
@@ -75,12 +1154,9 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        math_ast = AST()
-        math_ast.root = Node("math", None)
-        for c in ctx.getChildren():
-            math_ast.add_child(self.visit_child(c))
-        self.resolve_empty(math_ast)
-        self.base_ast = math_ast
+        math_ast = self.DFS(None, ctx)
+        math_ast.symbolTable = SymbolTable()
+        math_ast.symbolTable.owner = math_ast
         return math_ast
 
     def visitInstr(self, ctx: MathParser.InstrContext):
@@ -89,27 +1165,11 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        instr_ast = AST()
+        instr_ast = InstrAST()
         instr_ast.root = Node("instr", None)
-        for c in ctx.getChildren():
-            instr_ast.add_child(self.visit_child(c))
-        self.resolve_empty(instr_ast)
+        instr_ast.column = ctx.start.column
+        instr_ast.line = ctx.start.line
         return instr_ast
-
-    def visitPrintf(self, ctx: MathParser.PrintfContext):
-        """
-        Creates the node for printf function
-        :param ctx: context
-        :return: Node
-        """
-        out = FunctionNode(ctx.children[0].getText() ,
-                           {"par0" : self.visit_child(ctx.children[2])}
-                           )
-        if not out.key in self.symbol_table.keys():
-            self.symbol_table[out.key] = [copy.copy(out)]
-        else:
-            self.symbol_table[out.key].append(copy.copy(out))
-        return out
 
     def visitExpr(self, ctx: MathParser.ExprContext):
         """
@@ -117,49 +1177,68 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: AST
         """
-        expr_ast = AST()
-        expr_ast.root = Node("expr" , None)
-        for c in ctx.getChildren():
-            expr_ast.add_child(self.visit_child(c))
-        self.resolve_empty(expr_ast)
-        # Resolve the operations order
-        expr_ast = self.resolve_datatype(expr_ast)
-        self.resolve_unary(expr_ast)
-        self.resolve_binary(expr_ast)
-        self.resolve_assign(expr_ast)
-        # expr_ast = self.unnest(expr_ast)
+        expr_ast = ExprAST()
+        expr_ast.root = Node("expr", None)
+        if len(ctx.children) == 3:
+            expr_ast.root.value = ctx.children[1].getText()
+        else:
+            return None
+        expr_ast.column = ctx.start.column
+        expr_ast.line = ctx.start.line
         return expr_ast
 
-    def visitCast(self, ctx: MathParser.CastContext):
+    def visitPrintf(self, ctx: MathParser.PrintfContext):
         """
-        Cast visit function
-        :param ctx:
-        :return: Node
-        """
-        out = Node("cast" , ctx.children[0].getText()[1:-1])
-        return out
-
-    def visitIncr(self, ctx: MathParser.IncrContext):
-        """
-        Increment visit function
+        Creates the node for printf function
         :param ctx: context
         :return: Node
         """
-        out = Node("incr" , None)
-        return out
 
-    def visitDecr(self, ctx: MathParser.DecrContext):
-        """
-        Decrement visit function
-        :param ctx: context
-        :return: Node
-        """
-        out = Node("decr", None)
+        out = PrintfAST(Node("printf", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        if ctx.print_val is not None:
+            out.format_string = ctx.print_val.text[1:-1] # printf
+        if ctx.format_string is not None:
+            out.format_string = ctx.format_string.text[1:-1] # printf
+        # split the format string into a list of strings and variables
+        format_string = out.format_string
+        format_string = format_string.replace("\\n", "\n")
+        format_string = format_string.replace("\\t", "\t")
+        format_string = format_string.replace("\\r", "\r")
+        format_string = format_string.replace("\\v", "\v")
+        format_string = format_string.replace("\\b", "\b")
+        format_string = format_string.replace("\\a", "\a")
+        format_string = format_string.replace("\\f", "\f")
+        # format_string = format_string.replace("\\\\", "\\")
+        # format_string = format_string.replace("\\\'", "\'")
+        # format_string = format_string.replace("\\\"", "\"")
+        # format_string = format_string.replace("\\\?", "\?")
+        # format_string = format_string.replace("\\\0", "\0")
+        format_string = format_string.replace(" ", "")
+        out.format_specifiers += re.findall("%[0-9]*[discf]", format_string)
+        # remove escape characters
+        out.format_string = out.format_string.replace("\\n", "\\0A")
+        out.format_string = out.format_string.replace("\\t", "\\09")
+        out.format_string = out.format_string.replace("\\r", "\\0D")
+        out.format_string = out.format_string.replace("\\v", "\\0B")
+        out.format_string = out.format_string.replace("\\b", "\\08")
+        out.format_string = out.format_string.replace("\\a", "\\07")
+        out.format_string = out.format_string.replace("\\f", "\\0C")
+
+        out.args = [None] * len(ctx.vars_) # printf
+        if len(out.args) != len(out.format_specifiers):
+            raise AttributeError("Wrong number of arguments for printf")
+        for i in range(len(ctx.vars_)):
+            if isinstance(ctx.vars_[i].children[0], antlr4.tree.Tree.TerminalNodeImpl):
+                new_node = Node("string", ctx.vars_[i].children[0].getText()[1:-1])
+                out.args[i] = new_node
+                out.children.append(new_node)
         return out
 
     def visitRvar(self, ctx: MathParser.RvarContext):
         """
-        Right hand side variable visit function
+        Right-hand side variable visit function
         :param ctx: context
         :return: Node
         """
@@ -168,70 +1247,16 @@ class AstCreator (MathVisitor):
 
     def visitRtype(self, ctx: MathParser.RtypeContext):
         """
-        Right hand side type visit function
+        Right-hand side type visit function
         :param ctx: context
         :return: Node
         """
         if ctx.children[0].getText().isdigit():
             return Node(keywords_datatype[0], int(ctx.children[0].getText()))
-        elif self.isfloat(ctx.children[0].getText()):
+        elif isfloat(ctx.children[0].getText()):
             return Node(keywords_datatype[1], Decimal(ctx.children[0].getText()).__float__())
         else:
             return Node(keywords_datatype[2], ctx.children[0].getText()[1:-1])
-
-    def visitBinary_op(self, ctx: MathParser.Binary_opContext):
-        """
-        Binary operator visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[2], ctx.children[0].getText())
-        return root
-
-    def visitUnary_op(self, ctx: MathParser.Unary_opContext):
-        """
-        Unary operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[3], ctx.children[0].getText())
-        return root
-
-    def visitComp_op(self, ctx: MathParser.Comp_opContext):
-        """
-        Compare operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[4], ctx.children[0].getText())
-        return root
-
-    def visitComp_eq(self, ctx: MathParser.Comp_eqContext):
-        """
-        Compare equal visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[5], ctx.children[0].getText())
-        return root
-
-    def visitBin_log_op(self, ctx: MathParser.Bin_log_opContext):
-        """
-        Binary logical operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[6], ctx.children[0].getText())
-        return root
-
-    def visitUn_log_op(self, ctx: MathParser.Un_log_opContext):
-        """
-        Unary logical operand visit function
-        :param ctx: context
-        :return: Node
-        """
-        root = Node(keywords[7], ctx.children[0].getText())
-        return root
 
     def visitAssign(self, ctx: MathParser.AssignContext):
         """
@@ -239,68 +1264,45 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: Node
         """
-        root = Node(keywords[8], ctx.children[0].getText())
+        root = Node(keywords[8], None)
+        if not isinstance(ctx.children[0], MathParser.Array_elContext):
+            root.value = ctx.children[0].getText()
+        else:
+            root.value = ctx.children[0].children[0].getText()
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
-        # CONST? TYPE (var_decl ',')* var_decl
         """
         Declaration visit function
         :param ctx: context
         :return: AST
         """
-        out = AST()
-        out.root = Node("declr" , None)
-        const = False
-        v_type = ""
-        root = VarNode("", None, v_type, const)
-        for i in range(len(ctx.children)):
-            if ctx.children[i].getText() == "const":
-                const = True
-            elif ctx.children[i].getText() in keywords_datatype and v_type == "":
-                v_type = ctx.children[i].getText()
-            elif ctx.children[i].getText() == ",":
-                root = VarNode("" , None , v_type , const)
-            else:
-                root = self.visit_child(ctx.children[i])
-                self.resolve_unary(root)
-                self.resolve_binary(root)
-                self.resolve_variables(root)
-                self.resolve_assign(root)
-                self.resolve_empty(root)
-                new_ast = self.resolve_datatype(root)
-                # new_ast = self.unnest(new_ast)
-                if isinstance(new_ast , VarNode):
-                    new_ast.assign_type(v_type)
-                elif isinstance(new_ast.children[0] , VarNode):
-                    new_ast.children[0].assign_type(v_type)
-                new_ast = self.optimise(new_ast)
-                new_ast = new_ast
-                new_ast.const = const
-
-                out.add_child(new_ast)
-                if not isinstance(new_ast , AST):
-                    self.symbol_table[new_ast.key] = copy.copy(new_ast)
+        out = DeclrAST(Node("declr", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        index = 0
+        if ctx.children[index].getText() == "const":
+            out.const = True
+            index += 1
+        if ctx.children[index].getText() in keywords_datatype:
+            out.type = ctx.children[index].getText()
+        else:
+            raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
         return out
 
     def visitVar_decl(self, ctx: MathParser.Var_declContext):
-        # TYPE VAR_NAME
-        # int x
         """
         Variable declaration visit function
         :param ctx: context
         :return: VarNode || AST
         """
-        out = VarNode("" , None , "")
-        if len(ctx.children) == 1:
-            out = self.visit_child(ctx.children[0])
+        if len(ctx.children) == 3:
+            out = VarDeclrAST(Node("assign", None))
+            out.column = ctx.start.column
+            out.line = ctx.start.line
+            return out
         else:
-            out = AST()
-            for c in ctx.children:
-                out.add_child(self.visit_child(c))
-            # return VarNode(vtype=ctx.children[0].getText(), key=ctx.children[1].getText(), value=None)
-            out.root = Node("expr" , None)
-        return out
+            return None
 
     def visitLvar(self, ctx: MathParser.LvarContext):
         """
@@ -308,41 +1310,14 @@ class AstCreator (MathVisitor):
         :param ctx: context
         :return: VarNode
         """
-        if ctx.children[-1].getText() in self.symbol_table.keys():
-            raise AttributeError("Redeclaration of variable " + ctx.children[-1].getText())
         if len(ctx.children) == 1:
-            root = VarNode(ctx.children[-1].getText() , None , "")
+            root = VarNode(ctx.children[-1].getText(), None, "")
             return root
         # If more than 1 element: it's a pointer
-        root = VarNode(ctx.children[-1].getText(), None , "" , total_deref= len(ctx.children) - 1)
-        # Make a length-1 chain on the symbol table for the pointer
-        current_node = root
-        for i in range(len(ctx.children) - 1):
-            # new_node = VarNode(current_node.key , None , current_node.type , current_node.const , i + 1)
-            if current_node.key not in self.symbol_table.keys():
-                self.symbol_table[current_node.key] = root
-                root.value = current_node
-                root.ptr = True
-            current_node.value = VarNode(current_node.key , None , current_node.type , current_node.const , current_node.total_deref > 1 , i + 1 , current_node.total_deref - 1)
-            current_node = current_node.value
-
+        ptr_len = len(ctx.ptr) if ctx.ptr is not None else 0
+        is_ptr = ptr_len > 0
+        root = VarNode(ctx.name.text, None, "", ptr=is_ptr, total_deref=ptr_len)
         return root
-
-    def visitAddr_op(self, ctx: MathParser.Addr_opContext):
-        """
-        Address operand visit function
-        :param ctx: context
-        :return: AST || Node
-        """
-        # resolve second child (rvar)
-        r_var = self.visit_child(ctx.children[1])
-        r_var = self.resolve_variables(r_var)
-        # Search for variable in the symbol table
-
-        root = r_var
-        return root
-
-    # Helper functions
 
     def visitDeref(self, ctx: MathParser.DerefContext):
         """
@@ -352,533 +1327,277 @@ class AstCreator (MathVisitor):
         """
         # STR rvar
         # STR deref
-        inp = ctx
-        key = ""
-        deref_count = 1
-        # Get deref level
-        while True:
-            if isinstance(inp.children[1], MathParser.RvarContext):
-                key = inp.children[1].getText()
-                if self.symbol_table[key] is not None:
-                    # Get pointer from symbol table
-                    pointer = self.symbol_table[key]
-                    if not isinstance(pointer , VarNode):
-                        raise AttributeError("Variable " + key + " is not a pointer")
-                    elif pointer.total_deref < deref_count:
-                        raise RuntimeError("Trying to get pointer dereference depth" + str(deref_count)
-                                           +" when pointer only has depth " + pointer.total_deref)
-                    for i in range(deref_count):
-                        pointer = pointer.value
-                    out = copy.copy(pointer)
-                    return out
+        out = DerefAST(Node("deref", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitTerm(self, ctx: MathParser.TermContext):
+        ast = TermAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        if len(ctx.children) == 3:
+            ast.root = Node("term", ctx.children[1].getText())
+        elif len(ctx.children) == 2:
+            if ctx.children[0].getText() == '!':
+                ast.root = Node("term", ctx.children[0].getText())
             else:
-                inp = inp.children[1]
-                deref_count += 1
-
-    # Tree reduction methods
-
-    def isfloat(self, string):
-        """
-        Checks if inout is a float
-        :param string: input variable
-        :return: bool
-        """
-        try:
-            float(string)
-            return True
-        except ValueError:
-            return False
-
-    def resolve_binary(self, expr_ast) -> AST | Node:
-        """
-        resolves binary operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if isinstance(expr_ast, Node):
-            return expr_ast
-        for i in range(len(expr_ast.children)):
-            expr_ast.children[i] = self.resolve_binary(expr_ast.children[i])
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[
-                i].key in keywords_binary:
-                new_el = AST()
-                if i > 0:
-                    new_el.add_child(expr_ast.children[i - 1])
-                if i < len(expr_ast.children):
-                    new_el.add_child(expr_ast.children[i + 1])
-                new_el.root = expr_ast.children[i]
-                expr_ast.children = [new_el]
-                if len(expr_ast.children) == 1:
-                    expr_ast.root = expr_ast.children[0].root
-                    expr_ast.children = expr_ast.children[0].children
-                    return expr_ast
-                else:
-                    for j in range(len(expr_ast.children)):
-                        expr_ast.children[j] = self.resolve_binary(expr_ast.children[j])
-                    return expr_ast
-            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], AST):
-                expr_ast.children[i] = self.resolve_binary(expr_ast.children[i])
-        return expr_ast
-
-    def resolve_unary(self, expr_ast: AST | Node) -> AST | Node:
-        """
-        resolves unary operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if isinstance(expr_ast, Node):
-            return expr_ast
-        for i in range(len(expr_ast.children)):
-            expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
-            # Unary operations
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
-                    expr_ast.children[i].key in keywords_unary:
-                new_el = AST()
-                if i > 0:
-                    new_el.add_child(expr_ast.children[i - 1])
-                if i < len(expr_ast.children):
-                    new_el.add_child(expr_ast.children[i + 1])
-                new_el.root = expr_ast.children[i]
-                expr_ast.root = new_el.root
-                expr_ast.children = new_el.children
-                if len(expr_ast.children) == 1:
-                    return expr_ast
-                else:
-                    for j in range(len(expr_ast.children)):
-                        expr_ast.children[j] = self.resolve_unary(expr_ast.children[j])
-                    return expr_ast
-            # Increment and decrement operations
-            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
-                    expr_ast.children[i].key in keywords_indecr:
-                # form rvar incr or rvar decr
-                expr_ast.root = expr_ast.children[i]
-                expr_ast.children.remove(expr_ast.children[i])
-                expr_ast.children[0] = self.resolve_variables(expr_ast.children[0])
-                return expr_ast
-            # Casting operation
-            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and \
-                    expr_ast.children[i].key == "cast":
-                expr_ast.root = expr_ast.children[i]
-                expr_ast.children.remove(expr_ast.children[i])
-                expr_ast.children[0] = self.resolve_variables(expr_ast.children[0])
-                return expr_ast
-            elif expr_ast.children[i] is not None and isinstance(expr_ast.children[i], AST):
-                expr_ast.children[i] = self.resolve_unary(expr_ast.children[i])
-        return expr_ast
-
-    def resolve_assign(self, expr_ast: AST | Node) -> AST | Node:
-        """
-        resolves assign operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if isinstance(expr_ast , Node):
-            return expr_ast
-        if len(expr_ast.children) < 3:
-            return expr_ast
-        for i in range(len(expr_ast.children)):
-            expr_ast.children[i] = self.resolve_assign(expr_ast.children[i])
-            if expr_ast.children[i] is not None and isinstance(expr_ast.children[i], Node) and expr_ast.children[i].key in keywords_assign:
-                new_el = AST()
-                if i > 0:
-                    new_el.add_child(expr_ast.children[i - 1])
-                if i < len(expr_ast.children):
-                    new_el.add_child(expr_ast.children[i + 1])
-                new_el.root = expr_ast.children[i]
-                self.resolve_variables(new_el.children[0])
-                self.resolve_variables(new_el.children[1])
-                expr_ast.children = [new_el]
-                return expr_ast
-
-    def resolve_datatype(self , expr_ast: AST | Node) -> AST | Node:
-        """
-        resolves datatype operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if not isinstance(expr_ast , AST) or expr_ast.root.value is not None :
-            return expr_ast
-        if len(expr_ast.children) == 1:
-            if isinstance(expr_ast.children[0], AST):
-                expr_ast = expr_ast.children[0]
-            elif isinstance(expr_ast.children[0], Node):
-                if expr_ast.children[0].key == "var":
-                    expr_ast = expr_ast.children[0]
-                    expr_ast.key = expr_ast.value
-                    if expr_ast.key in self.symbol_table.keys() and self.symbol_table[expr_ast.key] is not None:
-                        expr_ast.value = self.symbol_table[expr_ast.key].value
-                    else:
-                        expr_ast.value = None
-                elif isinstance(expr_ast.children[0] , VarNode):
-                    expr_ast = expr_ast.children[0]
-                    # Add the variable declaration to the symbols table
-                    if expr_ast.key not in self.symbol_table:
-                        self.symbol_table[expr_ast.key] = None
-                    else:
-                        expr_ast.value = self.symbol_table[expr_ast.key].value
-                else:
-                    expr_ast = expr_ast.children[0]
-        return expr_ast
-
-    def resolve_variables(self , input_ast : AST | Node) -> AST | Node:
-        """
-        resolves variable operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if not isinstance(input_ast , Node):
-            return input_ast
-        if input_ast.key == "var":
-            input_ast.key = input_ast.value
-            if input_ast.key in self.symbol_table.keys() and self.symbol_table[input_ast.key] is not None:
-                input_ast.value = self.symbol_table[input_ast.key].value
-        elif isinstance(input_ast, VarNode):
-            # Add the variable declaration to the symbols table
-            if input_ast.key not in self.symbol_table:
-                self.symbol_table[input_ast.key] = None
-        return input_ast
-
-    def resolve_empty(self, expr_ast):
-        """
-        resolves empty operation,
-        promotes operations to root and operands to their children
-        :param expr_ast: input AST
-        :return: AST | Node
-        """
-        if isinstance(expr_ast , Node):
-            return expr_ast
-        for child in expr_ast.children:
-            if child is None:
-                expr_ast.children.remove(child)
-            else:
-                self.resolve_empty(child)
-
-    def unnest(self, input_ast: AST | Node):
-        """
-        unnest the operations
-        :param input_ast: input AST or Node
-        :return: AST
-        """
-        if isinstance(input_ast , Node):
-            return input_ast
-        if len(input_ast.children) == 1:
-            return input_ast.children[0]
+                ast.root = Node("term", ctx.children[1].getText())
         else:
-            for i in range(len(input_ast.children)):
-                input_ast.children[i] = self.unnest(input_ast.children[i])
-        return input_ast
+            return None
+        return ast
 
-    # Optimising tree by reducing operations with literals to their result
-    def optimise_unary(self, input_ast: AST) -> AST | Node:
-        """
-        unary constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        # check if they are both literals
-        if len(input_ast.children) == 1:
-            # unary sum
-            if input_ast.root.value == "+":
-                return input_ast.children[0]
-            # unary dif
-            elif input_ast.root.value == "-":
-                new_el = input_ast.children[0]
-                if not isinstance(new_el, Node):
-                    return input_ast
-                new_el.key = "int"
-                new_el.value = - new_el.value
-                return new_el
-        elif len(input_ast.children) == 2:
-            first = input_ast.children[0]
-            second = input_ast.children[1]
-            if first is not None and isinstance(first, AST):
-                first = self.optimise(first)
-            if second is not None and isinstance(second, AST):
-                second = self.optimise(second)
-            if first is not None and first.value is not None and second is not None and second.value is not None:
-                if input_ast.root.value == "+":
-                    new_el.value = first.value + second.value
-                if input_ast.root.value == "-":
-                    new_el.value = first.value - second.value
-                if isinstance(new_el.value, float):
-                    new_el.key = "float"
-                elif isinstance(new_el.value, int):
-                    new_el.key = "int"
-            return new_el
+    def visitFactor(self, ctx: MathParser.FactorContext):
+        ast = FactorAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        if len(ctx.children) == 2:
+            ast.root = Node("factor", ctx.children[0].getText())
+        else:
+            return None
+        return ast
 
-    def optimise_binary(self, input_ast: AST) -> AST | Node:
-        """
-        binary constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        first = input_ast.children[0]
-        second = input_ast.children[1]
-        # check if they are both literals
-        if first is not None and isinstance(first, AST):
-            first = self.optimise(first)
-        if second is not None and isinstance(second, AST):
-            second = self.optimise(second)
-        # Resolve variables if they need to be
-        if isinstance(first , Node):
-            first = self.optimise_variables(first)
-        if isinstance(second, Node):
-            second = self.optimise_variables(second)
-        if first is not None and first.value is not None and second is not None and second.value is not None:
-            if input_ast.root.value == '*':
-                new_el.value = first.value * second.value
-            elif input_ast.root.value == '/':
-                # check for implicit casting
-                if first.key != "float" and second.key != "float":
-                    new_el.value = int(first.value / second.value)
-                else:
-                    new_el.value = first.value / second.value
-            elif input_ast.root.value == "%":
-                new_el.value = int(first.value % second.value)
-            if isinstance(new_el.value, float):
-                new_el.key = "float"
-            elif isinstance(new_el.value, int):
-                new_el.key = "int"
-        return new_el
+    def visitPrimary(self, ctx: MathParser.PrimaryContext):
+        ast = PrimaryAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        if len(ctx.children) == 2:
+            ast.root = Node("primary", ctx.children[0].getText())
+        else:
+            return None
+        return ast
 
-    def optimise_comp_op(self, input_ast: AST) -> AST | Node:
-        """
-        compare operation constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        first = input_ast.children[0]
-        second = input_ast.children[1]
-        # check if they are both literals
-        if first is not None and isinstance(first, AST):
-            first = self.optimise(first)
-        if second is not None and isinstance(second, AST):
-            second = self.optimise(second)
-        if first is not None and first.key != "var" and second is not None and second.key != "var":
-            if input_ast.root.value == '>':
-                new_el.value = (first.value > second.value)
-            elif input_ast.root.value == '<':
-                new_el.value = (first.value < second.value)
-            elif input_ast.root.value == "==":
-                new_el.value = (first.value == second.value)
-        if isinstance(new_el.value, bool):
-            new_el.key = "bool"
-        return new_el
+    def visitScope(self, ctx: MathParser.ScopeContext):
+        out = Scope_AST(Node("unnamed", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
-    def optimise_comp_eq(self, input_ast: AST) -> AST | Node:
-        """
-        compare equal constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        first = input_ast.children[0]
-        second = input_ast.children[1]
-        # check if they are both literals
-        if first is not None and isinstance(first, AST):
-            first = self.optimise(first)
-        if second is not None and isinstance(second, AST):
-            second = self.optimise(second)
-        if first is not None and first.key != "var" and second is not None and second.key != "var":
-            if input_ast.root.value == '>=':
-                new_el.value = (first.value >= second.value)
-            elif input_ast.root.value == '<=':
-                new_el.value = (first.value <= second.value)
-            elif input_ast.root.value == "!=":
-                new_el.value = (first.value != second.value)
-        if isinstance(new_el.value, bool):
-            new_el.key = "bool"
-        return new_el
+    def visitIf_cond(self, ctx: MathParser.If_condContext):
+        out = If_CondAST(Node("If_cond", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
-    def optimise_bin_log(self, input_ast: AST) -> AST | Node:
-        """
-        binary logic constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        first = input_ast.children[0]
-        second = input_ast.children[1]
-        # check if they are both literals
-        if first is not None and isinstance(first, AST):
-            first = self.optimise(first)
-        if second is not None and isinstance(second, AST):
-            second = self.optimise(second)
-        if first is not None and first.key != "var" and second is not None and second.key != "var":
-            if input_ast.root.value == '&&':
-                new_el.value = (first.value and second.value)
-            elif input_ast.root.value == '||':
-                new_el.value = (first.value or second.value)
-        if isinstance(new_el.value, bool):
-            new_el.key = "bool"
-        return new_el
+    def visitElse_cond(self, ctx: MathParser.Else_condContext):
+        out = Else_CondAST(Node("Else_cond", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
-    def optimise_un_log(self, input_ast: AST) -> AST | Node:
-        """
-        unary logic constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("", None)
-        first = input_ast.children[0]
-        # Check if condition is a literal
-        if first is not None and isinstance(first, AST):
-            first = self.optimise(first)
-        if input_ast.root.value == "!":
-            new_el.value = not first.value
-        # Set the key name for the return node
-        if isinstance(new_el.value, bool):
-            new_el.key = "bool"
-        return new_el
+    def visitWhile_loop(self, ctx: MathParser.While_loopContext):
+        out = While_loopAST(Node("While_loop", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
-    def optimise_assign(self, input_ast: AST) -> AST | Node:
-        """
-        assign constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: AST || Node
-        """
-        new_el = Node("" , None)
-        # Get the ID
-        first = input_ast.children[0]
-        # Get the rvalue to assign to the ID
-        second = input_ast.children[1]
-        # Check if condition is a literal
-        if first is None or not (isinstance(first, Node)):
-            return input_ast
-        if first is not None and isinstance(first , Node):
-            first = self.optimise_variables(first)
-            new_el = first
-        if second is not None and isinstance(second, AST):
-            second = self.optimise(second)
-        if second is not None and isinstance(second , Node):
-            if isinstance(first , VarNode) and first.ptr:
-                if second.key in keywords_datatype:
-                    raise AttributeError("Attempting to assign a non-variable to a pointer")
-                val = self.symbol_table[second.key]
-                second = VarNode(val.key , val.value , val.type , val.const , val.ptr , val.deref_level , val.total_deref)
-            elif second.value is None:
-                second = self.optimise_variables(second)
-        if input_ast.root.value == "=":
-            if new_el.key not in self.symbol_table:
-                raise SyntaxError("Variable " + new_el.key + " not declared in this scope")
-            if new_el.key in self.symbol_table and self.symbol_table[new_el.key] is not None:
-                if self.symbol_table[new_el.key].value is not None and self.symbol_table[new_el.key].const:
-                    raise RuntimeError("Attempting to modify a const variable " + new_el.key)
-            if isinstance(first , VarNode):
-                # Deref the required number of times
-                if new_el.ptr and new_el.deref_level > 0 and not isinstance(second , VarNode):
-                    raise RuntimeError("Attempting to assign value of pointer of depth " + new_el.deref_level + " to a non-pointer value")
-                # Pointer assignment
-                elif new_el.ptr:
-                    if new_el.deref_level > 0 and not isinstance(second , VarNode):
-                        raise RuntimeError("Attempting to assign pointer of depth greater than 0 to a non-pointer value")
-                    if new_el.total_deref > second.total_deref + 1:
-                        raise RuntimeError("Pointer depth incompatible for pointer "
-                                           + new_el.key + " with depth " + str(new_el.total_deref) + " and pointer "
-                                           + second.key + " with depth " + str(second.total_deref))
-                    new_el.value = self.symbol_table[second.key]
-                # Check if type matches
-                elif second.key not in self.symbol_table.keys() and new_el.type != second.key:
-                        # Check for any valid conversions
-                        # Promoting conversions are good
-                        if (self.symbol_table[new_el.key].type, second.key) in conv_promotions:
-                            new_el.value = self.convert(second.value , self.symbol_table[new_el.key].type)
-                        # Implicit demoting conversions
-                        elif (self.symbol_table[new_el.key].type, second.key) in conversions:
-                            self.warnings.append(
-                                Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
-                                    new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                            # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
-                            #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                            new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
-                        # No conversions
-                        else:
-                            raise TypeError("Assign value of invalid type. Should be " +
-                                            self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
-                                                                                                             "No valid conversion from " +
-                                            self.symbol_table[new_el.key].type + " to " + second.key)
-                elif second.key in self.symbol_table.keys() and self.symbol_table[second.key].type != new_el.type:
-                    self.warnings.append(
-                        Fore.YELLOW + "Implicit conversion from " + self.symbol_table[second.key].type + " to "
-                        + self.symbol_table[new_el.key].type + " for variable " +
-                        new_el.key + ". Possible loss of information")
-                    new_el.value = self.convert(second.value , new_el.type)
-                else:
-                    new_el.value = second.value
-                self.symbol_table[new_el.key].value = new_el.value
-                return new_el
+    def visitFor_loop(self, ctx: MathParser.For_loopContext):
+        out =  For_loopAST(Node("For_loop", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitInit(self, ctx: MathParser.InitContext):
+        if len(ctx.children) == 1:
+            return Node(keywords[8], ctx.children[0].getText())
+        else:
+            out = InitAST(Node("init", None))
+            out.column = ctx.start.column
+            out.line = ctx.start.line
+            index = 0
+            if ctx.children[index].getText() in keywords_datatype:
+                out.type = ctx.children[index].getText()
             else:
-                new_el.key = first.key
-                # Check that the assigned value is of correct type
-                if self.symbol_table[new_el.key].type != second.key and second.key not in self.symbol_table.keys():
-                    # Check for any valid conversions
-                    # Promoting conversions are good
-                    if (self.symbol_table[new_el.key].type , second.key) in conv_promotions:
-                        new_el.value = second.value
-                    # Implicit demoting conversions
-                    elif (self.symbol_table[new_el.key].type , second.key) in conversions:
-                        self.warnings.append(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
-                            new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                        # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
-                        #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                        new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
-                    # No conversions
+                raise TypeError(f"Variable declared with invalid type {ctx.children[0].getText()}")
+            return out
 
-                    elif second.key not in self.symbol_table.keys():
-                        raise AttributeError("Variable " + second.key + " was not declared in this scope")
-                    else:
-                        raise TypeError("Assign value of invalid type. Should be " +
-                                        self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
-                                                                                                         "No valid conversion from " +
-                                        self.symbol_table[new_el.key].type + " to " + second.key)
-                elif isinstance(new_el.value, VarNode) and second.key in keywords_datatype:
-                    raise AttributeError("Attempting to assign a pointer to a non-variable type")
-                elif self.symbol_table[new_el.key].ptr and not self.symbol_table[second.key].ptr:
-                    entry = self.symbol_table[new_el.key]
-                    raise AttributeError("Incompatible types when assigning to type ‘" + entry.type + str('*')*entry.total_deref +"’ from type ‘float’")
-                elif second.key in self.symbol_table.keys() and \
-                        self.symbol_table[second.key].type != self.symbol_table[new_el.key].type:
-                    second_type = self.symbol_table[second.key].type
-                    # Check for any valid conversions
-                    # Promoting conversions are good
-                    if (second_type , self.symbol_table[new_el.key].type) in conv_promotions:
-                        new_el.value = self.convert(second.value , self.symbol_table[new_el.key].type)
-                    # Implicit demoting conversions
-                    elif (self.symbol_table[new_el.key].type, second_type) in conversions:
-                        self.warnings.append(
-                            Fore.YELLOW + "Implicit conversion from " + second_type + " to " + self.symbol_table[
-                                new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                        # print(Fore.YELLOW + "Implicit conversion from " + second.key + " to " + self.symbol_table[
-                        #     new_el.key].type + " for variable " + new_el.key + ". Possible loss of information")
-                        new_el.value = self.convert(second.value, self.symbol_table[new_el.key].type)
-                    # No conversions
+    def visitCond(self, ctx: MathParser.CondContext):
+        ast = CondAST()
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        if len(ctx.children) == 3:
+            ast.root = Node("cond", ctx.children[1].getText())
+        elif len(ctx.children) == 1:
+            ast.root = Node("cond", "const")
+        return ast
 
-                    elif second.key not in self.symbol_table.keys():
-                        raise AttributeError("Variable " + second.key + " was not declared in this scope")
-                    else:
-                        raise TypeError("Assign value of invalid type. Should be " +
-                                        self.symbol_table[new_el.key].type + " , but is " + second.key + "\n"
-                                                                                                         "No valid conversion from " +
-                                        self.symbol_table[new_el.key].type + " to " + second.key)
-                else:
-                    new_el.value = second.value
-                self.symbol_table[new_el.key].value = new_el.value
-        return new_el
+    def visitIncr(self, ctx: MathParser.IncrContext):
+        if isinstance(ctx.children[0], antlr4.tree.Tree.TerminalNodeImpl):
+            # case for rvar INCR and rvar DECR
+            out = TermAST(Node("term", ctx.children[0].getText()))
+        else:
+            # case for INCR rvar and DECR rvar
+            out = FactorAST(Node("factor", ctx.children[1].getText()))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitCont_instr(self, ctx: MathParser.Cont_instrContext):
+        out = ContAST(Node("cont", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitBreak_instr(self, ctx: MathParser.Break_instrContext):
+        out = BreakAST(Node("break", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitParam_list(self, ctx: MathParser.Param_listContext):
+        out = FuncParametersAST(Node("parameter", None), parameters=[None for _ in ctx.params])
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitParam_declr(self, ctx: MathParser.Param_declrContext):
+        out = FuncParameter(key=ctx.var.text, value=None, vtype=ctx.type_.text, const=(ctx.const is not None),
+                            ptr=(ctx.ptr is not None),
+                            deref_level=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                            total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                            const_ptr=(ctx.const is not None and ctx.ptr is not None),
+                            reference=(ctx.reference is not None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitFunc_defn(self, ctx: MathParser.Func_defnContext):
+        out = FuncDefnAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+                           ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                           symbolTable=SymbolTable())
+        out.symbolTable.owner = out
+        out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
+                           const_ptr=out.ptr and out.const)
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitFunc_decl(self, ctx: MathParser.Func_declContext):
+        out = FuncDeclAST(root=Node(ctx.name.text, None), const=(ctx.const is not None), return_type=ctx.type_.text,
+                           ptr=(len(ctx.ptr) > 0), ptr_level=(len(ctx.ptr)),
+                           symbolTable=SymbolTable())
+        out.symbolTable.owner = out
+        out.root = VarNode(out.root.key, out.root.value, out.type, out.const, out.ptr, total_deref=out.ptr_level,
+                           const_ptr=out.ptr and out.const)
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+    def visitFunc_arg(self, ctx: MathParser.Func_argContext):
+        return
+
+    def visitArg_list(self, ctx: MathParser.Arg_listContext):
+        """
+        :return: Node with name args_list and value the number of arguments
+        """
+        # return Node("args_list", len(ctx.args))
+
+    def visitFunc_call(self, ctx: MathParser.Func_callContext):
+        """
+        :return: A FuncCallAST.
+        Key is the name of the function being called and value is None.
+        Args is an empty initialized list with the size of the number of arguments
+        """
+        out = FuncCallAST(Node(ctx.name.text, None))
+        if ctx.args is not None:
+            out.args = [None for arg in ctx.args.args]
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitFunc_scope(self, ctx: MathParser.Func_scopeContext):
+        """
+        :return: A FuncScopeAST.
+        The key is the name of the function it belongs to.
+        The value is None.
+        """
+        out = FuncScopeAST(Node(ctx.parentCtx.name.text, None), symbolTable=SymbolTable())
+        out.symbolTable.owner = out
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitReturn_instr(self, ctx: MathParser.Return_instrContext):
+        out = ReturnInstr(Node("return", None))
+        if ctx.ret_val is None:
+            out.root.value = "void"
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+
+    def visitScanf(self, ctx: MathParser.ScanfContext):
+        ast = ScanfAST(Node("scanf", None))
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        # ast.variables = ctx.vars_
+        ast.variables = [Node] * len(ctx.vars_)
+        ast.format_string = ctx.format_string.text
+        # split the format string into a list of strings and variables
+        format_string = ast.format_string
+        format_string = format_string.replace("\\n", "\n")
+        format_string = format_string.replace("\\t", "\t")
+        format_string = format_string.replace("\\r", "\r")
+        format_string = format_string.replace("\\v", "\v")
+        format_string = format_string.replace("\\b", "\b")
+        format_string = format_string.replace("\\a", "\a")
+        format_string = format_string.replace("\\f", "\f")
+        format_string = format_string.replace("\\\\", "\\")
+        format_string = format_string.replace("\\\'", "\'")
+        format_string = format_string.replace("\\\"", "\"")
+        format_string = format_string.replace("\\\?", "\?")
+        format_string = format_string.replace("\\\0", "\0")
+        format_string = format_string.replace(" ", "")
+        ast.format_specifiers += re.findall("%[0-9]*[disc]", format_string) # find all format specifiers
+        ast.variables = [self.visit_child(var.children[0]) for var in ctx.vars_]  # scanf can have multiple variables
+        for var in ast.variables:
+            var.parent = ast
+        return ast
+
+    def visitArray_decl(self, ctx: MathParser.Array_declContext):
+        ast = ArrayDeclAST(
+            VarNode(ctx.name.text + '[]', None, ctx.type_.text, const=(ctx.const is not None), ptr=(len(ctx.ptr) > 0),
+                    deref_level=0, total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                    const_ptr=(ctx.const is not None and len(ctx.ptr) > 0), is_array=True),
+            arr_type=ctx.type_.text
+        )
+        ast.column = ctx.start.column
+        ast.line = ctx.start.line
+        ast.root.parent = ast
+        ast.values = [self.visit_child(value) for value in ctx.values]
+        if ctx.size is not None:
+            ast.size = int(ctx.size.text)
+        else:
+            ast.size = len(ast.values)
+        if len(ast.values) > ast.size:
+            raise RuntimeError(f"Too many values for array {ast.root.key} of size {ast.size} given in line "
+                               f"{ctx.start.line} column {ctx.start.column}")
+        # if len(ast.values) == 0:
+        #     ast.values = [None for i in range(ast.size)]
+        else:
+            for value in ast.values:
+                if value.key != ast.type:
+                    self.warnings.append(f"Implicit cast from {value.key} to {ast.type} in line {ctx.start.line} for "
+                                         f"array element '{value.value}' of array '{ast.root.key}' with index "
+                                         f"{ast.values.index(value)}. This element will be casted to {self.convert(value.value, ast.type)}")
+                value.parent = ast
+        return ast
+
+    def visitArray_el(self, ctx: MathParser.Array_elContext):
+        element = ArrayElementAST(Node("array_element", None))
+        element.column = ctx.start.column
+        element.line = ctx.start.line
+        # get index
+        if ctx.index is not None:
+            element.root.value = int(ctx.index.text)
+        return element
+
+    def visitIncl_stat(self, ctx: MathParser.Incl_statContext):
+        if ctx.library.text != "stdio":
+            raise RuntimeError("Unsupported Library")
+        out = IncludeAST(Node(f"{ctx.library.text}.h", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
 
     @staticmethod
     def convert(value, d_type):
@@ -886,155 +1605,31 @@ class AstCreator (MathVisitor):
         help function for casting
         :param value: input_value
         :param d_type: cast type
-        :return: casted value
+        :return: cast value
         """
         try:
+            if value is None:
+                return value
             if d_type == "int":
-                if isinstance(value , int):
+                if isinstance(value, int):
                     return value
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return ord(value)
                 else:
                     return int(value)
             elif d_type == "float":
-                if isinstance(value , float):
+                if isinstance(value, float):
                     return value
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return float(ord(value))
                 else:
                     return float(value)
             elif d_type == "char":
-                if isinstance(value , str):
+                if isinstance(value, str):
                     return value
                 return chr(value)
-        except:
+        except Exception as e:
             raise RuntimeError("Bad Cast")
-
-    def optimise_variables(self, input_node : Node) -> Node :
-        """
-        variables constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input Node
-        :return: Node
-        """
-        # Search for the variable name in the symbols table
-        if input_node.key in self.symbol_table:
-            if self.symbol_table[input_node.key] is None:
-                if isinstance(input_node , VarNode):
-                    new_node = VarNode(input_node.key , input_node.value , input_node.type , input_node.const)
-                    self.symbol_table[new_node.key] = new_node
-                    # check for usage of this variable in functions
-                    for key , val in self.symbol_table.items():
-                        if isinstance(val , FunctionNode):
-                            for j in range(len(val.value)):
-                                pass
-                return input_node
-            if self.symbol_table[input_node.key] is not None:
-                if isinstance(input_node , VarNode) and self.symbol_table[input_node.key].const:
-                    if input_node.value is not None and input_node.value != self.symbol_table[input_node.key].value:
-                        raise RuntimeError("Attempting to modify a const variable " + input_node.key)
-                else:
-                    input_node.value = self.symbol_table[input_node.key].value
-        return input_node
-
-    def optimise_functions(self, input_node: Node) -> Node:
-        """
-        function constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input Node
-        :return: Node
-        """
-        if isinstance(input_node, FunctionNode) and input_node.key in keywords_functions:
-            for i in range(len(input_node.value)):
-                if input_node.value["par" + str(i)].key in keywords_datatype:
-                    return input_node
-                elif isinstance(input_node.value["par" + str(i)] , Node) and input_node.value["par" + str(i)].value in self.symbol_table.keys():
-                    input_node.value["par" + str(i)]= copy.copy(self.symbol_table[input_node.value["par" + str(i)].value])
-                elif isinstance(input_node.value["par" + str(i)] , VarNode):
-                    if self.symbol_table[input_node.value["par" + str(i)].key] is None:
-                        raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
-                    elif input_node.value["par" + str(i)].value is None:
-                        raise NameError("Variable " + input_node.value["par" + str(i)] + " doesn't exist")
-                    else:
-                        input_node.value["par" + str(i)] = copy.copy(self.symbol_table[input_node.value["par" + str(i)].key])
-                else:
-                    pass
-        return input_node
-
-    def optimise_cast(self, input_node: AST) -> Node:
-        """
-        cast constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: Node
-        """
-        # Check type of cast
-        input_node.children[0].value = self.convert(input_node.children[0].value , input_node.root.value)
-        input_node.children[0].key = input_node.root.value
-        # if input_node.root.value == "int":
-        #     input_node.children[0].value = int(input_node.children[0].value)
-        # if input_node.root.value == "float":
-        #     input_node.children[0].value = float(input_node.children[0].value)
-        # if input_node.root.value == "char":
-        #     input_node.children[0].value = chr(input_node.children[0].value)
-        return input_node.children[0]
-
-    def optimise_incr_decr(self, input_node: AST) -> Node:
-        """
-        increment or decrement constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST
-        :return: Node
-        """
-        # Check which operation to perform
-        if input_node.root.key == "incr":
-            input_node.children[0].value += 1
-        if input_node.root.key == "decr":
-            input_node.children[0].value -= 1
-        if input_node.children[0].key in self.symbol_table.keys():
-            self.symbol_table[input_node.children[0].key].value = input_node.children[0].value
-        return input_node.children[0]
-
-    def optimise(self, input_ast : AST | Node) -> AST | Node:
-        """
-        constant folding,
-        replaces the AST --> Node with the result of the operation
-        :param input_ast: Input AST or Node
-        :return: AST || Node
-        """
-        if isinstance(input_ast , AST):
-            for i in range(len(input_ast.children)):
-                input_ast.children[i] = self.optimise(input_ast.children[i])
-            if input_ast.root.key == "cast":
-                return self.optimise_cast(input_ast)
-            elif input_ast.root.key == "assign_op":
-                return self.optimise_assign(input_ast)
-            elif input_ast.root.key == "unary_op":
-                return self.optimise_unary(input_ast)
-            elif input_ast.root.key == "binary_op":
-                return self.optimise_binary(input_ast)
-            # Comparison operations
-            elif input_ast.root.key == "comp_op":
-                return self.optimise_comp_op(input_ast)
-            elif input_ast.root.key == "comp_eq":
-                return self.optimise_comp_eq(input_ast)
-            elif input_ast.root.key == "bin_log_op":
-                return self.optimise_bin_log(input_ast)
-            elif input_ast.root.key == "un_log_op":
-                return self.optimise_un_log(input_ast)
-            elif input_ast.root.key == "incr" or input_ast.root.key == "decr":
-                return self.optimise_incr_decr(input_ast)
-            else:
-                return self.unnest(input_ast)
-                # return input_ast
-        elif isinstance(input_ast , FunctionNode):
-            # return input_ast
-            return self.optimise_functions(input_ast)
-        elif isinstance(input_ast , VarNode):
-            return self.optimise_variables(input_ast)
-        elif isinstance(input_ast , Node):
-            return self.optimise_variables(input_ast)
-        # Unary operation node replacements
 
     def warn(self):
         """
