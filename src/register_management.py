@@ -40,6 +40,9 @@ class Manager:  # Manager class for register management using LRU
     def LRU(self, in_object):
         return
 
+    def clear(self):
+        return
+
 
 class returnManager(Manager):
 
@@ -71,6 +74,11 @@ class returnManager(Manager):
             self.head.next = self.tail
             self.tail.next = None
 
+    def clear(self):
+        self.head = Register(in_name="v0")
+        self.tail = Register(in_prev=self.head, in_name="v1")
+        self.head.next = self.tail
+
 
 class argumentManager(Manager):
 
@@ -82,11 +90,35 @@ class argumentManager(Manager):
         self.tail = Register(in_prev=self.tail, in_name="a3")
         self.head.next = self.tail
 
+    def LRU(self, in_object):
+        pass
+
+    def clear(self):
+        self.head = Register(in_name="a0")
+        self.tail = Register(in_prev=self.head, in_name="a1")
+        self.tail = Register(in_prev=self.tail, in_name="a2")
+        self.tail = Register(in_prev=self.tail, in_name="a3")
+        self.head.next = self.tail
+
 
 class temporaryManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(8)
+        self.head = Register(in_name="t0")
+        self.tail = Register(in_prev=self.head, in_name="t1")
+        self.tail = Register(in_prev=self.tail, in_name="t2")
+        self.tail = Register(in_prev=self.tail, in_name="t3")
+        self.tail = Register(in_prev=self.tail, in_name="t4")
+        self.tail = Register(in_prev=self.tail, in_name="t5")
+        self.tail = Register(in_prev=self.tail, in_name="t6")
+        self.tail = Register(in_prev=self.tail, in_name="t7")
+        self.head.next = self.tail
+
+    def LRU(self, in_object):
+        pass
+
+    def clear(self):
         self.head = Register(in_name="t0")
         self.tail = Register(in_prev=self.head, in_name="t1")
         self.tail = Register(in_prev=self.tail, in_name="t2")
@@ -112,11 +144,35 @@ class savedManager(Manager):
         self.tail = Register(in_prev=self.tail, in_name="s7")
         self.head.next = self.tail
 
+    def LRU(self, in_object):
+        pass
+
+    def clear(self):
+        self.head = Register(in_name="s0")
+        self.tail = Register(in_prev=self.head, in_name="s1")
+        self.tail = Register(in_prev=self.tail, in_name="s2")
+        self.tail = Register(in_prev=self.tail, in_name="s3")
+        self.tail = Register(in_prev=self.tail, in_name="s4")
+        self.tail = Register(in_prev=self.tail, in_name="s5")
+        self.tail = Register(in_prev=self.tail, in_name="s6")
+        self.tail = Register(in_prev=self.tail, in_name="s7")
+        self.head.next = self.tail
+
 
 class reservedManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(4)
+        self.head = Register(in_name="k0")
+        self.tail = Register(in_prev=self.head, in_name="k1")
+        # self.tail = Register(in_prev=self.tail, in_name="hi")
+        # self.tail = Register(in_prev=self.tail, in_name="lo")
+        self.head.next = self.tail
+
+    def LRU(self, in_object):
+        pass
+
+    def clear(self):
         self.head = Register(in_name="k0")
         self.tail = Register(in_prev=self.head, in_name="k1")
         # self.tail = Register(in_prev=self.tail, in_name="hi")
@@ -133,6 +189,32 @@ class singleManager:
         self.ra = Register(in_name="ra")
         self.zero = Register(in_name="zero")
         self.at = Register(in_name="at")
+
+    def clear(self):
+        self.gp = Register(in_name="gp")
+        self.sp = Register(in_name="sp")
+        self.fp = Register(in_name="fp")
+        self.ra = Register(in_name="ra")
+        self.zero = Register(in_name="zero")
+        self.at = Register(in_name="at")
+
+
+class Registers:
+    def __init__(self) -> None:
+        self.returnManager = returnManager()
+        self.argumentManager = argumentManager()
+        self.temporaryManager = temporaryManager()
+        self.savedManager = savedManager()
+        self.reservedManager = reservedManager()
+        self.singleManager = singleManager()
+
+    def clearAll(self):
+        self.returnManager.clear()
+        self.argumentManager.clear()
+        self.temporaryManager.clear()
+        self.savedManager.clear()
+        self.reservedManager.clear()
+        self.singleManager.clear()
 
 
 class Register:
