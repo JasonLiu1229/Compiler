@@ -19,42 +19,56 @@ This project is made for the course Compilers at the **University of Antwerp**.
 ### Assignments
 
 #### TODO list
-- [x] Project 1
-- [x] Project 2
-- [x] Project 3
-- [X] Project 4
-  - [X] For loops
-  - [X] While loops
-  - [X] Break
-  - [X] Continue
-- [X] Project 5
-  - [X] Function declarations
-  - [X] Function definitions
-  - [X] Function calls
-  - [X] Return
-  - [X] Return values and type checking / **void type**
-  - [X] No dead code after **return, break, continue**
-- [X] Project 6
-  - [X] Arrays
-    - [X] Declarations
-    - [X] Access
-  - [X] Printf
-  - [X] Scanf
-  - [X] Includes
-- [ ] LLVM
-  - [ ] Project 1
-  - [ ] Project 2
-  - [ ] Project 3
-  - [ ] Project 4
-  - [ ] Project 5
-  - [ ] Project 6
-- [ ] MIPS
-  - [ ] Project 1
-  - [ ] Project 2
-  - [ ] Project 3
-  - [ ] Project 4
-  - [ ] Project 5
-  - [ ] Project 6
+<ul>
+    <li><input type="checkbox" checked> Project 1</li>
+    <li><input type="checkbox" checked> Project 2</li>
+    <li><input type="checkbox" checked> Project 3</li>
+    <li><input type="checkbox" checked> Project 4</li>
+    <ul>
+        <li><input type="checkbox" checked> For loops</li>
+        <li><input type="checkbox" checked> While loops</li>
+        <li><input type="checkbox" checked> Break</li>
+        <li><input type="checkbox" checked> Continue</li>
+    </ul>
+    <li><input type="checkbox" checked> Project 5</li>
+    <ul>
+        <li><input type="checkbox" checked> Function declarations</li>
+        <li><input type="checkbox" checked> Function definitions</li>
+        <li><input type="checkbox" checked> Function calls</li>
+        <li><input type="checkbox" checked> Return</li>
+        <li><input type="checkbox" checked> Return values and type checking / **void type**</li>
+        <li><input type="checkbox" checked> No dead code after **return, break, continue**</li>
+    </ul>     
+    <li><input type="checkbox" checked> Project 6</li>
+    <ul>
+        <li><input type="checkbox" checked> Arrays</li>
+        <ul>
+            <li><input type="checkbox" checked> Declarations</li>
+            <li><input type="checkbox" checked> Access</li>
+        </ul>
+        <li><input type="checkbox" checked> Printf</li>
+        <li><input type="checkbox" checked> Scanf</li>
+        <li><input type="checkbox" checked> Includes</li>
+    </ul>
+    <li><input type="checkbox"> LLVM</li>
+    <ul>
+        <li><input type="checkbox" checked> Project 1</li>
+        <li><input type="checkbox" checked> Project 2</li>
+        <li><input type="checkbox" checked> Project 3</li>
+        <li><input type="checkbox"> Project 4</li>
+        <li><input type="checkbox"> Project 5</li>
+        <li><input type="checkbox" checked> Project 6 - **Half implemented**</li>
+    </ul>
+    <li><input type="checkbox"> MIPS</li>
+    <ul>
+        <li><input type="checkbox"> Project 1</li>
+        <li><input type="checkbox"> Project 2</li>
+        <li><input type="checkbox"> Project 3</li>
+        <li><input type="checkbox"> Project 4</li>
+        <li><input type="checkbox"> Project 5</li>
+        <li><input type="checkbox"> Project 6</li>
+    </ul>
+</ul>
 
 <a name="Testing"></a>
 ### Testing
