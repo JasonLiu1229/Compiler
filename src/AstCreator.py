@@ -537,7 +537,7 @@ class AstCreator(MathVisitor):
                     if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST) or isinstance(temp, For_loopAST):
                         not_visited.append(temp.condition)
                     for i in temp.children:
-                        if isinstance(i, AST) and not isinstance(i, Else_CondAST):
+                        if isinstance(i, AST):
                             not_visited.append(i)
                 else:
                     if isinstance(temp, For_loopAST) and temp.initialization is not None:
@@ -558,6 +558,7 @@ class AstCreator(MathVisitor):
         conditional = False
         evaluate = True
         temp_symbol = None
+        nodes = []
         for ast in list_ast:
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
@@ -578,26 +579,34 @@ class AstCreator(MathVisitor):
                             raise AttributeError(f"non-void function '{temp_parent.root.key}' should return a value")
                         break
                     temp_parent = temp_parent.parent
+                continue
             if isinstance(ast, FuncCallAST):
                 # check whether function is in symbol table
                 match = None
                 temp_parent = ast
-                while temp_parent.parent is not None:
+                temp_symbol = ast.symbolTable
+                while temp_parent.parent is not None and temp_symbol is None:
+                    temp_symbol = temp_parent.symbolTable
                     temp_parent = temp_parent.parent
                 if temp_parent.symbolTable is None:
                     raise RuntimeError("Symbol table not found")
-                if not temp_parent.symbolTable.exists(ast.root.key):
+                while not temp_symbol.exists(ast.root.key):
+                    temp_symbol = temp_symbol.parent
+                    if temp_symbol.parent is None:
+                        break
+                if not temp_symbol.exists(ast.root.key):
                     raise AttributeError(f"Function {ast.root.key} not found in scope")
                 # replace args
                 for i in range(len(ast.args)):
                     if isinstance(ast.args[i], Node) and ast.args[i].key != "var":
                         continue
-                    match = AST.getEntry(ast.args[i])
-                    if match is None:
-                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
-                    if match[0] is None:
-                        raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
-                    ast.args[i] = match[0]
+                    if not isinstance(ast.args[i], AST):
+                        match = AST.getEntry(ast.args[i])
+                        if match is None:
+                            raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                        if match[0] is None:
+                            raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
+                        ast.args[i] = match[0]
                 if temp_parent.symbolTable is None:
                     raise RuntimeError("Symbol table not found")
                 match_found = True
@@ -609,6 +618,8 @@ class AstCreator(MathVisitor):
                         for i in range(len(entry.parameters)):
                             current_param = entry.parameters[i]
                             current_arg = ast.args[i]
+                            if isinstance(current_arg, AST):
+                                continue
                             if isinstance(current_arg, VarNode):
                                 # check all attributes
                                 if current_param.name != current_arg.key:
@@ -639,6 +650,7 @@ class AstCreator(MathVisitor):
                                         break
                 if not match_found:
                     raise AttributeError(f"Function {ast.root.key} not found")
+                continue
 
             if isinstance(ast, FuncDeclAST):
                 # add parent symbol table as parent of current symbol table
@@ -841,7 +853,9 @@ class AstCreator(MathVisitor):
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                             if evaluate and not in_loop:
-                                ast.children[index] = copy.copy(matches[0].object)
+                                # check if value is function parameter
+                                if not isinstance(matches[0].object, FuncParameter):
+                                    ast.children[index] = copy.copy(matches[0].object)
                 if not handle:
                     continue
             if isinstance(ast, ScanfAST):
@@ -932,53 +946,56 @@ class AstCreator(MathVisitor):
                 ast.parent.children.insert(ast.parent.children.index(old_parent), ast.children[0])
                 node = InstrAST(Node("instr", None), [new_entry])
             elif isinstance(ast, DeclrAST):
-                if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
-                    raise RuntimeError("Faulty declaration")
-                if symbol_table.exists(ast.children[0].key):
-                    matches = temp_symbol.lookup(ast.children[0].key)
-                    if len(matches) != 1:
-                        raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                    match = matches[0]
-                    if match.initialized():
-                        raise AttributeError(f"Redeclaration of variable {ast.children[0].key}")
-                    if not evaluate:
-                        node = ast
-                        continue
-                if ast.type != ast.children[0].type and ast.children[0].value is not None and not ast.children[0].cast:
-                    if (ast.children[0].type, ast.type) not in conversions:
-                        raise AttributeError("Variable assigned to wrong type")
-                    elif (ast.children[0].type, ast.type) not in conv_promotions:
-                        # clang style warning (with warning in pink)
-                        warning_str = "\033[95mwarning: \033[0m"
-                        if ast.children[0].type == "float" and ast.children[0].value is not None:
-                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
-                        if ast.children[0].type == "int" and ast.children[0].value is not None:
-                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
-                        if ast.children[0].type == "char" and ast.children[0].value is not None:
-                            warning_str += f"implicit conversion from \'{ast.children[0].type}\' to \'{ast.type}\' changes value from {ast.children[0].value} to {self.convert(ast.children[0].value, ast.type)}"
-                        # get instruction in the file where the warning is by using column and line number
-                        f = open(self.file_name, "r")
-                        lines = f.readlines()
-                        line = lines[ast.line - 1]
-                        f.close()
-                        # insert squiggly line
-                        line = line[:ast.column] + '\u0332' + line[ast.column:]
-                        warning_str += f"\n{ast.line}:{ast.column}: {line}"
-                        self.warnings.append(warning_str)
-                node = ast.children[0]
-                node.type = ast.type
-                if node.value is not None and not isinstance(node.value, Node):
-                    node.value = self.convert(node.value, ast.type)
-                # node.const = (ast.const is True)
-                if node.ptr and ast.const:
-                    node.const_ptr = True
-                else:
-                    node.const = (ast.const is True)
-                if not temp_symbol.exists(node):
-                    if not evaluate:
-                        node.value = None
-                    temp_symbol.insert(SymbolEntry(node))
-                updates_queue.append(node)
+                # if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
+                #     raise RuntimeError("Faulty declaration")
+                nodes = []
+                for i in range(len(ast.children)):
+                    if symbol_table.exists(ast.children[i].key):
+                        matches = temp_symbol.lookup(ast.children[i].key)
+                        if len(matches) != 1:
+                            raise ReferenceError(f"Multiple matches for variable {ast.children[i].key}")
+                        match = matches[0]
+                        if match.initialized():
+                            raise AttributeError(f"Redeclaration of variable {ast.children[i].key}")
+                        if not evaluate:
+                            node = ast
+                            continue
+                    if ast.type != ast.children[i].type and ast.children[i].value is not None and not ast.children[i].cast:
+                        if (ast.children[i].type, ast.type) not in conversions:
+                            raise AttributeError("Variable assigned to wrong type")
+                        elif (ast.children[i].type, ast.type) not in conv_promotions:
+                            # clang style warning (with warning in pink)
+                            warning_str = "\033[95mwarning: \033[0m"
+                            if ast.children[i].type == "float" and ast.children[i].value is not None:
+                                warning_str += f"implicit conversion from \'{ast.children[i].type}\' to \'{ast.type}\' changes value from {ast.children[i].value} to {self.convert(ast.children[i].value, ast.type)}"
+                            if ast.children[i].type == "int" and ast.children[i].value is not None:
+                                warning_str += f"implicit conversion from \'{ast.children[i].type}\' to \'{ast.type}\' changes value from {ast.children[i].value} to {self.convert(ast.children[i].value, ast.type)}"
+                            if ast.children[i].type == "char" and ast.children[i].value is not None:
+                                warning_str += f"implicit conversion from \'{ast.children[i].type}\' to \'{ast.type}\' changes value from {ast.children[i].value} to {self.convert(ast.children[i].value, ast.type)}"
+                            # get instruction in the file where the warning is by using column and line number
+                            f = open(self.file_name, "r")
+                            lines = f.readlines()
+                            line = lines[ast.line - 1]
+                            f.close()
+                            # insert squiggly line
+                            line = line[:ast.column] + '\u0332' + line[ast.column:]
+                            warning_str += f"\n{ast.line}:{ast.column}: {line}"
+                            self.warnings.append(warning_str)
+                    node = ast.children[i]
+                    node.type = ast.type
+                    if node.value is not None and not isinstance(node.value, Node):
+                        node.value = self.convert(node.value, ast.type)
+                    # node.const = (ast.const is True)
+                    if node.ptr and ast.const:
+                        node.const_ptr = True
+                    else:
+                        node.const = (ast.const is True)
+                    if not temp_symbol.exists(node):
+                        if not evaluate:
+                            node.value = None
+                        temp_symbol.insert(SymbolEntry(node))
+                    updates_queue.append(node)
+                    nodes.append(node)
 
             elif isinstance(ast, AssignAST):
 
@@ -1141,7 +1158,14 @@ class AstCreator(MathVisitor):
                         decr_queue.append(node)
             elif isinstance(ast, CondAST):
                 if evaluate:
-                    ast.last_eval = copy.copy(ast).handle().value
+                    handle = True
+                    for val in ast.children:
+                        if isinstance(val, Node) and val.key == "var" or isinstance(val, AST):
+                            node = ast
+                            handle = False
+                            break
+                    if handle:
+                        ast.last_eval = copy.copy(ast).handle().value
             elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and not evaluate:
                 continue
             elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and not evaluate:
@@ -1225,7 +1249,11 @@ class AstCreator(MathVisitor):
                         ast.parent.incr = node
                 else:
                     index = ast.parent.children.index(ast)
-                    ast.parent.children[index] = node
+                    if len(nodes) == 0:
+                        ast.parent.children[index] = node
+                    else:
+                        ast.parent.children = nodes
+                        nodes = []
             else:
                 if isinstance(ast.parent, Else_CondAST):
                     ast.last_eval = not ast.last_eval
