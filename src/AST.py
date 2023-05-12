@@ -967,13 +967,11 @@ class PrintfAST(AST):
     def mips(self, registers: Registers):
         out_local = ""
         out_global = ""
-        for var in self.args:
-            if isinstance(var, Node):
-                pass
-            else:
-                pass
+        # split format string into parts separated by % and not \%
+        format_string = re.split("(?<!\\\)%", self.format_string)
 
-        out_local += f"li $v0, 0x4004\n"
+
+
 
 
 class DeclrAST(AST):
