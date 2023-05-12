@@ -1,12 +1,13 @@
-from AST import AST
+from register_management import *
 
 class MIPS:
     """
     Converts AST of C language to MIPS
     """
-    def __init__(self, in_ast: AST, in_file: str = "out.asm"):
+    def __init__(self, in_ast, in_file: str = "out.asm"):
         self.ast = in_ast
         self.mips = in_file
+        self.registers = Registers()
 
     def convert(self):
         """

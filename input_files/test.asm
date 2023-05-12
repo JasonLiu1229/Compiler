@@ -1,16 +1,39 @@
-func:
-    # Function prologue
-    addi $sp, $sp, -4      # reserve space for one word on stack
-    sw $ra, 0($sp)         # store the return address
+main:                                   # @main
+        addiu   $sp, $sp, -48
+        sw      $ra, 44($sp)                    # 4-byte Folded Spill
+        sw      $fp, 40($sp)                    # 4-byte Folded Spill
+        move    $fp, $sp
+        addiu   $1, $zero, 5
+        sw      $1, 36($fp)
+        lui     $1, 16128
+        sw      $1, 32($fp)
+        addiu   $1, $zero, 99
+        sb      $1, 28($fp)
+        lw      $5, 36($fp)
+        lwc1    $f0, 32($fp)
+        cvt.d.s $f0, $f0
+        lb      $1, 28($fp)
+        move    $2, $sp
+        sw      $1, 16($2)
+        lui     $1, %hi($.str)
+        addiu   $4, $1, %lo($.str)
+        mfc1    $6, $f1
+        mfc1    $7, $f0
+        jal     printf
+        nop
+        lui     $1, %hi($.str.1)
+        addiu   $4, $1, %lo($.str.1)
+        jal     printf
+        nop
+        addiu   $2, $zero, 0
+        move    $sp, $fp
+        lw      $fp, 40($sp)                    # 4-byte Folded Reload
+        lw      $ra, 44($sp)                    # 4-byte Folded Reload
+        addiu   $sp, $sp, 48
+        jr      $ra
+        nop
+$.str:
+        .asciz  "%d; %f; %c"
 
-    # Function body
-    sll $t0, $a0, 1        # $t0 = 2 * x
-    add $t0, $t0, $a0      # $t0 = 3 * x
-    sll $t1, $a1, 1        # $t1 = 2 * y
-    add $t1, $t1, $a1      # $t1 = 3 * y
-    add $v0, $t0, $t1      # $v0 = 3 * x + 2 * y
-
-    # Function epilogue
-    lw $ra, 0($sp)         # restore the return address
-    addi $sp, $sp, 4       # release the space used on stack
-    jr $ra                 # jump to the return address
+$.str.1:
+        .asciz  " test"

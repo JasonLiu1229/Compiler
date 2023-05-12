@@ -12,6 +12,7 @@ import antlr4.error.ErrorStrategy
 import json
 from SymbolTable import *
 from antlr4.error.Errors import ParseCancellationException
+from MIPS import *
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
@@ -180,6 +181,11 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def mips(self, registers: Registers):
+        out_global = ""
+        out_local = ""
+        return out_local, out_global
+
     def searchBlocks(self):
         if isinstance(self, While_loopAST):
             return self.blocks
@@ -282,6 +288,11 @@ class AST:
             current.parent.children[current.parent.children.index(current)] = Node(currenType, index)
             index += 1
         return out, index
+
+    def visitMIPSOp(self, current, registers):
+        out_local = ""
+        out_global = ""
+        return out_local, out_global
 
     @staticmethod
     def getEntry(entry):
@@ -908,6 +919,17 @@ class PrintfAST(AST):
         out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{self.register if self.register is not None else ''}{', ' if len(var_string) > 0 else ''}{var_string})\n"
         return out, index
 
+    def mips(self, registers: Registers):
+        out_local = ""
+        out_global = ""
+        for var in self.args:
+            if isinstance(var, Node):
+                pass
+            else:
+                pass
+
+        out_local += f"li $v0, 0x4004\n"
+
 
 class DeclrAST(AST):
 
@@ -1199,6 +1221,9 @@ class Scope_AST(AST):
             index = output[1]
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
+
 
 
 
@@ -1263,6 +1288,9 @@ class If_CondAST(Scope_AST):
 
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
+
 
 class Else_CondAST(Scope_AST):
 
@@ -1293,6 +1321,9 @@ class Else_CondAST(Scope_AST):
             out += output[0]
             index = output[1]
         return out, index
+
+    def mips(self, registers: Registers):
+        pass
 
 
 class For_loopAST(Scope_AST):
@@ -1406,6 +1437,8 @@ class While_loopAST(Scope_AST):
         out, index = self.llvm_block3(out, index, self.blocks)
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
 
 class CondAST(TermAST):
 
@@ -1441,6 +1474,9 @@ class BreakAST(InstrAST):
         out = f"br label %{name}"
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
+
 
 class ContAST(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -1452,6 +1488,8 @@ class ContAST(InstrAST):
         out = f"br label %{name}"
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
 
 class FuncParametersAST(AST):
 
@@ -1522,6 +1560,9 @@ class FuncDeclAST(AST):
         out += f" ({param_string})"
         return out, index
 
+    def mips(self, registers: Registers):
+        return f"{self.root.key}:\n", f".globl {self.root.key}\n" if self.root.key == "main" else ""
+
 
 class FuncDefnAST(AST):
 
@@ -1590,6 +1631,15 @@ class FuncDefnAST(AST):
         out += "\n"
         return out, index
 
+    def mips(self, registers: Registers):
+        out_local = f"{self.root.key}:\n"
+        out_global = f".globl {self.root.key}\n" if self.root.key == "main" else ""
+        # Begin
+        # Parameters
+        out_l, out_g = self.children[0].mips(registers)
+        out_local += out_l
+        out_global += out_g
+        return out_local, out_global
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -1622,6 +1672,10 @@ class FuncCallAST(AST):
         # end string
         out = f"call {getLLVMType(function.type)} @{self.root.key}({arg_string})\n"
         return out, index
+
+    def mips(self, registers: Registers):
+        pass
+
 
 
 class FuncScopeAST(AST):
@@ -1667,6 +1721,65 @@ class FuncScopeAST(AST):
         out += "}\n"
         return out, index
 
+    def calculateStackSize(self):
+        size = 0
+        # calculate the size of the stack of the function
+        for entry in self.symbolTable.table:
+            if isinstance(entry.object, VarNode):
+                if entry.object.ptr:
+                    size += 4
+                if entry.object.array:
+                    size += 4 * entry.size
+                else:
+                    size += 4
+
+        # calculate the size of the stack of the function parameters
+        for entry in self.parent.symbolTable.table:
+            if isinstance(entry.object, VarNode):
+                if entry.object.ptr:
+                    size += 4
+                if entry.object.array:
+                    size += 4 * entry.size
+                else:
+                    size += 4
+        return size
+    def mips(self, registers: Registers):
+        size = self.calculateStackSize()
+        size += 4 # for the return address
+        # Begin
+        out_global = ""
+        out_local = f"\taddi $sp, $sp, -{size}\n"
+        out_local += "\tsw $ra, 4($sp)\n"
+        # TODO: add the function body
+        # DFS
+        visited = []
+        not_visited = [self]
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                if current is not self:
+                    visited.append(current)
+                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
+                    or not isinstance(current, If_CondAST) \
+                    or not isinstance(current, FuncDefnAST) and not isinstance(current, FuncScopeAST):
+                    for i in current.children:
+                        if not isinstance(i, Node):
+                            not_visited.append(i)
+
+        for current in visited:
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitMIPSOp(current, registers)
+            else:
+                output = current.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+
+        # End
+        out_local += "\tlw $ra, -4($sp)\n"
+        out_local += f"\taddi $sp, $sp, {size}\n"
+        out_local += "\tjr $ra\n"
+        return out_local, out_global
 
 class ReturnInstr(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -1691,6 +1804,8 @@ class ReturnInstr(InstrAST):
             out += f"ret {temp_type} %{entry.register}\n"
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
 
 class ScanfAST(AST):
 
@@ -1738,6 +1853,8 @@ class ScanfAST(AST):
         out += f"call i32 (ptr, ...) @__isoc99_scanf(ptr noundef @.str.{index}, {var_string})\n"
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
 
 class ArrayDeclAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -1809,6 +1926,9 @@ class ArrayDeclAST(AST):
                    f"{'zeroinitializer' if len(self.values) == 0 else vals}, align {4 if self.size < 4 else 16}\n"
         return out, index
 
+    def mips(self, registers: Registers):
+        pass
+
 
 class IncludeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -1825,3 +1945,6 @@ class IncludeAST(AST):
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         return f"declare i32 @printf(ptr noundef, ...) #2\n\ndeclare i32 @__isoc99_scanf(ptr noundef, ...) #2\n\n", index
+
+    def mips(self, registers: Registers):
+        pass

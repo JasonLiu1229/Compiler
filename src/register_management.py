@@ -266,6 +266,100 @@ class reservedManager(Manager):
         self.head.next = self.tail
 
 
+class floatManager(Manager):
+
+    def __init__(self) -> None:
+        super().__init__(32)
+        self.head = Register(in_name="f0")
+        self.tail = Register(in_prev=self.head, in_name="f1")
+        self.tail = Register(in_prev=self.tail, in_name="f2")
+        self.tail = Register(in_prev=self.tail, in_name="f3")
+        self.tail = Register(in_prev=self.tail, in_name="f4")
+        self.tail = Register(in_prev=self.tail, in_name="f5")
+        self.tail = Register(in_prev=self.tail, in_name="f6")
+        self.tail = Register(in_prev=self.tail, in_name="f7")
+        self.tail = Register(in_prev=self.tail, in_name="f8")
+        self.tail = Register(in_prev=self.tail, in_name="f9")
+        self.tail = Register(in_prev=self.tail, in_name="f10")
+        self.tail = Register(in_prev=self.tail, in_name="f11")
+        self.tail = Register(in_prev=self.tail, in_name="f12")
+        self.tail = Register(in_prev=self.tail, in_name="f13")
+        self.tail = Register(in_prev=self.tail, in_name="f14")
+        self.tail = Register(in_prev=self.tail, in_name="f15")
+        self.tail = Register(in_prev=self.tail, in_name="f16")
+        self.tail = Register(in_prev=self.tail, in_name="f17")
+        self.tail = Register(in_prev=self.tail, in_name="f18")
+        self.tail = Register(in_prev=self.tail, in_name="f19")
+        self.tail = Register(in_prev=self.tail, in_name="f20")
+        self.tail = Register(in_prev=self.tail, in_name="f21")
+        self.tail = Register(in_prev=self.tail, in_name="f22")
+        self.tail = Register(in_prev=self.tail, in_name="f23")
+        self.tail = Register(in_prev=self.tail, in_name="f24")
+        self.tail = Register(in_prev=self.tail, in_name="f25")
+        self.tail = Register(in_prev=self.tail, in_name="f26")
+        self.tail = Register(in_prev=self.tail, in_name="f27")
+        self.tail = Register(in_prev=self.tail, in_name="f28")
+        self.tail = Register(in_prev=self.tail, in_name="f29")
+        self.tail = Register(in_prev=self.tail, in_name="f30")
+        self.tail = Register(in_prev=self.tail, in_name="f31")
+
+def LRU(self, in_object):
+    # check if the registers are in use
+    # if f0 not in use, replace object of register f0 with in_object
+    # if f1 not in use, replace object of register f1 with in_object
+    tempHead = self.head
+    free = False
+    while tempHead is not None:
+        if tempHead.used is False:
+            tempHead.update(in_object)
+            free = True
+            break
+        tempHead = tempHead.next
+    if not free:
+        self.head.update(in_object)
+        newHead = self.head.next
+        self.tail.next = self.head
+        self.head.prev = self.tail
+        self.tail = self.head
+        self.tail.next = None
+        newHead.prev = None
+        self.head = newHead
+
+    def clear(self):
+        self.head = Register(in_name="f0")
+        self.tail = Register(in_prev=self.head, in_name="f1")
+        self.tail = Register(in_prev=self.tail, in_name="f2")
+        self.tail = Register(in_prev=self.tail, in_name="f3")
+        self.tail = Register(in_prev=self.tail, in_name="f4")
+        self.tail = Register(in_prev=self.tail, in_name="f5")
+        self.tail = Register(in_prev=self.tail, in_name="f6")
+        self.tail = Register(in_prev=self.tail, in_name="f7")
+        self.tail = Register(in_prev=self.tail, in_name="f8")
+        self.tail = Register(in_prev=self.tail, in_name="f9")
+        self.tail = Register(in_prev=self.tail, in_name="f10")
+        self.tail = Register(in_prev=self.tail, in_name="f11")
+        self.tail = Register(in_prev=self.tail, in_name="f12")
+        self.tail = Register(in_prev=self.tail, in_name="f13")
+        self.tail = Register(in_prev=self.tail, in_name="f14")
+        self.tail = Register(in_prev=self.tail, in_name="f15")
+        self.tail = Register(in_prev=self.tail, in_name="f16")
+        self.tail = Register(in_prev=self.tail, in_name="f17")
+        self.tail = Register(in_prev=self.tail, in_name="f18")
+        self.tail = Register(in_prev=self.tail, in_name="f19")
+        self.tail = Register(in_prev=self.tail, in_name="f20")
+        self.tail = Register(in_prev=self.tail, in_name="f21")
+        self.tail = Register(in_prev=self.tail, in_name="f22")
+        self.tail = Register(in_prev=self.tail, in_name="f23")
+        self.tail = Register(in_prev=self.tail, in_name="f24")
+        self.tail = Register(in_prev=self.tail, in_name="f25")
+        self.tail = Register(in_prev=self.tail, in_name="f26")
+        self.tail = Register(in_prev=self.tail, in_name="f27")
+        self.tail = Register(in_prev=self.tail, in_name="f28")
+        self.tail = Register(in_prev=self.tail, in_name="f29")
+        self.tail = Register(in_prev=self.tail, in_name="f30")
+        self.tail = Register(in_prev=self.tail, in_name="f31")
+
+
 class singleManager:
 
     def __init__(self) -> None:
@@ -275,6 +369,8 @@ class singleManager:
         self.ra = Register(in_name="ra")
         self.zero = Register(in_name="zero")
         self.at = Register(in_name="at")
+        self.lo = Register(in_name="lo")
+        self.hi = Register(in_name="hi")
 
     def clear(self):
         self.gp = Register(in_name="gp")
@@ -283,6 +379,8 @@ class singleManager:
         self.ra = Register(in_name="ra")
         self.zero = Register(in_name="zero")
         self.at = Register(in_name="at")
+        self.lo = Register(in_name="lo")
+        self.hi = Register(in_name="hi")
 
 
 class Registers:
@@ -293,6 +391,7 @@ class Registers:
         self.savedManager = savedManager()
         self.reservedManager = reservedManager()
         self.singleManager = singleManager()
+        self.floatManager = floatManager()
 
     def clearAll(self):
         self.returnManager.clear()
@@ -301,6 +400,7 @@ class Registers:
         self.savedManager.clear()
         self.reservedManager.clear()
         self.singleManager.clear()
+        self.floatManager.clear()
 
 
 class Register:
@@ -315,4 +415,5 @@ class Register:
 
     def update(self, in_object):
         self.object = in_object
+        self.object.register = self
         self.used = True
