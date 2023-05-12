@@ -56,22 +56,23 @@ class returnManager(Manager):
         # check if the registers are in use
         # if v0 not in use, replace object of register v0 with in_object
         # if v1 not in use, replace object of register v1 with in_object
-        if self.head.used is False:
-            self.head.update(in_object)
-        elif self.tail.used is False:
-            self.tail.update(in_object)
-        # if v0 and v1 are in use and v0 is head, replace object of register v0 with in_object and move v0 to tail
-        # if v0 and v1 are in use and v1 is head, replace object of register v1 with in_object and move v1 to tail
-        elif self.head.used is True and self.tail.used is True:
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
             self.head.update(in_object)
             newHead = self.head.next
-            self.head.next = None
+            self.tail.next = self.head
+            self.head.prev = self.tail
             self.tail = self.head
-            self.head = newHead
-            self.head.prev = None
-            self.tail.prev = self.head
-            self.head.next = self.tail
             self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="v0")
@@ -90,7 +91,28 @@ class argumentManager(Manager):
         self.head.next = self.tail
 
     def LRU(self, in_object):
-        pass
+        # check if the registers are in use
+        # if a0 not in use, replace object of register a0 with in_object
+        # if a1 not in use, replace object of register a1 with in_object
+        # if a2 not in use, replace object of register a2 with in_object
+        # if a3 not in use, replace object of register a3 with in_object
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.tail = self.head
+            self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="a0")
@@ -115,7 +137,32 @@ class temporaryManager(Manager):
         self.head.next = self.tail
 
     def LRU(self, in_object):
-        pass
+        # check if the registers are in use
+        # if t0 not in use, replace object of register t0 with in_object
+        # if t1 not in use, replace object of register t1 with in_object
+        # if t2 not in use, replace object of register t2 with in_object
+        # if t3 not in use, replace object of register t3 with in_object
+        # if t4 not in use, replace object of register t4 with in_object
+        # if t5 not in use, replace object of register t5 with in_object
+        # if t6 not in use, replace object of register t6 with in_object
+        # if t7 not in use, replace object of register t7 with in_object
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.tail = self.head
+            self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="t0")
@@ -144,7 +191,32 @@ class savedManager(Manager):
         self.head.next = self.tail
 
     def LRU(self, in_object):
-        pass
+        # check if the registers are in use
+        # if s0 not in use, replace object of register s0 with in_object
+        # if s1 not in use, replace object of register s1 with in_object
+        # if s2 not in use, replace object of register s2 with in_object
+        # if s3 not in use, replace object of register s3 with in_object
+        # if s4 not in use, replace object of register s4 with in_object
+        # if s5 not in use, replace object of register s5 with in_object
+        # if s6 not in use, replace object of register s6 with in_object
+        # if s7 not in use, replace object of register s7 with in_object
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.tail = self.head
+            self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="s0")
@@ -164,18 +236,33 @@ class reservedManager(Manager):
         super().__init__(4)
         self.head = Register(in_name="k0")
         self.tail = Register(in_prev=self.head, in_name="k1")
-        # self.tail = Register(in_prev=self.tail, in_name="hi")
-        # self.tail = Register(in_prev=self.tail, in_name="lo")
         self.head.next = self.tail
 
     def LRU(self, in_object):
-        pass
+        # check if the registers are in use
+        # if k0 not in use, replace object of register k0 with in_object
+        # if k1 not in use, replace object of register k1 with in_object
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.tail = self.head
+            self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="k0")
         self.tail = Register(in_prev=self.head, in_name="k1")
-        # self.tail = Register(in_prev=self.tail, in_name="hi")
-        # self.tail = Register(in_prev=self.tail, in_name="lo")
         self.head.next = self.tail
 
 
