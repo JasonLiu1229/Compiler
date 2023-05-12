@@ -1005,6 +1005,9 @@ class AstCreator(MathVisitor):
                             f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
                 if not isinstance(assignee.parent, ArrayNode):
                     assignee.value = ast.children[1].value
+                    if isinstance(assignee.parent, VarNode) and assignee.parent.ptr:
+                        assignee.parent.value = assignee
+                        temp_symbol.update(assignee.parent)
                 else:
                     index = assignee.parent.values.index(assignee)
                     assignee.parent.values[index].value = ast.children[1].value
@@ -1044,17 +1047,26 @@ class AstCreator(MathVisitor):
                 for instance in incr_queue:
                     # get the match from the nearest symbol table
                     if not isinstance(instance.parent, ArrayNode):
-                        matches = temp_symbol.lookup(instance)
-                        length = len(matches)
-                        match = matches[0].object
-                        if length == 0:
-                            raise ReferenceError(f"Variable {instance.key} not found")
-                        if length > 1:
-                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
-                        instance = match
-                        instance.value += 1
-                        temp_symbol.update(instance)
-                        temp_symbol.refresh()
+                        if isinstance(instance.parent, VarNode) and instance.parent.ptr:
+                            temp_instance = copy.copy(instance)
+                            temp_instance.value += 1
+                            instance.parent.value = temp_instance
+                            temp_symbol.update(instance.parent)
+                            instance = copy.copy(temp_instance)
+                            temp_symbol.update(instance)
+                            temp_symbol.refresh()
+                        else:
+                            matches = temp_symbol.lookup(instance)
+                            length = len(matches)
+                            match = matches[0].object
+                            if length == 0:
+                                raise ReferenceError(f"Variable {instance.key} not found")
+                            if length > 1:
+                                raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                            instance = match
+                            instance.value += 1
+                            temp_symbol.update(instance)
+                            temp_symbol.refresh()
                     else:
                         match = instance.parent
                         match.values[match.values.index(instance)].value += 1
@@ -1062,17 +1074,26 @@ class AstCreator(MathVisitor):
                 for instance in decr_queue:
                     # get the match from the nearest symbol table
                     if not isinstance(instance.parent, ArrayNode):
-                        matches = temp_symbol.lookup(instance)
-                        length = len(matches)
-                        match = matches[0].object
-                        if length == 0:
-                            raise ReferenceError(f"Variable {instance.key} not found")
-                        if length > 1:
-                            raise ReferenceError(f"Multiple matches for variable {instance.key}")
-                        instance = match
-                        instance.value -= 1
-                        temp_symbol.update(instance)
-                        temp_symbol.refresh()
+                        if isinstance(instance.parent, VarNode) and instance.parent.ptr:
+                            temp_instance = copy.copy(instance)
+                            temp_instance.value -= 1
+                            instance.parent.value = temp_instance
+                            temp_symbol.update(instance.parent)
+                            instance = copy.copy(temp_instance)
+                            temp_symbol.update(instance)
+                            temp_symbol.refresh()
+                        else:
+                            matches = temp_symbol.lookup(instance)
+                            length = len(matches)
+                            match = matches[0].object
+                            if length == 0:
+                                raise ReferenceError(f"Variable {instance.key} not found")
+                            if length > 1:
+                                raise ReferenceError(f"Multiple matches for variable {instance.key}")
+                            instance = match
+                            instance.value -= 1
+                            temp_symbol.update(instance)
+                            temp_symbol.refresh()
                     else:
                         match = instance.parent
                         match.values[match.values.index(instance)].value -= 1
@@ -1099,18 +1120,33 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, CondAST):
                 if evaluate:
                     ast.last_eval = copy.copy(ast).handle().value
-            elif isinstance(ast, TermAST) and ast.root.value == "++" and not evaluate:
+            elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and not evaluate:
+                continue
+            elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and not evaluate:
                 continue
             elif ast is not None:
                 if isinstance(ast, TermAST) and ast.root.value == "++":
                     node = copy.copy(ast.children[0])
                     instance = copy.copy(node)
                     incr_queue.append(instance)
-                if isinstance(ast, TermAST) and ast.root.value == "--":
+                elif isinstance(ast, TermAST) and ast.root.value == "--":
                     node = copy.copy(ast.children[0])
                     instance = copy.copy(node)
                     decr_queue.append(instance)
-                if isinstance(ast, PrintfAST):
+                elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"]:
+                    ast.children[0] = copy.deepcopy(ast.children[0])
+                    node = ast.handle()
+                    if ast.root.value == "++":
+                        temp_symbol.update(node)
+                        if isinstance(node.parent, VarNode) and node.parent.ptr:
+                            node.parent.value = copy.deepcopy(node)
+                            temp_symbol.update(node.parent)
+                    if ast.root.value == "--":
+                        temp_symbol.update(node)
+                        if isinstance(node.parent, VarNode) and node.parent.ptr:
+                            node.parent.value = copy.deepcopy(node)
+                            temp_symbol.update(node.parent)
+                elif isinstance(ast, PrintfAST):
                     # handle printf
                     node = ast.handle()
                     # handle increment and decrement
