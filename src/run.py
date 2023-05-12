@@ -28,6 +28,9 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             ast = visitor.visit(parse_tree)
             # handle tree
             ast = visitor.resolve(ast)
+            # check if the main function exists
+            if not ast.symbolTable.exists("main"):
+                raise Exception("No main function found")
             ast.print(4, verbose, filename)
             if verbose:
                 ast.symbolTable.print(True)
