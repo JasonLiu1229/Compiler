@@ -7,7 +7,7 @@ int main(){
 	*xp = 10;
 	printf("%d; ", x);
 	printf("%d\n", *xp);
-	++(*xp);
+	(*xp)++;
 	printf("%d; ", x);
 	printf("%d\n", *xp);
 	return 1;
