@@ -161,12 +161,7 @@ class Node:
         converts Node in a dot dictionary format
         :return: dot dictionary format
         """
-        out = '<\"' + self.key + '\t' + ':' + '\t'
-        if isinstance(self.value, str):
-            out += '\"\\' + self.value + '\"\\'
-        else:
-            out += str(self.value)
-        out += '\">'
+        out = f"\"{self.key}\" [label=\"{self.key}{ ' :' + self.value if self.value is not None else ''}\"];\n"
         return out
 
     def recursive_dot(self, dictionary, count, name):

@@ -8,7 +8,7 @@ import argparse
 import Dot
 
 
-def run(directory: str, file_type: str, filenames: list, verbose: bool = False, no_warning: bool = False):
+def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False):
     for filename in filenames:
         try:
             print(f">>> Parsing {directory}{filename}{file_type}\n")
@@ -28,9 +28,11 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = False, 
             ast = visitor.visit(parse_tree)
             # handle tree
             ast = visitor.resolve(ast)
-            ast.print(4, False, filename)
-            ast.symbolTable.print(True)
-            visitor.warn()
+            ast.print(4, verbose, filename)
+            if verbose:
+                ast.symbolTable.print(True)
+            if not no_warning:
+                visitor.warn()
             # dot = Dot.dot(ast, "../Output/" + filename + ".dot")
             # dot.connect()
             # ast.dot_language(filename, visitor.symbol_table)

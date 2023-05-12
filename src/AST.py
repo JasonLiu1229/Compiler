@@ -939,6 +939,7 @@ class VarDeclrAST(AST):
             # assign value
             if self.children[0].ptr:
                 self.children[0].value = self.children[1]
+                self.children[1].parent = self.children[0]
             else:
                 self.children[0].value = self.children[1].value
                 self.children[0].cast = self.children[1].cast
@@ -1131,6 +1132,7 @@ class DerefAST(AST):
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child = child.value
+        child.parent = self.children[0]
         if isinstance(child, VarNode) and child.ptr:
             child.deref_level += 1
         return child
@@ -1487,6 +1489,9 @@ class FuncDeclAST(AST):
             if isinstance(child, FuncParametersAST):
                 out[name].append({"Parameters": child.save()})
         return out
+
+    def save_dot(self, dictionary_function: dict = None):
+        return f"{'const ' if self.const else ''}{self.type}{'*'*self.ptr_level} {self.root.key} [label=\"{self.root.key}\"]\n"
 
     def getDict(self):
         return {f"{'const ' if self.const else ''}{self.type}{'*' * self.ptr_level} {self.root.key}": self.root.value}, \
