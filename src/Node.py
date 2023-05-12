@@ -17,6 +17,8 @@ class Node:
         self.parent = parent
         self.cast = False
         self.register = None
+        self.in_loop = False
+        self.in_func = False
 
     # def __eq__(self, o: object) -> bool:
     #     return (self.key == o.key) and (self.value == o.value)

@@ -96,6 +96,17 @@ def getType(inputValue):
     else:
         return None
 
+def getTypeFromFormat(inputValue):
+    if inputValue == "d":
+        return "int"
+    if inputValue == "f":
+        return "float"
+    if inputValue == "c":
+        return "char"
+    if inputValue == "s":
+        return "string"
+    else:
+        return None
 
 def convert(value, d_type):
     """
@@ -174,6 +185,8 @@ class AST:
         self.blocks = []
         self.column = None
         self.line = None
+        self.in_loop = False
+        self.in_func = False
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
@@ -750,6 +763,8 @@ class PrintfAST(AST):
         self.args: list = args
 
     def handle(self):
+        warnings = []
+        evaluate = True
         # replace all the arguments
         for i in range(len(self.args)):
             if isinstance(self.args[i], Node) and self.args[i].key == "string":
@@ -757,6 +772,36 @@ class PrintfAST(AST):
             last_register = self.children[i].register
             self.args[i] = self.children[i]
             self.args[i].register = last_register
+        # if any children haven't been replaced yet
+        for i in range(len(self.args)):
+            if isinstance(self.args[i], Node) and self.args[i].key == "var":
+                evaluate = False
+                # search for the variable in the symbol table
+                temp_symbol = self.symbolTable
+                while temp_symbol is None:
+                    temp_symbol = self.parent.symbolTable
+                while not temp_symbol.exists(self.args[i].value) and temp_symbol.parent is not None:
+                    temp_symbol = temp_symbol.parent
+                if temp_symbol.exists(self.args[i].value):
+                    matches = temp_symbol.lookup(self.args[i].value)
+                    if len(matches) > 1:
+                        raise Exception("Ambiguous variable name")
+                    else:
+                        self.args[i] = matches[0]
+                        var_type = self.args[i].type
+                        format_type = getTypeFromFormat(self.format_specifiers[i][-1])
+                        if var_type == format_type:
+                            continue
+                        # check if the type of the variable matches
+                        if (var_type, format_type) not in conversions:
+                            raise Exception(f"No possible conversion from {var_type} to {format_type}")
+                        if (var_type, format_type) not in conv_promotions:
+                            # clang style warning
+                            warnings.append(f"Format specifies type '{format_type}' but the argument has type '{var_type}'\n"
+                                            f"Implicit conversion from '{var_type}' to '{format_type}'")
+        if not evaluate:
+            return self, warnings
+
         for i in range(len(self.format_specifiers)):
             current_specifier = self.format_specifiers[i]
             current_child = self.children[i]
@@ -862,7 +907,7 @@ class PrintfAST(AST):
 
             if current_specifier[-1] == 's':
                 if isinstance(current_child, VarNode):
-                    if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
+                    if not current_child.type == 'char' or not current_child.array:
                         raise TypeError("Invalid type for printf")
                 if isinstance(current_child, Node):
                     if current_child.value is None:
@@ -876,7 +921,7 @@ class PrintfAST(AST):
                 if isinstance(current_child, Node):
                     if length > len(str(current_child.value)):
                         current_child.value = str(current_child.value).rjust(length, ' ')
-        return self
+        return self , warnings
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
         out = ""
