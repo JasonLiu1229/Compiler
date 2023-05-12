@@ -896,7 +896,7 @@ class PrintfAST(AST):
 
             if current_specifier[-1] == 's':
                 if isinstance(current_child, VarNode):
-                    if not current_child.type == 'char' or not current_child.ptr or not current_child.array:
+                    if not current_child.type == 'char' or not current_child.array:
                         raise TypeError("Invalid type for printf")
                 if isinstance(current_child, Node):
                     if current_child.value is None:

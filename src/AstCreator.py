@@ -529,7 +529,12 @@ class AstCreator(MathVisitor):
                     visited.append(temp)
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
                         temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
-                    if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST):
+                    if isinstance(temp, For_loopAST):
+                        if temp.initialization is not None:
+                            not_visited.append(temp.initialization)
+                        if temp.incr is not None:
+                            not_visited.append(temp.incr)
+                    if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST) or isinstance(temp, For_loopAST):
                         not_visited.append(temp.condition)
                     for i in temp.children:
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
@@ -581,7 +586,7 @@ class AstCreator(MathVisitor):
                     temp_parent = temp_parent.parent
                 if temp_parent.symbolTable is None:
                     raise RuntimeError("Symbol table not found")
-                if not temp_parent.symbolTable.exists(ast.root):
+                if not temp_parent.symbolTable.exists(ast.root.key):
                     raise AttributeError(f"Function {ast.root.key} not found in scope")
                 # replace args
                 for i in range(len(ast.args)):
@@ -783,6 +788,8 @@ class AstCreator(MathVisitor):
                     temp_parent = temp_parent.parent
                 for child in ast.children:
                     # unhandled trees
+                    if isinstance(ast, For_loopAST):
+                        break
                     if isinstance(child, AST) and not isinstance(ast, Scope_AST):
                         handle = False
                         break
@@ -1143,26 +1150,38 @@ class AstCreator(MathVisitor):
                 continue
             elif ast is not None:
                 if isinstance(ast, TermAST) and ast.root.value == "++":
-                    node = copy.copy(ast.children[0])
-                    instance = copy.copy(node)
-                    incr_queue.append(instance)
+                    if isinstance(ast.parent, For_loopAST):
+                        if ast.parent.incr == ast:
+                            node = ast
+                    else:
+                        node = copy.copy(ast.children[0])
+                        instance = copy.copy(node)
+                        incr_queue.append(instance)
                 elif isinstance(ast, TermAST) and ast.root.value == "--":
-                    node = copy.copy(ast.children[0])
-                    instance = copy.copy(node)
-                    decr_queue.append(instance)
+                    if isinstance(ast.parent, For_loopAST):
+                        if ast.parent.incr == ast:
+                            node = ast
+                    else:
+                        node = copy.copy(ast.children[0])
+                        instance = copy.copy(node)
+                        decr_queue.append(instance)
                 elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"]:
-                    ast.children[0] = copy.deepcopy(ast.children[0])
-                    node = ast.handle()
-                    if ast.root.value == "++":
-                        temp_symbol.update(node)
-                        if isinstance(node.parent, VarNode) and node.parent.ptr:
-                            node.parent.value = copy.deepcopy(node)
-                            temp_symbol.update(node.parent)
-                    if ast.root.value == "--":
-                        temp_symbol.update(node)
-                        if isinstance(node.parent, VarNode) and node.parent.ptr:
-                            node.parent.value = copy.deepcopy(node)
-                            temp_symbol.update(node.parent)
+                    if isinstance(ast.parent, For_loopAST):
+                        if ast.parent.incr == ast:
+                            node = ast
+                    else:
+                        ast.children[0] = copy.deepcopy(ast.children[0])
+                        node = ast.handle()
+                        if ast.root.value == "++":
+                            temp_symbol.update(node)
+                            if isinstance(node.parent, VarNode) and node.parent.ptr:
+                                node.parent.value = copy.deepcopy(node)
+                                temp_symbol.update(node.parent)
+                        if ast.root.value == "--":
+                            temp_symbol.update(node)
+                            if isinstance(node.parent, VarNode) and node.parent.ptr:
+                                node.parent.value = copy.deepcopy(node)
+                                temp_symbol.update(node.parent)
                 elif isinstance(ast, PrintfAST):
                     # handle printf
                     node, warnings_handle = ast.handle()
@@ -1201,8 +1220,12 @@ class AstCreator(MathVisitor):
                 continue
             # Replace node
             if not isinstance(ast, CondAST) and not isinstance(ast, InitAST):
-                index = ast.parent.children.index(ast)
-                ast.parent.children[index] = node
+                if isinstance(ast.parent, For_loopAST):
+                    if ast.parent.incr == ast:
+                        ast.parent.incr = node
+                else:
+                    index = ast.parent.children.index(ast)
+                    ast.parent.children[index] = node
             else:
                 if isinstance(ast.parent, Else_CondAST):
                     ast.last_eval = not ast.last_eval
