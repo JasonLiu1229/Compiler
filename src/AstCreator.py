@@ -327,7 +327,7 @@ class AstCreator(MathVisitor):
                 elif isinstance(child, If_CondAST) or isinstance(child, While_loopAST):
                     if child.parent is None:
                         child.parent = base
-                    number = len(base.children[index-1].children)
+                    number = 2
                     else_child = None
                     if isinstance(base.children[index - 3], Else_CondAST):
                         number = 3
@@ -339,6 +339,14 @@ class AstCreator(MathVisitor):
                     child.condition = child.children[0]
                     child.condition.parent = child
                     child.children = child.children[1:]
+                    # set in_loop flag to false for all children in scope if if condition
+                    if isinstance(child, If_CondAST):
+                        for ch in child.children[0].children:
+                            ch.in_loop = child.in_loop
+                    if isinstance(child, While_loopAST):
+                        child.condition.in_loop = True
+                        for ch in child.children:
+                            ch.in_loop = True
                     index = base.children.index(child)
 
                 elif isinstance(child, Else_CondAST):
@@ -366,6 +374,9 @@ class AstCreator(MathVisitor):
                     child.incr = child.children[2]
                     child.incr.parent = child
                     child.children = child.children[3:]
+                    child.condition.in_loop = True
+                    for ch in child.children:
+                        ch.in_loop = True
                     index = base.children.index(child)
 
                 elif isinstance(child, Scope_AST) or isinstance(child, FuncScopeAST):
@@ -381,6 +392,9 @@ class AstCreator(MathVisitor):
                     base.children[new_index: index] = []
                     index = base.children.index(child)
                     # indexes["last_scope"][(indexes["scope_depth"]-1)] += 1
+                    if not (isinstance(child.parent, If_CondAST) or isinstance(child, FuncScopeAST)):
+                        for ch in child.children:
+                            ch.in_loop = True
                     indexes["last_instr"] = self.lastInstruction(index, base.children) + 1
 
                 elif isinstance(child, DeclrAST):
@@ -424,6 +438,7 @@ class AstCreator(MathVisitor):
                 child = base.children[index]
                 for n in child.children:
                     n.parent = child
+
                     if isinstance(child, AST) and child.symbolTable is not None and \
                             child.symbolTable.parent is None and n.symbolTable is not None:
                         # add child symbol table as parent symbol table of n symbol table
@@ -502,7 +517,7 @@ class AstCreator(MathVisitor):
         a = self.resolveTree(a)
         return a
 
-    def resolve(self, ast_in: AST):
+    def resolve(self, ast_in: AST, in_loop: bool = False, in_func: bool = False, in_cond: bool = False):
         visited = list()
         not_visited = list()
         not_visited.append(ast_in)
@@ -525,10 +540,10 @@ class AstCreator(MathVisitor):
                     # if temp.condition is not None and not isinstance(temp.condition, Node):
                     #     not_visited.append(temp.condition)
         visited.reverse()
-        ast_in.symbolTable = self.handle(visited)
+        ast_in.symbolTable = self.handle(visited, in_loop, in_func, in_cond)
         return ast_in
 
-    def handle(self, list_ast: list):
+    def handle(self, list_ast: list, in_loop: bool = False, in_func: bool = False, in_cond: bool = False):
         # TODO: handle function call
         # initialize queues
         updates_queue = []
@@ -685,7 +700,7 @@ class AstCreator(MathVisitor):
                 # declare each parameter in your scope
                 # handle what's in the function scope
                 ast.children[-1].symbolTable = ast.symbolTable
-                symbol_table = self.resolve(ast.children[-1]).symbolTable
+                symbol_table = self.resolve(ast.children[-1], in_func=True).symbolTable
                 ast.symbolTable.parent = symbol_table
                 # print symbol table
                 # print(f"Symbol table for {ast.root.key}:")
@@ -759,6 +774,13 @@ class AstCreator(MathVisitor):
                 continue
             if len(ast.children) > 0:
                 handle = True
+                temp_parent = ast.parent
+                evaluate = True
+                while temp_parent is not None:
+                    if isinstance(temp_parent, While_loopAST):
+                        evaluate = False
+                        break
+                    temp_parent = temp_parent.parent
                 for child in ast.children:
                     # unhandled trees
                     if isinstance(child, AST) and not isinstance(ast, Scope_AST):
@@ -779,10 +801,7 @@ class AstCreator(MathVisitor):
                                 line = "\033[95mError:\033[0m" + line.replace('\t', ' ')
                                 raise AttributeError(f"Error at line {ast.line}:{ast.column}: Array {ast.root.key} was not declared\n"
                                                      f"{line}")
-
-
                         # if not, throw error
-
                     # unreplaced rvars
                     if isinstance(child, Node) and child.key == "var":
                         # temp_parent = child.parent
@@ -804,10 +823,7 @@ class AstCreator(MathVisitor):
                                 exists_state = temp_symbol.exists(child.value)
                         if temp_parent is not None:
                             if evaluate:
-                                evaluate = not (
-                                            isinstance(temp_parent, While_loopAST) or isinstance(temp_parent,
-                                                                                                        For_loopAST)
-                                or isinstance(temp_parent.parent, While_loopAST) or isinstance(temp_parent.parent,For_loopAST))
+                                evaluate = not ast.in_loop
                         if not temp_symbol.exists(child.value):
                             raise ReferenceError(f"Variable {child.value} was not declared in this scope")
                         else:
@@ -817,7 +833,7 @@ class AstCreator(MathVisitor):
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                            if evaluate:
+                            if evaluate and not in_loop:
                                 ast.children[index] = copy.copy(matches[0].object)
                 if not handle:
                     continue
@@ -835,14 +851,14 @@ class AstCreator(MathVisitor):
                 ast.symbolTable = temp_symbol
                 self.resolve(ast.condition)
                 # handle for condition true
-                self.resolve(ast.children[0])
+                self.resolve(ast.children[0], in_cond=True)
                 self.resolve(ast.children[-1])
                 node = ast
 
             elif isinstance(ast, While_loopAST):
                 self.resolve(ast.condition)
                 ast.symbolTable = temp_symbol
-                self.resolve(ast.children[0])
+                self.resolve(ast.children[0], in_loop=True)
                 node = ast
 
             elif isinstance(ast, For_loopAST):
@@ -1149,7 +1165,19 @@ class AstCreator(MathVisitor):
                             temp_symbol.update(node.parent)
                 elif isinstance(ast, PrintfAST):
                     # handle printf
-                    node = ast.handle()
+                    node, warnings_handle = ast.handle()
+                    for warning in warnings_handle:
+                        # get line where warning is
+                        warning_str = "\033[95mwarning: \033[0m"
+                        f = open(self.file_name, "r")
+                        lines = f.readlines()
+                        f.close()
+                        line = lines[ast.line - 1]
+                        # insert squiggly line
+                        line = line[:ast.column] + '\u0332' + line[ast.column:]
+
+                        warning_str += f"{warning}\n{ast.line}:{ast.column}: {line}"
+                        self.warnings.append(warning_str)
                     # handle increment and decrement
                     for instance in incr_queue:
                         temp_instance = copy.copy(instance)
