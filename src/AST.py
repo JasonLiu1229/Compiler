@@ -686,6 +686,8 @@ class ExprAST(AST):
 
     def handle(self):
         node = Node("", None, self.parent)
+        if self.children[0].key == "var" or self.children[1].key == "var":
+            return self
         if self.root.value == '+':
             node = self.children[0] + self.children[1]
             node_type = checkType(str(node.value))
@@ -1166,6 +1168,11 @@ class ArrayElementAST(AST):
         if self.root.value < 0 or self.root.value >= temp_symbol.size:
             raise AttributeError(f"Array index {self.root.value} out of bounds for array {self.root.key}")
         return temp_symbol.object.values[self.root.value]
+
+    def save(self):
+        # for printing purposes
+        out = f"{self.root.key}[{self.root.value}]"
+        return out
 
 
 class Scope_AST(AST):

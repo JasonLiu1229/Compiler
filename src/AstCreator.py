@@ -514,6 +514,8 @@ class AstCreator(MathVisitor):
                     visited.append(temp)
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
                         temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
+                    if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST):
+                        not_visited.append(temp.condition)
                     for i in temp.children:
                         if isinstance(i, AST) and not isinstance(i, Else_CondAST):
                             not_visited.append(i)
@@ -704,29 +706,6 @@ class AstCreator(MathVisitor):
                 scanf.defined = True
                 ast.parent.symbolTable.insert(scanf)
 
-            # if isinstance(ast, ArrayElementAST):
-            #     # search for the array in the symbol table
-            #     if temp_symbol is not None:
-            #         exists_state = temp_symbol.exists(ast.root.key)
-            #     elif symbol_table is not None:
-            #         exists_state = symbol_table.exists(ast.root.key)
-            #     else:
-            #         exists_state = False
-            #     if not exists_state:
-            #         raise AttributeError(f"Array {ast.root.key} not found")
-            #     else:
-            #         matches = symbol_table.lookup(ast.root.key)
-            #         if len(matches) == 1:
-            #             temp_symbol = matches[0]
-            #             # check index
-            #             if ast.root.value < 0 or ast.root.value >= temp_symbol.size:
-            #                 raise AttributeError(f"Index {ast.root.key} out of bounds for array {ast.root.key}")
-            #             # check if the array is a pointer - for now, assume it's not
-            #             # get the index-th element of the array
-            #             node = temp_symbol.object.values[ast.root.value]
-            #         else:
-            #             raise AttributeError(f"Multiple definitions of array {ast.root.key}")
-
             if isinstance(ast, ArrayDeclAST):
                 # check if the array was previously declared
                 # if not, declare it
@@ -785,8 +764,27 @@ class AstCreator(MathVisitor):
                     if isinstance(child, AST) and not isinstance(ast, Scope_AST):
                         handle = False
                         break
+                    if isinstance(ast, ArrayElementAST):
+                        # check if the array was previously declared
+                        while not temp_symbol.exists(ast.root.key):
+                            temp_symbol = temp_symbol.parent
+                            if temp_symbol is None:
+                                # get instruction in the file where the warning is by using column and line number
+                                f = open(self.file_name, "r")
+                                lines = f.readlines()
+                                line = lines[ast.line - 1]
+                                f.close()
+                                # insert squiggly line
+                                line = line[:ast.column] + '\u0332' + line[ast.column:]
+                                line = "\033[95mError:\033[0m" + line.replace('\t', ' ')
+                                raise AttributeError(f"Error at line {ast.line}:{ast.column}: Array {ast.root.key} was not declared\n"
+                                                     f"{line}")
+
+
+                        # if not, throw error
+
                     # unreplaced rvars
-                    elif isinstance(child, Node) and child.key == "var":
+                    if isinstance(child, Node) and child.key == "var":
                         # temp_parent = child.parent
                         # temp_symbol = child.parent.symbolTable
                         # symbol_table = child.parent.symbolTable
@@ -819,7 +817,8 @@ class AstCreator(MathVisitor):
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                            ast.children[index] = copy.copy(matches[0].object)
+                            if evaluate:
+                                ast.children[index] = copy.copy(matches[0].object)
                 if not handle:
                     continue
             if isinstance(ast, ScanfAST):
@@ -1123,6 +1122,8 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and not evaluate:
                 continue
             elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and not evaluate:
+                continue
+            elif isinstance(ast, ArrayElementAST) and not evaluate:
                 continue
             elif ast is not None:
                 if isinstance(ast, TermAST) and ast.root.value == "++":
