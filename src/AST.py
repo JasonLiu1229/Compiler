@@ -1606,7 +1606,8 @@ class Else_CondAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        # TDOD: else mips
+        # TODO: else mips
+        pass
 
 
 class For_loopAST(Scope_AST):
