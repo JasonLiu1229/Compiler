@@ -1098,6 +1098,14 @@ class PrintfAST(AST):
                         format_[i] = arg
         return format_
 
+    def getType(self, input):
+        if type(input) == int:
+            return 0
+        elif type(input) == float:
+            return 1
+        elif type(input) == str:
+            return 2
+
     def mips(self, registers: Registers):
         out_local = ""
         out_global = ""
@@ -1115,7 +1123,15 @@ class PrintfAST(AST):
             # out_local += "li $v0, 4\n"
             # out_local += "syscall\n"
             # change so it call the right print function
-            pass
+            if self.getType(i) == 0:
+                out_local += f"li $a0, {i}\n"
+                out_local += f"jal print_int\n"
+            elif self.getType(i) == 1:
+                out_local += f"li $a0, {i}\n"
+                out_local += f"jal print_float\n"
+            elif self.getType(i) == 2:
+                out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
+                out_local += f"jal print_string\n"
         return out_local, out_global
 
 
