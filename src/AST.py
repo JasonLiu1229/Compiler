@@ -1560,17 +1560,18 @@ class If_CondAST(Scope_AST):
         for current in visited:
             output = current.mips(registers)
             out += output[0]
-        # else block if else ast exist do 'else llvm' else do 'create block'
-        else_bool = False
-        for child in self.children:
-            if isinstance(child, Else_CondAST):
-                output = child.mips(registers)
-                out += output[0]
-                else_bool = True
-                break
-        # create new block if else llvm didn't pass
-        if not else_bool:
-            out += f"else_{registers.label}:\n"
+        # TODO: else
+        # # else block if else ast exist do 'else mips' else do 'create block'
+        # else_bool = False
+        # for child in self.children:
+        #     if isinstance(child, Else_CondAST):
+        #         output = child.mips(registers)
+        #         out += output[0]
+        #         else_bool = True
+        #         break
+        # # create new block if else mips didn't pass
+        # if not else_bool:
+        #     out += f"else_{}:\n"
         return out, ""
 
 
@@ -1771,6 +1772,7 @@ class ContAST(InstrAST):
         return out, index
 
     def mips(self, registers: Registers):
+        # get the name of it's block
         pass
 
 class FuncParametersAST(AST):
