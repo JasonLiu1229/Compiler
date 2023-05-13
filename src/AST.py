@@ -1107,6 +1107,7 @@ class PrintfAST(AST):
                 continue
             else:
                 registers.globalObjects.data[0][f"str_{i}"] = i
+        # now syscall the list format in the right order with the right names
         pass
 
 
