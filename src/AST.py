@@ -1214,6 +1214,8 @@ class TermAST(AST):
                 return self
             if child.value is None:
                 return self
+            if child.key == "var":
+                return self
         if self.root.value == '*':
             node = self.children[0] * self.children[1]
             node_type = checkType(str(node.value))

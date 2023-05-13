@@ -105,6 +105,9 @@ class AstCreator(MathVisitor):
             return self.visitIncl_stat(ctx)
         elif isinstance(ctx, MathParser.ScanfContext):
             return self.visitScanf(ctx)
+        elif isinstance(ctx, MathParser.CompContext):
+            return self.visitComp(ctx)
+
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -289,12 +292,9 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
 
                 elif isinstance(child, CondAST):
-                    if child.root.value == "const":
-                        child.children = base.children[index - 1: index]
-                        base.children[index - 1:index] = []
-                    else:
-                        child.children = base.children[index - 2: index]
-                        base.children[index - 2:index] = []
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1:index] = []
+
                     child.children.reverse()
                     index = base.children.index(child)
 
@@ -535,7 +535,9 @@ class AstCreator(MathVisitor):
                         if temp.incr is not None:
                             not_visited.append(temp.incr)
                     if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST) or isinstance(temp, For_loopAST):
-                        not_visited.append(temp.condition)
+                        # not_visited.append(temp.condition)
+                        visited.append(temp)
+                        continue
                     for i in temp.children:
                         if isinstance(i, AST):
                             not_visited.append(i)
@@ -870,10 +872,10 @@ class AstCreator(MathVisitor):
             # conditional cases
             elif isinstance(ast, If_CondAST) or isinstance(ast, Else_CondAST):
                 ast.symbolTable = temp_symbol
-                self.resolve(ast.condition)
+                self.resolve(ast.condition, in_cond=True, in_loop=in_loop)
                 # handle for condition true
-                self.resolve(ast.children[0], in_cond=True)
-                self.resolve(ast.children[-1])
+                self.resolve(ast.children[0], in_cond=True, in_loop=in_loop)
+                self.resolve(ast.children[-1], in_cond=True, in_loop=in_loop)
                 node = ast
 
             elif isinstance(ast, While_loopAST):
@@ -1157,7 +1159,7 @@ class AstCreator(MathVisitor):
                     if ast.root.value == "--":
                         decr_queue.append(node)
             elif isinstance(ast, CondAST):
-                if evaluate:
+                if evaluate and not ast.in_loop:
                     handle = True
                     for val in ast.children:
                         if isinstance(val, Node) and val.key == "var" or isinstance(val, AST):
@@ -1165,7 +1167,10 @@ class AstCreator(MathVisitor):
                             handle = False
                             break
                     if handle:
-                        ast.last_eval = copy.copy(ast).handle().value
+                        if isinstance(ast.children[0], Node):
+                            ast.last_eval = ast.children[0].value
+                        else:
+                            ast.last_eval = copy.copy(ast).handle().value
             elif isinstance(ast, TermAST) and ast.root.value in ["++", "--"] and not evaluate:
                 continue
             elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and not evaluate:
@@ -1531,10 +1536,13 @@ class AstCreator(MathVisitor):
         ast = CondAST()
         ast.column = ctx.start.column
         ast.line = ctx.start.line
-        if len(ctx.children) == 3:
-            ast.root = Node("cond", ctx.children[1].getText())
-        elif len(ctx.children) == 1:
-            ast.root = Node("cond", "const")
+        # cond : comp | expr
+        if len(ctx.children) != 1:
+            raise TypeError("Invalid condition")
+        if isinstance(ctx.children[0], MathParser.CompContext):
+            ast.root = Node("cond", None)
+        elif isinstance(ctx.children[0], MathParser.ExprContext):
+            ast.root = Node("expr", "const")
         return ast
 
     def visitIncr(self, ctx: MathParser.IncrContext):
@@ -1711,6 +1719,13 @@ class AstCreator(MathVisitor):
         if ctx.library.text != "stdio":
             raise RuntimeError("Unsupported Library")
         out = IncludeAST(Node(f"{ctx.library.text}.h", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitComp(self, ctx: MathParser.CompContext):
+        # this is just an in-between node for an expression
+        out = TermAST(Node("term" , ctx.op.text))
         out.column = ctx.start.column
         out.line = ctx.start.line
         return out
