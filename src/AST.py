@@ -1918,6 +1918,8 @@ class FuncDefnAST(AST):
         out_global = f".globl {self.root.key}\n" if self.root.key == "main" else ""
         # Begin
         # Parameters
+        # TODO: Parameters
+        # Body
         out_l, out_g = self.children[0].mips(registers)
         out_local += out_l
         out_global += out_g
