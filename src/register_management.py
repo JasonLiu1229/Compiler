@@ -382,6 +382,9 @@ class singleManager:
         self.lo = Register(in_name="lo")
         self.hi = Register(in_name="hi")
 
+class dataManager:
+    def __init__(self) -> None:
+        self.data: [] = [{}, {}] # asciiz, word
 
 class Registers:
     def __init__(self) -> None:
@@ -392,6 +395,7 @@ class Registers:
         self.reservedManager = reservedManager()
         self.singleManager = singleManager()
         self.floatManager = floatManager()
+        self.globalObjects: dataManager = dataManager()
 
     def clearAll(self):
         self.returnManager.clear()

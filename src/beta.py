@@ -10,7 +10,7 @@ class printf:
     def convert(self):
         # Split the format string into a list of strings and format specifiers (e.g. "%s") but not \%[A-Za-z] but keep the string
         # so if \%s is found, it is not split
-        format_ = re.split(r'(?<!\\)%[A-Za-z]', self.format_string)
+        format_ = re.split(r'((?<!\\)%[A-Za-z])', self.format_string)
         # loop through list and check for valid format specifiers
         counter = -1
         for i in range(len(format_)):
@@ -58,7 +58,7 @@ class printf:
                     # remove the size from the format string
                     format_[i] = format_[i][len(size_str):]
                     # convert the size to an integer
-                    size = int(size_str)
+                    self.width = int(size_str)
                 # replace the format specifier with the argument
                 # check first if the format specifier is in the list of valid specifiers
                 if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X', 'f', 'F', 'e', 'E', 'g', 'G', 'a', 'A', 'c', 's', 'p',
@@ -72,15 +72,15 @@ class printf:
                                 format_[i] = arg
                                 continue
                             # if the integer is shorter than the size
-                            if len(str(arg)) < size:
+                            if len(str(arg)) < self.width:
                                 # if the integer is left-aligned
                                 if left_align:
                                     # add spaces to the right of the integer
-                                    arg = str(arg) + " " * (size - len(str(arg)))
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
                                 # if the integer is right-aligned
                                 else:
                                     # add spaces to the left of the integer
-                                    arg = " " * (size - len(str(arg))) + str(arg)
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                             format_[i] = arg
                         # if the format specifier is a floating-point number
                         elif format_[i][0] in ['f', 'F', 'e', 'E', 'g', 'G', 'a', 'A']:
@@ -93,15 +93,15 @@ class printf:
                                 format_[i] = arg
                                 continue
                             # if the number is shorter than the size
-                            if len(str(arg)) < size:
+                            if len(str(arg)) < self.width:
                                 # if the number is left-aligned
                                 if left_align:
                                     # add spaces to the right of the number
-                                    arg = str(arg) + " " * (size - len(str(arg)))
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
                                 # if the number is right-aligned
                                 else:
                                     # add spaces to the left of the number
-                                    arg = " " * (size - len(str(arg))) + str(arg)
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                             format_[i] = arg
                         # if the format specifier is a character
                         elif format_[i][0] == 'c':
@@ -110,15 +110,15 @@ class printf:
                                 format_[i] = arg
                                 continue
                             # if the character is shorter than the size
-                            if len(str(arg)) < size:
+                            if len(str(arg)) < self.width:
                                 # if the character is left-aligned
                                 if left_align:
                                     # add spaces to the right of the character
-                                    arg = str(arg) + " " * (size - len(str(arg)))
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
                                 # if the character is right-aligned
                                 else:
                                     # add spaces to the left of the character
-                                    arg = " " * (size - len(str(arg))) + str(arg)
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                             format_[i] = arg
                         # if the format specifier is a string
                         elif format_[i][0] == 's':
@@ -127,15 +127,15 @@ class printf:
                                 format_[i] = arg
                                 continue
                             # if the string is shorter than the size
-                            if len(str(arg)) < size:
+                            if len(str(arg)) < self.width:
                                 # if the string is left-aligned
                                 if left_align:
                                     # add spaces to the right of the string
-                                    arg = str(arg) + " " * (size - len(str(arg)))
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
                                 # if the string is right-aligned
                                 else:
                                     # add spaces to the left of the string
-                                    arg = " " * (size - len(str(arg))) + str(arg)
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                             format_[i] = arg
         return "".join(format_)
 
