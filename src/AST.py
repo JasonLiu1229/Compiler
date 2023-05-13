@@ -1110,10 +1110,12 @@ class PrintfAST(AST):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0])}"
         # now syscall the list format in the right order with the right names
         for i in range(len(list_format)):
-            out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
-            out_local += "li $v0, 4\n"
-            out_local += "syscall\n"
-
+            # load the right variable in $a0
+            # out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
+            # out_local += "li $v0, 4\n"
+            # out_local += "syscall\n"
+            # change so it call the right print function
+            pass
         return out_local, out_global
 
 
