@@ -2001,6 +2001,7 @@ class ScanfAST(AST):
         self.variables = []
         self.format_string = None
         self.format_specifiers = []
+        self.width: int = 0
 
     def save(self):
         out, name = self.getDict()
@@ -2041,6 +2042,11 @@ class ScanfAST(AST):
         return out, index
 
     def mips(self, registers: Registers):
+        # scanf in mips
+        # format the format string
+        # ask for input depending on the format string, so different syscall for different types
+        # store the input in the variables (registers that are assigned to the variables)
+        # check if the completed format string is correct
         pass
 
 class ArrayDeclAST(AST):
@@ -2134,4 +2140,45 @@ class IncludeAST(AST):
         return f"declare i32 @printf(ptr noundef, ...) #2\n\ndeclare i32 @__isoc99_scanf(ptr noundef, ...) #2\n\n", index
 
     def mips(self, registers: Registers):
-        pass
+        # hardcode the printf and scanf functions
+        # printf for int
+        out_local = "printf_int:\n"
+        out_local += "li $v0, 1\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # printf for string
+        out_local += "printf_string:\n"
+        out_local += "li $v0, 4\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # printf for char
+        out_local += "printf_char:\n"
+        out_local += "li $v0, 11\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # printf for float
+        out_local += "printf_float:\n"
+        out_local += "li $v0, 2\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # scanf for int
+        out_local += "scanf_int:\n"
+        out_local += "li $v0, 5\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # scanf for string
+        out_local += "scanf_string:\n"
+        out_local += "li $v0, 8\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # scanf for char
+        out_local += "scanf_char:\n"
+        out_local += "li $v0, 12\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        # scanf for float
+        out_local += "scanf_float:\n"
+        out_local += "li $v0, 6\n"
+        out_local += "syscall\n"
+        out_local += "jr $ra\n\n"
+        return out_local, ""
