@@ -274,9 +274,6 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
 
                 elif isinstance(child, FuncParametersAST):
-                    # last_inst = self.lastInstruction(index=index, in_list=base.children, token='}')
-                    # last_func = self.lastFuncScope(index=index, in_list=base.children, token='}')
-                    # last_det = max(last_inst, last_func)
                     child.parameters = base.children[index - len(child.parameters): index]
                     base.children[index - len(child.parameters): index] = []
                     child.parameters.reverse()
@@ -288,7 +285,7 @@ class AstCreator(MathVisitor):
                         if param.value is not None:
                             default_found = True
                         elif param.value is None and default_found:
-                            raise AttributeError("Default value in the middle")
+                            raise AttributeError("Default value cannot be followed by non-default value")
                     index = base.children.index(child)
 
                 elif isinstance(child, CondAST):
@@ -407,7 +404,7 @@ class AstCreator(MathVisitor):
                     update_index = last_decl
                     update_index += 1
 
-                elif child.root.key == "assign":
+                elif isinstance(child, AssignAST) or isinstance(child, VarDeclrAST):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
                     base.children[index - 2: index] = []
@@ -464,13 +461,6 @@ class AstCreator(MathVisitor):
 
                 if child.key == "term" and child.value is None:
                     child.value = base.children[index - 1].value
-
-                if child.key == "assign_op":
-                    base.children[index] = AssignAST(Node("assign", None))
-                    base.children[index].children = base.children[index - 2:index]
-                    base.children[index].children.reverse()
-                    base.children[index - 2:index] = []
-                    index -= 2
 
                 if isinstance(base.children[index], AST):
                     child = base.children[index]
@@ -741,14 +731,6 @@ class AstCreator(MathVisitor):
                 ast.parent.symbolTable.insert(scanf)
 
             if isinstance(ast, ArrayDeclAST):
-                # check if the array was previously declared
-                # if not, declare it
-                # if yes, throw error
-                # check if the array size is valid
-                # if not, throw error
-                # if yes, return the type of the array
-                # if the array is a pointer, dereference it
-                # if the array is not a pointer, return the type
                 if temp_symbol is not None:
                     exists_state = temp_symbol.exists(ast.root.key[:-2])
                 elif symbol_table is not None:
@@ -802,6 +784,13 @@ class AstCreator(MathVisitor):
                     temp_parent = temp_parent.parent
                 for child in ast.children:
                     # unhandled trees
+                    # check parent line: if it is dereferenced from a function parameter, then evaluate is false
+                    temp_parent = child.parent
+                    while temp_parent is not None:
+                        if isinstance(temp_parent, FuncParameter):
+                            evaluate = False
+                            break
+                        temp_parent = temp_parent.parent
                     if isinstance(ast, For_loopAST):
                         break
                     if isinstance(child, AST) and not isinstance(ast, Scope_AST):
@@ -855,9 +844,10 @@ class AstCreator(MathVisitor):
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                             if evaluate and not in_loop:
-                                # check if value is function parameter
-                                if not isinstance(matches[0].object, FuncParameter):
-                                    ast.children[index] = copy.copy(matches[0].object)
+                                ast.children[index] = copy.copy(matches[0].object)
+                                if isinstance(ast.children[index], FuncParameter):
+                                    ast.children[index].parent = ast
+                                    evaluate = False
                 if not handle:
                     continue
             if isinstance(ast, ScanfAST):
@@ -1178,7 +1168,7 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, ArrayElementAST) and not evaluate:
                 continue
             elif ast is not None:
-                if isinstance(ast, TermAST) and ast.root.value == "++":
+                if isinstance(ast, TermAST) and ast.root.value == "++" and evaluate:
                     if isinstance(ast.parent, For_loopAST):
                         if ast.parent.incr == ast:
                             node = ast
@@ -1186,7 +1176,7 @@ class AstCreator(MathVisitor):
                         node = copy.copy(ast.children[0])
                         instance = copy.copy(node)
                         incr_queue.append(instance)
-                elif isinstance(ast, TermAST) and ast.root.value == "--":
+                elif isinstance(ast, TermAST) and ast.root.value == "--" and evaluate:
                     if isinstance(ast.parent, For_loopAST):
                         if ast.parent.incr == ast:
                             node = ast
@@ -1194,7 +1184,7 @@ class AstCreator(MathVisitor):
                         node = copy.copy(ast.children[0])
                         instance = copy.copy(node)
                         decr_queue.append(instance)
-                elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"]:
+                elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and evaluate:
                     if isinstance(ast.parent, For_loopAST):
                         if ast.parent.incr == ast:
                             node = ast
@@ -1385,11 +1375,9 @@ class AstCreator(MathVisitor):
         :param ctx: context
         :return: Node
         """
-        root = Node(keywords[8], None)
-        if not isinstance(ctx.children[0], MathParser.Array_elContext):
-            root.value = ctx.children[0].getText()
-        else:
-            root.value = ctx.children[0].children[0].getText()
+        root = AssignAST(Node("assign", None))
+        root.column = ctx.start.column
+        root.line = ctx.start.line
         return root
 
     def visitDeclr(self, ctx: MathParser.DeclrContext):
@@ -1577,7 +1565,7 @@ class AstCreator(MathVisitor):
     def visitParam_declr(self, ctx: MathParser.Param_declrContext):
         out = FuncParameter(key=ctx.var.text, value=None, vtype=ctx.type_.text, const=(ctx.const is not None),
                             ptr=(ctx.ptr is not None),
-                            deref_level=(len(ctx.ptr) if ctx.ptr is not None else 0),
+                            deref_level=0,
                             total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
                             const_ptr=(ctx.const is not None and ctx.ptr is not None),
                             reference=(ctx.reference is not None))
@@ -1614,6 +1602,7 @@ class AstCreator(MathVisitor):
         :return: Node with name args_list and value the number of arguments
         """
         # return Node("args_list", len(ctx.args))
+        return
 
     def visitFunc_call(self, ctx: MathParser.Func_callContext):
         """
@@ -1623,7 +1612,7 @@ class AstCreator(MathVisitor):
         """
         out = FuncCallAST(Node(ctx.name.text, None))
         if ctx.args is not None:
-            out.args = [None for arg in ctx.args.args]
+            out.args = [None for _ in ctx.args.args]
         out.column = ctx.start.column
         out.line = ctx.start.line
         return out
@@ -1725,7 +1714,11 @@ class AstCreator(MathVisitor):
 
     def visitComp(self, ctx: MathParser.CompContext):
         # this is just an in-between node for an expression
-        out = TermAST(Node("term" , ctx.op.text))
+        # check the operation
+        if ctx.op.text in ["&&", "||"]:
+            out = ExprAST(Node("expr", ctx.op.text))
+        else:
+            out = TermAST(Node("term" , ctx.op.text))
         out.column = ctx.start.column
         out.line = ctx.start.line
         return out

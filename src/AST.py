@@ -1365,8 +1365,9 @@ class DerefAST(AST):
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child = child.value
-        child.parent = self.children[0]
-        if isinstance(child, VarNode) and child.ptr:
+        if not isinstance(self.children[0], FuncParameter):
+            child.parent = self.children[0]
+        if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
             child.deref_level += 1
         return child
 
