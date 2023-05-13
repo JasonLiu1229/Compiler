@@ -1411,7 +1411,25 @@ class Scope_AST(AST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
+        visited = []
+        not_visited = [self.children[0]]
+        # DFS
+        while len(not_visited) != 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                if isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
+                        or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
+                        or isinstance(current, FuncDeclAST):
+                    for i in current.children:
+                        not_visited.append(i)
+        out_local = out_global = ""
+        for i in visited:
+            output = i.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+        return out_local, out_global
+
 
 
 
