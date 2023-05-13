@@ -1409,6 +1409,28 @@ class Scope_AST(AST):
             out += output[0]
             index = output[1]
         return out, index
+    def calculateStacksize(self):
+        size = 0
+        # calculate the size of the stack of the function
+        for entry in self.symbolTable.table:
+            if isinstance(entry.object, VarNode):
+                if entry.object.ptr:
+                    size += 4
+                if entry.object.array:
+                    size += 4 * entry.size
+                else:
+                    size += 4
+
+        # calculate the size of the stack of the function parameters
+        for entry in self.parent.symbolTable.table:
+            if isinstance(entry.object, VarNode):
+                if entry.object.ptr:
+                    size += 4
+                if entry.object.array:
+                    size += 4 * entry.size
+                else:
+                    size += 4
+        return size
 
     def mips(self, registers: Registers):
         visited = []
@@ -1424,10 +1446,23 @@ class Scope_AST(AST):
                     for i in current.children:
                         not_visited.append(i)
         out_local = out_global = ""
-        for i in visited:
-            output = i.mips(registers)
-            out_local += output[0]
-            out_global += output[1]
+        size = self.calculateStacksize()
+        size += 4
+        # begin
+        out_local += f"addi $sp, $sp, -{size}\n"
+        out_local += f"sw $ra, {4}($sp)\n"
+
+        # middle
+        for current in visited:
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitMIPSOp(current, registers)
+            else:
+                output = current.mips(registers)
+
+        # end
+        out_local += f"lw $ra, {4}($sp)\n"
+        out_local += f"addi $sp, $sp, {size}\n"
         return out_local, out_global
 
 
@@ -1496,7 +1531,29 @@ class If_CondAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
+        out = ""
+        # condition first
+        visited = visited_list_DFS(self.condition)
+        for current in visited:
+            output_str, output_in = self.visitMipsOp(current, registers)
+            out += output_str
+        # if block
+        visited = visited_list_DFS(self.children[0])
+        for current in visited:
+            output = current.mips(registers)
+            out += output[0]
+        # else block if else ast exist do 'else llvm' else do 'create block'
+        else_bool = False
+        for child in self.children:
+            if isinstance(child, Else_CondAST):
+                output = child.mips(registers)
+                out += output[0]
+                else_bool = True
+                break
+        # create new block if else llvm didn't pass
+        if not else_bool:
+            out += f"else_{registers.label}:\n"
+        return out, ""
 
 
 class Else_CondAST(Scope_AST):
