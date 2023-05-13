@@ -64,6 +64,7 @@ func_call       :   name=VAR_NAME '(' args=arg_list? ')'
 func_scope      :   '{'(
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
+                        | comp ((';')+ | DELIM)
                            )* '}'
                 ;
 
@@ -74,7 +75,7 @@ return_instr    :   RETURN (ret_val=expr)? ';' (instr | return_instr)*
 scope           :   '{' (
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
-                        | break_instr | cont_instr | instr
+                        | break_instr | cont_instr | instr | comp ((';')+ | DELIM)
                         )* '}'
                 ;
 
@@ -110,9 +111,9 @@ for_loop        :   FOR '(' initialization=init ';' condition=cond ';' increment
 init            :   TYPE lvar ASSIGN expr
                 |   assign;
 
-cond            :   term (GEQ | LEQ | NEQ) factor
-                |   term (GT | LT | EQ) factor
-                |   expr (AND_OP | OR_OP) term
+// comparison takes precedence over mathemathical operations
+
+cond            :   comp
                 |   expr
                 ;
 
@@ -148,6 +149,11 @@ lvar            :   ptr+=STR* name=VAR_NAME
 rvar            :   VAR_NAME
                 ;
 
+comp            :   expr op=(GEQ | LEQ | NEQ) expr
+                |   expr op=(GT | LT | EQ) expr
+                |   expr op=(AND_OP | OR_OP) expr
+                ;
+
 expr            :   term
                 |   expr SUM term
                 |   expr DIF term
@@ -156,11 +162,10 @@ expr            :   term
 
 term            :   factor
                 |   term (STR | DIV | MOD) factor
-                |   term (GT | LT | EQ) factor
-                |   term (GEQ | LEQ | NEQ) factor
                 |   (NOT_OP) factor
                 |   term (INCR | DECR)
                 ;
+// declare precedence of operations
 
 factor          :   primary
                 |   DIF factor

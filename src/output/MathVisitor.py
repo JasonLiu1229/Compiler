@@ -179,6 +179,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#comp.
+    def visitComp(self, ctx:MathParser.CompContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#expr.
     def visitExpr(self, ctx:MathParser.ExprContext):
         return self.visitChildren(ctx)
