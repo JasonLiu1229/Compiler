@@ -13,7 +13,6 @@ instr           :   declr ((';')+ | DELIM)
 declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
-// TODO: printf (modified) and scanf
 printf          :   PRINTF '(' (rvar | rtype | print_val=STRING) ')'
                 |   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
                 ;
@@ -22,6 +21,7 @@ printf_arg      :   rvar
                 |   rtype
                 |   array_el
                 |   deref
+                |   comp
                 |   expr
                 |   STRING;
 
@@ -92,10 +92,6 @@ array_decl      :   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT?
 incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
                 ;
 
-
-// TODO: break and continue
-// TODO: switch(case, break, default) -> translate switch to if
-
 if_cond         :   IF '(' condition=cond ')' scope else_cond?
                 ;
 
@@ -162,6 +158,7 @@ expr            :   term
 
 term            :   factor
                 |   term (STR | DIV | MOD) factor
+                |   term (GT | LT | GEQ | LEQ | EQ | NEQ) factor
                 |   (NOT_OP) factor
                 |   term (INCR | DECR)
                 ;
