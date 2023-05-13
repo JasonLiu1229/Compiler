@@ -968,6 +968,7 @@ class PrintfAST(AST):
     def format(self):
         # Split the format string into a list of strings and format specifiers (e.g. "%s") but not \%[A-Za-z] but keep the string
         # so if \%s is found, it is not split
+        # TODO: argument if variable -> take value of the variable else make string
         format_ = re.split(r'((?<!\\)%[A-Za-z])', self.format_string)
         # loop through list and check for valid format specifiers
         counter = -1
@@ -1098,7 +1099,8 @@ class PrintfAST(AST):
                         format_[i] = arg
         return format_
 
-    def getType(self, input):
+    @staticmethod
+    def getType(input):
         if type(input) == int:
             return 0
         elif type(input) == float:
