@@ -1102,25 +1102,19 @@ class PrintfAST(AST):
         out_local = ""
         out_global = ""
         list_format = self.format()
-        # check all strings in list_format and if the contain special characters, replace it with the right asci code
-        for object_ in range(len(list_format)):
-            for j in range(len(list_format[object_])):
-                # if list_format[object_][j] == " ":
-                #     list_format[object_][j] ==
-                pass
-            pass
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
             if i in registers.globalObjects.data[0].values():
                 continue
             else:
-                registers.globalObjects.data[0][f"str_{i}"] = i
+                registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0])}"
         # now syscall the list format in the right order with the right names
         for i in range(len(list_format)):
-            out_local += f"la $a0, str_{list_format[i]}\n"
+            out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
             out_local += "li $v0, 4\n"
             out_local += "syscall\n"
 
+        return out_local, out_global
 
 
 
