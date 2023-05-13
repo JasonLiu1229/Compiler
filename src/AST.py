@@ -1956,7 +1956,16 @@ class FuncCallAST(AST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
+        out = ""
+        # arguments
+        arg_string = ""
+        count = 0
+        for arg in self.args:
+            # TODO: add support for arguments
+            pass
+        # end string
+        out += f"jal {self.root.key}\n"
+        return out, ""
 
 
 
