@@ -181,9 +181,11 @@ class MIPS:
         out = "allocate_stack:\n"
         out += f"addi $sp, $sp, -120\n"
         for i in range(2,32):
+            if i in [26, 27, 28, 29, 30]:
+                continue
             out += f"sw ${i}, {i*4}($sp)\n"
         # jump back to function
-        out += f"jr $ra\n"
+        out += f"jr $ra\n\n"
         return out
 
     @staticmethod
@@ -191,8 +193,10 @@ class MIPS:
         # Deallocate every register from stack
         out = "deallocate_stack:\n"
         for i in range(2,32):
+            if i in [26, 27, 28, 29, 30]:
+                continue
             out += f"lw ${i}, {i*4}($sp)\n"
         out += f"addi $sp, $sp, 120\n"
         # jump back to function
-        out += f"jr $ra\n"
+        out += f"jr $ra\n\n"
         return out
