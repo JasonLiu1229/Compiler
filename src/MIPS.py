@@ -38,16 +38,16 @@ class MIPS:
         """
         self.mips_dfs()
         global_str = local_str = variables = ""
-        global_str += self.allocate_stack()
-        global_str += self.deallocate_stack()
+        # global_str += self.allocate_stack()
+        # global_str += self.deallocate_stack()
         with open(self.mips, "w") as f:
             for node in self.nodes:
                 new_loc, new_glob = node.mips(self.registers)
                 global_str += new_glob
                 local_str += new_loc
-            variables += ".data\n"
+            variables += "\t.data\n"
             for key, value in self.registers.globalObjects.data[0].items():
-                variables += f"{value}: .asciiz \"{key}\"\n"
+                variables += f"\t{value}: .asciiz \"{key}\"\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)

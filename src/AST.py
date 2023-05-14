@@ -968,8 +968,7 @@ class PrintfAST(AST):
     def format(self):
         # Split the format string into a list of strings and format specifiers (e.g. "%s") but not \%[A-Za-z] but keep the string
         # so if \%s is found, it is not split
-        # TODO: argument if variable -> take value of the variable else make string
-        format_ = re.split(r'((?<!\\)%[A-Za-z])', self.format_string)
+        format_ = re.split(r'((?<!\\)%[A-Za-z] | \\0A)', self.format_string)
         # loop through list and check for valid format specifiers
         counter = -1
         for i in range(len(format_)):
@@ -1112,6 +1111,8 @@ class PrintfAST(AST):
             return 1
         elif type(input) == str:
             return 2
+        else:
+            return 3
 
     def mips(self, registers: Registers):
         out_local = ""
@@ -1119,7 +1120,7 @@ class PrintfAST(AST):
         list_format = self.format()
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
-            if i in registers.globalObjects.data[0].items() or (isinstance(i, str) and len(i) == 0) \
+            if i in registers.globalObjects.data[0].items() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
                     or isinstance(i, int) or isinstance(i, float):
                 continue
             else:
@@ -1133,15 +1134,23 @@ class PrintfAST(AST):
             # change so it call the right print function
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
+            if isinstance(list_format[i], str) and list_format[i] == '\\0A':
+                out_local += "\tli $v0, 11\n"
+                out_local += "\tla $a0, 0x0A\n"
+                out_local += "\tsyscall\n"
+                continue
             if self.getType(list_format[i]) == 0:
                 out_local += f"\tli $a0, {list_format[i]}\n"
-                out_local += f"\tjal printf_int\n"
+                out_local += "\tli $v0, 1\n"
+                out_local += "\tsyscall\n"
             elif self.getType(list_format[i]) == 1:
                 out_local += f"\tli $a0, {list_format[i]}\n"
-                out_local += f"\tjal printf_float\n"
+                out_local += "\tli $v0, 2\n"
+                out_local += "\tsyscall\n"
             elif self.getType(list_format[i]) == 2:
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
-                out_local += f"\tjal printf_string\n"
+                out_local += "\tli $v0, 4\n"
+                out_local += "\tsyscall\n"
         return out_local, out_global
 
 
@@ -2096,8 +2105,16 @@ class FuncScopeAST(AST):
         out_global = ""
         # out_local = f"\taddi $sp, $sp, -{size}\n"
         # out_local += "\tsw $ra, 4($sp)\n"
-        out_local = "\tjal allocate_stack\n"
+        # out_local = "\tjal allocate_stack\n"
+        out_local = ""
         # TODO: add the function body
+        out_local += f"\taddi $sp, $sp, -100\n"
+        count = 0
+        for i in range(2, 32):
+            if i in [26, 27, 28, 29, 30]:
+                count += 1
+                continue
+            out_local += f"\tsw ${i}, {(i - count) * 4}($sp)\n"
         # DFS
         visited = []
         not_visited = [self]
@@ -2125,7 +2142,14 @@ class FuncScopeAST(AST):
         # End
         # out_local += "\tlw $ra, -4($sp)\n"
         # out_local += f"\taddi $sp, $sp, {size}\n"
-        out_local += "\tjal deallocate_stack\n"
+        # out_local += "\tjal deallocate_stack\n"
+        count = 0
+        for i in range(2, 32):
+            if i in [26, 27, 28, 29, 30]:
+                count += 1
+                continue
+            out_local += f"\tlw ${i}, {(i - count) * 4}($sp)\n"
+        out_local += f"\taddi $sp, $sp, 100\n"
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global
 
@@ -2310,43 +2334,43 @@ class IncludeAST(AST):
     def mips(self, registers: Registers):
         # hardcode the printf and scanf functions
         # printf for int
-        out_global = "printf_int:\n"
-        out_global += "li $v0, 1\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # printf for string
-        out_global += "printf_string:\n"
-        out_global += "li $v0, 4\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # printf for char
-        out_global += "printf_char:\n"
-        out_global += "li $v0, 11\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # printf for float
-        out_global += "printf_float:\n"
-        out_global += "li $v0, 2\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # scanf for int
-        out_global += "scanf_int:\n"
-        out_global += "li $v0, 5\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # scanf for string
-        out_global += "scanf_string:\n"
-        out_global += "li $v0, 8\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # scanf for char
-        out_global += "scanf_char:\n"
-        out_global += "li $v0, 12\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        # scanf for float
-        out_global += "scanf_float:\n"
-        out_global += "li $v0, 6\n"
-        out_global += "syscall\n"
-        out_global += "jr $ra\n\n"
-        return "", out_global
+        # out_global = "printf_int:\n"
+        # out_global += "\tli $v0, 1\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # printf for string
+        # out_global += "printf_string:\n"
+        # out_global += "\tli $v0, 4\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # printf for char
+        # out_global += "printf_char:\n"
+        # out_global += "\tli $v0, 11\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # printf for float
+        # out_global += "printf_float:\n"
+        # out_global += "\tli $v0, 2\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # scanf for int
+        # out_global += "scanf_int:\n"
+        # out_global += "\tli $v0, 5\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # scanf for string
+        # out_global += "scanf_string:\n"
+        # out_global += "\tli $v0, 8\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # scanf for char
+        # out_global += "scanf_char:\n"
+        # out_global += "\tli $v0, 12\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        # # scanf for float
+        # out_global += "scanf_float:\n"
+        # out_global += "\tli $v0, 6\n"
+        # out_global += "\tsyscall\n"
+        # out_global += "\tjr $ra\n\n"
+        return "", ""
