@@ -47,7 +47,7 @@ class MIPS:
                 global_str += new_glob
                 local_str += new_loc
             variables += ".data\n"
-            for key, value in self.registers.globalObjects.data[0]:
+            for key, value in self.registers.globalObjects.data[0].items():
                 variables += f"{value}: .asciiz \"{key}\"\n"
             # variables += ".text\n"
             f.write(variables)
