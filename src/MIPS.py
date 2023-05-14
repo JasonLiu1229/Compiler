@@ -1,3 +1,5 @@
+import os
+
 from register_management import *
 from SymbolTable import *
 from AST import *
@@ -53,6 +55,18 @@ class MIPS:
             f.write(global_str)
             f.write(local_str)
         print("MIPS code generated in " + self.mips)
+
+    def execute(self, execute_with: str = "Mars"):
+        """
+        Executes the MIPS code with Mars as default, but can be changed to SPIM
+        :param execute_with: "Mars" or "SPIM"
+        """
+        if execute_with == "Mars":
+            os.system("java -jar ../Help/Mars4_5_Mod.jar " + self.mips)
+        elif execute_with == "SPIM":
+            os.system("spim -file " + self.mips)
+        else:
+            print("Invalid execution method")
 
     @staticmethod
     def add(rReg: str, op1: str, op2: str):
@@ -165,14 +179,6 @@ class MIPS:
     @staticmethod
     def nop():
         return "nop"
-
-    @staticmethod
-    def lw(rReg: str, op1: str, op2: str):
-        return f"lw {rReg}, {op1}({op2})"
-
-    @staticmethod
-    def sw(rReg: str, op1: str, op2: str):
-        return f"sw {rReg}, {op1}({op2})"
 
     @staticmethod
     def allocate_stack():

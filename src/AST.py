@@ -18,11 +18,11 @@ from register_management import *
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
             "const_var"]
 keywords_datatype = ["int", "float", "char"]
-keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op"]
-keywords_unary = ["unary_op"]
-keywords_indecr = ["incr", "decr"]
-keywords_assign = ["assign_op"]
-keywords_functions = ["printf"]
+# keywords_binary = ["binary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op"]
+# keywords_unary = ["unary_op"]
+# keywords_indecr = ["incr", "decr"]
+# keywords_assign = ["assign_op"]
+# keywords_functions = ["printf"]
 conversions = [("float", "int"), ("int", "char"), ("float", "char"),
                ("int", "float"), ("char", "int"), ("char", "float")]
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
@@ -940,10 +940,6 @@ class PrintfAST(AST):
                 index += 1
         return out, index
 
-    def updateRegisters(self):
-        for i in range(len(self.args)):
-            self.args[i].register = self.children[i].register
-
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
         var_string = ""
@@ -965,10 +961,15 @@ class PrintfAST(AST):
         out += f"call i32 (ptr, ...) @printf(ptr noundef @.str.{self.register if self.register is not None else ''}{', ' if len(var_string) > 0 else ''}{var_string})\n"
         return out, index
 
+    def updateRegisters(self):
+        for i in range(len(self.args)):
+            self.args[i].register = self.children[i].register
+
     def format(self):
-        # Split the format string into a list of strings and format specifiers (e.g. "%s") but not \%[A-Za-z] but keep the string
-        # so if \%s is found, it is not split
-        format_ = re.split(r'((?<!(\\\\))%?([0-9]*("+") | (".", "-")[0-9]*)[A-Za-z]|\\0A)', self.format_string)
+        # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
+        # we ignore the %s specifier because it is not used in the format string
+        # keep everything in-between the format specifiers too
+        format_ = re.split(r'(%[0-9]*[discf])', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
@@ -1121,7 +1122,7 @@ class PrintfAST(AST):
         list_format = self.format()
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
-            if i in registers.globalObjects.data[0].items() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
+            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
                     or isinstance(i, int) or isinstance(i, float):
                 continue
             else:
@@ -1140,15 +1141,16 @@ class PrintfAST(AST):
                 out_local += "\tla $a0, 0x0A\n"
                 out_local += "\tsyscall\n"
                 continue
-            if self.getType(list_format[i]) == 0:
+            if self.getType(list_format[i]) == 0: # if the type is an integer
                 out_local += f"\tli $a0, {list_format[i]}\n"
                 out_local += "\tli $v0, 1\n"
                 out_local += "\tsyscall\n"
-            elif self.getType(list_format[i]) == 1:
-                out_local += f"\tli $a0, {list_format[i]}\n"
-                out_local += "\tli $v0, 2\n"
-                out_local += "\tsyscall\n"
-            elif self.getType(list_format[i]) == 2:
+            # temp fix for floats
+            # elif self.getType(list_format[i]) == 1: # if the type is a float
+            #     out_local += f"\tli $a0, {list_format[i]}\n"
+            #     out_local += "\tli $v0, 2\n"
+            #     out_local += "\tsyscall\n"
+            elif self.getType(list_format[i]) == 2: # if the type is a string/char
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
