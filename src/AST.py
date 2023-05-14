@@ -1654,7 +1654,21 @@ class Else_CondAST(Scope_AST):
     def mips(self, registers: Registers):
         out = ""
         output = self.children[0].mips(registers)
+        temp_list = output[2]
+        size = 4
+        size += size * len(temp_list)
+        out += f"\taddi $sp, $sp, -{size}\n"
+        out += f"\tsw $ra, {4}($sp)\n"
+        count = 1
+        for i in temp_list:
+            count += 1
+            out += f"\tsw {i}, {count * 4}($sp)\n"
         out += output[0]
+        for i in reversed(temp_list):
+            out += f"\tlw {i}, {count * 4}($sp)\n"
+            count -= 1
+        out += f"\tlw $ra, {4}($sp)\n"
+        out += f"\tjr $ra\n"
         return out, "", []
 
 
