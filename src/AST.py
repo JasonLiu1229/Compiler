@@ -1128,7 +1128,7 @@ class PrintfAST(AST):
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
                 # cast the float to be representable in mips
                 i = array('f', [i])[0]
-                registers.globalObjects.data[1][i] = f"float_{len(registers.globalObjects.data[0].items())}"
+                registers.globalObjects.data[1][i] = f"float_{len(registers.globalObjects.data[1].items())}"
             elif isinstance(i, str):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
         # now syscall the list format in the right order with the right names
