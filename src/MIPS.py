@@ -178,24 +178,28 @@ class MIPS:
     def allocate_stack():
         # Allocate every register to stack
         out = "allocate_stack:\n"
-        out += f"addi $sp, $sp, -120\n"
+        out += f"\taddi $sp, $sp, -100\n"
+        count = 0
         for i in range(2,32):
             if i in [26, 27, 28, 29, 30]:
+                count += 1
                 continue
-            out += f"sw ${i}, {i*4}($sp)\n"
+            out += f"\tsw ${i}, {(i - count)*4}($sp)\n"
         # jump back to function
-        out += f"jr $ra\n\n"
+        out += f"\tjr $ra\n\n"
         return out
 
     @staticmethod
     def deallocate_stack():
         # Deallocate every register from stack
         out = "deallocate_stack:\n"
+        count = 0
         for i in range(2,32):
             if i in [26, 27, 28, 29, 30]:
+                count += 1
                 continue
-            out += f"lw ${i}, {i*4}($sp)\n"
-        out += f"addi $sp, $sp, 120\n"
+            out += f"\tlw ${i}, {(i - count)*4}($sp)\n"
+        out += f"\taddi $sp, $sp, 100\n"
         # jump back to function
-        out += f"jr $ra\n\n"
+        out += f"\tjr $ra\n\n"
         return out

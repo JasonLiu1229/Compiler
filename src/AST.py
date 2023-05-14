@@ -2088,6 +2088,7 @@ class FuncScopeAST(AST):
                 else:
                     size += 4
         return size
+
     def mips(self, registers: Registers):
         size = self.calculateStackSize()
         size += 4 # for the return address
@@ -2152,7 +2153,14 @@ class ReturnInstr(InstrAST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
+        out = ""
+        child = self.children[0]
+        if isinstance(child, Node):
+            out += f"\tli $v0, {child.value}\n"
+        elif isinstance(child, VarNode):
+            entry, length = self.getEntry(child)
+            out += f"\tlw $v0, {entry.offset}($sp)\n"
+        return out, ""
 
 class ScanfAST(AST):
 
