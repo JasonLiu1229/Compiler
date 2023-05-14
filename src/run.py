@@ -43,7 +43,7 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # generator = LLVM(ast,  "../Output/" + filename + ".ll")
             # generator.convert()
             # generator.execute()
-            generator = MIPS(ast, "../Output/" + filename + ".asm")
+            generator = MIPS(ast, "../MIPS_output/" + filename + ".asm")
             generator.convert()
             print(">>> Finished execution with exit code 0\n")
         except Exception as e:
