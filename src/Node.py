@@ -384,6 +384,19 @@ class FuncParameter(VarNode):
                  total_deref: int = 0, const_ptr: bool = False, reference: bool = False, is_array = False) -> None:
         super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
         self.reference = reference
+        # if it is a pointer, create a new variable for each deref
+        if self.ptr:
+            new_values = []
+            for i in range(self.total_deref):
+                new_val = VarNode(f"{self.key}_{i}", self.value, self.type, self.const, self.ptr, i, self.total_deref, self.const_ptr, self.array)
+                new_values.append(new_val)
+                if i > 0:
+                    new_values[i - 1].value = new_val
+                    new_values[i - 1].parent = new_val
+                else:
+                    new_values[i].parent = self
+            self.deref_level = 0
+            self.value = new_values[0]
 
     def __repr__(self) -> str:
         return f"{'& ' if self.reference else ''}{super().__repr__()}"

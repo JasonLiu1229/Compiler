@@ -314,6 +314,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#comp.
+    def enterComp(self, ctx:MathParser.CompContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#comp.
+    def exitComp(self, ctx:MathParser.CompContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#expr.
     def enterExpr(self, ctx:MathParser.ExprContext):
         pass

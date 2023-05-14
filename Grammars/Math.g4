@@ -13,7 +13,6 @@ instr           :   declr ((';')+ | DELIM)
 declr           :   CONST? TYPE (var_decl ',')* var_decl
                 ;
 
-// TODO: printf (modified) and scanf
 printf          :   PRINTF '(' (rvar | rtype | print_val=STRING) ')'
                 |   PRINTF '(' (format_string=SCANF_STRING | format_string=STRING) (',' (vars+=printf_arg ',')* vars+=printf_arg )? ')'
                 ;
@@ -22,6 +21,7 @@ printf_arg      :   rvar
                 |   rtype
                 |   array_el
                 |   deref
+                |   comp
                 |   expr
                 |   STRING;
 
@@ -64,6 +64,7 @@ func_call       :   name=VAR_NAME '(' args=arg_list? ')'
 func_scope      :   '{'(
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
+                        | comp ((';')+ | DELIM)
                            )* '}'
                 ;
 
@@ -74,7 +75,7 @@ return_instr    :   RETURN (ret_val=expr)? ';' (instr | return_instr)*
 scope           :   '{' (
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
-                        | break_instr | cont_instr | instr
+                        | break_instr | cont_instr | instr | comp ((';')+ | DELIM)
                         )* '}'
                 ;
 
@@ -91,10 +92,6 @@ array_decl      :   const=CONST? type=TYPE ptr+=STR* name=VAR_NAME '[' size=INT?
 incl_stat       :   INCLUDE LT library=VAR_NAME '.h' GT
                 ;
 
-
-// TODO: break and continue
-// TODO: switch(case, break, default) -> translate switch to if
-
 if_cond         :   IF '(' condition=cond ')' scope else_cond?
                 ;
 
@@ -110,9 +107,9 @@ for_loop        :   FOR '(' initialization=init ';' condition=cond ';' increment
 init            :   TYPE lvar ASSIGN expr
                 |   assign;
 
-cond            :   term (GEQ | LEQ | NEQ) factor
-                |   term (GT | LT | EQ) factor
-                |   expr (AND_OP | OR_OP) term
+// comparison takes precedence over mathemathical operations
+
+cond            :   comp
                 |   expr
                 ;
 
@@ -148,6 +145,11 @@ lvar            :   ptr+=STR* name=VAR_NAME
 rvar            :   VAR_NAME
                 ;
 
+comp            :   expr op=(GEQ | LEQ | NEQ) expr
+                |   expr op=(GT | LT | EQ) expr
+                |   expr op=(AND_OP | OR_OP) expr
+                ;
+
 expr            :   term
                 |   expr SUM term
                 |   expr DIF term
@@ -156,11 +158,11 @@ expr            :   term
 
 term            :   factor
                 |   term (STR | DIV | MOD) factor
-                |   term (GT | LT | EQ) factor
-                |   term (GEQ | LEQ | NEQ) factor
+                |   term (GT | LT | GEQ | LEQ | EQ | NEQ) factor
                 |   (NOT_OP) factor
                 |   term (INCR | DECR)
                 ;
+// declare precedence of operations
 
 factor          :   primary
                 |   DIF factor
