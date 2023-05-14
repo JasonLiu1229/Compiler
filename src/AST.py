@@ -2123,7 +2123,7 @@ class FuncScopeAST(AST):
         # End
         out_local += "\tlw $ra, -4($sp)\n"
         out_local += f"\taddi $sp, $sp, {size}\n"
-        out_local += "\tjr $ra\n"
+        out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global
 
 class ReturnInstr(InstrAST):

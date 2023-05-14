@@ -38,12 +38,19 @@ class MIPS:
         Converts AST to MIPS
         """
         self.mips_dfs()
-        global_str , local_str = "", ""
+        global_str = local_str = variables = ""
+        global_str += self.allocate_stack()
+        global_str += self.deallocate_stack()
         with open(self.mips, "w") as f:
             for node in self.nodes:
                 new_glob , new_loc = node.mips(self.registers)
                 global_str += new_glob
                 local_str += new_loc
+            variables += ".data\n"
+            for key, value in self.registers.globalObjects.data[0]:
+                variables += f"{value}: .asciiz \"{key}\"\n"
+            # variables += ".text\n"
+            f.write(variables)
             f.write(global_str)
             f.write(local_str)
         print("MIPS code generated in " + self.mips)
