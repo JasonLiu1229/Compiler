@@ -42,7 +42,7 @@ class MIPS:
         # global_str += self.deallocate_stack()
         with open(self.mips, "w") as f:
             for node in self.nodes:
-                new_loc, new_glob = node.mips(self.registers)
+                new_loc, new_glob, new_list = node.mips(self.registers)
                 global_str += new_glob
                 local_str += new_loc
             variables += "\t.data\n"

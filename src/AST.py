@@ -1556,7 +1556,6 @@ class If_CondAST(Scope_AST):
 
         return out, index
     def mips(self, registers: Registers):
-        out = ""
         # condition first
         visited = []
         not_visited = [self.condition]
@@ -1570,25 +1569,56 @@ class If_CondAST(Scope_AST):
                         or isinstance(current, FuncDeclAST)):
                     for i in current.children:
                         not_visited.append(i)
-        out = f"if_{registers.globalObjects.index}: \n"
+        out_local = f"if_{registers.globalObjects.index}: \n"
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
-        # TODO: stack size
-        # TODO: condition
+        temp_list = out_list = []
+        out_global = out_cond = ""
         for current in visited:
             output = tuple
             if current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
                 output = current.mips(registers)
-            out += output[0]
-        # TODO: if block
+            out_cond += output[0]
+            temp_list += output[2]
+
         output = self.children[0].mips(registers)
-        out += output[0]
-        # TODO: add else block if exist
-        # else block if exist
-        # otherwise go back to the main block
-        return out, "", []
+        temp_out = output[0]
+        temp_list += output[2]
+        # stack size
+        size = 4
+        size += size * len(temp_list)
+        # begin
+        out_local += f"\taddi $sp, $sp, -{size}\n"
+        out_local += f"\tsw $ra, {4}($sp)\n"
+        count = 1
+        for i in temp_list:
+            count += 1
+            out_local += f"\tsw {i}, {count * 4}($sp)\n"
+        # middle
+        out_local += out_cond
+        out_local += f"\tbeq $t0, $zero, else_{registers.globalObjects.index}\n"
+        out_else = f"else_{registers.globalObjects.index}: \n"
+        for i in reversed(temp_list):
+            out_else += f"\tlw {i}, {count * 4}($sp)\n"
+            count -= 1
+        out_else += f"\tlw $ra, {4}($sp)\n"
+        if len(self.children) > 1:
+            self.children[1].register = registers.globalObjects.index
+            output = self.children[1].mips(registers)
+            out_else += output[0]
+        else:
+            out_else += f"\tjr $ra\n"
+        registers.globalObjects.index += 1
+        out_local += temp_out
+        # end
+        for i in reversed(temp_list):
+            out_local += f"\tlw {i}, {count * 4}($sp)\n"
+            count -= 1
+        out_local += f"\tlw $ra, {4}($sp)\n\n"
+        out_local += out_else
+        return out_local, out_global, []
 
 
 class Else_CondAST(Scope_AST):
@@ -1622,26 +1652,7 @@ class Else_CondAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        # # DFS
-        # visited = []
-        # not_visited = [self.children[0]]
-        # while len(not_visited) > 0:
-        #     current = not_visited.pop()
-        #     visited.append(current)
-        #     if not (isinstance(current, Scope_AST) or isinstance(current, FuncDeclAST) or isinstance(current, FuncCallAST)
-        #             or isinstance(current, If_CondAST) or isinstance(current, Else_CondAST) or isinstance(current, For_loopAST)
-        #             or isinstance(current, While_loopAST)):
-        #         for i in current.children:
-        #             not_visited.append(i)
-        # # begin
-        # # TODO: allocate space in stack for local variables
-        # out = ""
-        # for current in visited:
-        #     output = current.mips(registers)
-        #     out += output[0]
-        # # end
-        # # TODO: deallocate space in stack for local variables
-        out = f"else_{self.register}: \n"
+        out = ""
         output = self.children[0].mips(registers)
         out += output[0]
         return out, "", []
