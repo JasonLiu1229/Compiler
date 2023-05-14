@@ -1,4 +1,7 @@
 from register_management import *
+from SymbolTable import *
+from AST import *
+
 
 class MIPS:
     """
@@ -6,16 +9,44 @@ class MIPS:
     """
     def __init__(self, in_ast, in_file: str = "out.asm"):
         self.ast = in_ast
+        self.nodes = []
         self.mips = in_file
         self.registers = Registers()
+
+    def mips_dfs(self):
+        # returns a list with all the AST in the tree in DFS order to convert to MIPS
+        visited = []
+        not_visited = [self.ast]
+        while len(not_visited) > 0:
+            temp = not_visited.pop()
+            if temp not in visited:
+                # if a scope, skip
+                # if include instruction, skip
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or \
+                        isinstance(temp, PrintfAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
+                        isinstance(temp, IncludeAST):
+                    visited.append(temp)
+                if isinstance(temp, AST):
+                    for child in temp.children:
+                        not_visited.append(child)
+        visited.reverse()
+        self.nodes = visited
+        return visited
 
     def convert(self):
         """
         Converts AST to MIPS
         """
+        self.mips_dfs()
+        global_str , local_str = "", ""
         with open(self.mips, "w") as f:
-            pass
-        pass
+            for node in self.nodes:
+                new_glob , new_loc = node.mips(self.registers)
+                global_str += new_glob
+                local_str += new_loc
+            f.write(global_str)
+            f.write(local_str)
+        print("MIPS code generated in " + self.mips)
 
     @staticmethod
     def add(rReg: str, op1: str, op2: str):

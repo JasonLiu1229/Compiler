@@ -12,7 +12,7 @@ import antlr4.error.ErrorStrategy
 import json
 from SymbolTable import *
 from antlr4.error.Errors import ParseCancellationException
-from MIPS import *
+from register_management import *
 
 # Standard Variables
 keywords = ["var", "int", "binary_op", "unary_op", "comp_op", "comp_eq", "bin_log_op", "un_log_op", "assign_op",
@@ -28,8 +28,6 @@ conversions = [("float", "int"), ("int", "char"), ("float", "char"),
 conv_promotions = [("int", "float"), ("char", "int"), ("char", "float")]
 tokens = ['!=', '==', '>', '>=', '<', '<=', '||', '&&', '%', '/', '-', '+', '++', '--', '*']
 
-
-# TODO: Make specific types of AST in the visit functions
 # TODO: Replace code in the handle function of AstCreator with the handle functions
 
 
