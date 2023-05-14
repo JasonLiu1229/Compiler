@@ -195,7 +195,7 @@ class AST:
     def mips(self, registers: Registers):
         out_global = ""
         out_local = ""
-        return out_local, out_global
+        return out_local, out_global, []
 
     def searchBlocks(self):
         if isinstance(self, While_loopAST):
@@ -305,7 +305,7 @@ class AST:
         out_global = ""
         # TODO: Implement MIPS operations
         # TODO: use $t0
-        return out_local, out_global
+        return out_local, out_global, []
 
     @staticmethod
     def getEntry(entry):
@@ -1152,7 +1152,7 @@ class PrintfAST(AST):
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
-        return out_local, out_global
+        return out_local, out_global, ['$ao']
 
 
 
@@ -1448,28 +1448,6 @@ class Scope_AST(AST):
             out += output[0]
             index = output[1]
         return out, index
-    def calculateStacksize(self):
-        size = 0
-        # calculate the size of the stack of the function
-        for entry in self.symbolTable.table:
-            if isinstance(entry.object, VarNode):
-                if entry.object.ptr:
-                    size += 4
-                if entry.object.array:
-                    size += 4 * entry.size
-                else:
-                    size += 4
-
-        # calculate the size of the stack of the function parameters
-        for entry in self.parent.symbolTable.table:
-            if isinstance(entry.object, VarNode):
-                if entry.object.ptr:
-                    size += 4
-                if entry.object.array:
-                    size += 4 * entry.size
-                else:
-                    size += 4
-        return size
 
     def mips(self, registers: Registers):
         visited = []
@@ -1485,24 +1463,33 @@ class Scope_AST(AST):
                     for i in current.children:
                         not_visited.append(i)
         out_local = out_global = ""
-        size = self.calculateStacksize()
-        size += 4
-        # begin
-        out_local += f"addi $sp, $sp, -{size}\n"
-        out_local += f"sw $ra, {4}($sp)\n"
+        out_list = []
+        size = 4
 
-        # middle
+        output = None
         for current in visited:
-            output = tuple
             if current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
                 output = current.mips(registers)
-
-        # end
-        out_local += f"lw $ra, {4}($sp)\n"
-        out_local += f"addi $sp, $sp, {size}\n"
-        return out_local, out_global
+            out_local += output[0]
+            out_global += output[1]
+            out_list += output[2]
+        # # begin
+        # out_local += f"\taddi $sp, $sp, -{size}\n"
+        # out_local += f"\tsw $ra, {4}($sp)\n"
+        # count = 1
+        # for i in output[2]:
+        #     count += 1
+        #     out_local += f"\tsw {i}, {count * 4}($sp)\n"
+        # # middle
+        # # end
+        # for i in reversed(output[2]):
+        #     out_local += f"\tlw {i}, {count * 4}($sp)\n"
+        #     count -= 1
+        # out_local += f"\tlw $ra, {4}($sp)\n"
+        # out_local += f"\tddi $sp, $sp, {size}\n"
+        return out_local, out_global, out_list
 
 
 
@@ -1601,7 +1588,7 @@ class If_CondAST(Scope_AST):
         # TODO: add else block if exist
         # else block if exist
         # otherwise go back to the main block
-        return out, ""
+        return out, "", []
 
 
 class Else_CondAST(Scope_AST):
@@ -1657,7 +1644,7 @@ class Else_CondAST(Scope_AST):
         out = f"else_{self.register}: \n"
         output = self.children[0].mips(registers)
         out += output[0]
-        return out, ""
+        return out, "", []
 
 
 
@@ -1773,14 +1760,31 @@ class While_loopAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        out = f"while_{registers.globalObjects.index}: \n"
+        output_local = f"while_{registers.globalObjects.index}: \n"
+        output_global = ""
+        output_list = []
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
-        # TODO: add the condition
-        # TODO: add the body
         output = self.children[0].mips(registers)
-        out += output[0]
-        pass
+        output_list += output[2]
+        size = 4 * len(output_list)
+        size += 4
+        output_local += f"\taddi $sp, $sp, -{size}\n"
+        for i in range(len(output_list)):
+            output_local += f"\tsw ${output_list[i]}, {4 * i}($sp)\n"
+        output_local += f"\tsw $ra, {4 * len(output_list)}($sp)\n"
+        # TODO: add the condition
+        # condition of the while loop
+        output_local += output[0]
+        output_global += output[1]
+        output_local += f"\tlw $ra, {4 * len(output_list)}($sp)\n"
+        for i in range(len(output_list)):
+            output_local += f"\tlw ${output_list[i]}, {4 * i}($sp)\n"
+        output_local += f"\taddi $sp, $sp, {size}\n"
+        output_local += f"\tj while_{self.register}\n"
+        return output_local, output_global, []
+
+
 
 
 class CondAST(TermAST):
@@ -1985,7 +1989,7 @@ class FuncDefnAST(AST):
         out_l, out_g = self.children[0].mips(registers)
         out_local += out_l
         out_global += out_g
-        return out_local, out_global
+        return out_local, out_global, []
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -2029,7 +2033,7 @@ class FuncCallAST(AST):
             pass
         # end string
         out += f"jal {self.root.key}\n"
-        return out, ""
+        return out, "", []
 
 
 
@@ -2185,7 +2189,7 @@ class ReturnInstr(InstrAST):
         elif isinstance(child, VarNode):
             entry, length = self.getEntry(child)
             out += f"\tlw $v0, {entry.offset}($sp)\n"
-        return out, ""
+        return out, "", []
 
 class ScanfAST(AST):
 
@@ -2374,4 +2378,4 @@ class IncludeAST(AST):
         # out_global += "\tli $v0, 6\n"
         # out_global += "\tsyscall\n"
         # out_global += "\tjr $ra\n\n"
-        return "", ""
+        return "", "", []
