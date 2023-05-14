@@ -12,19 +12,23 @@ import Dot
 def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False):
     for filename in filenames:
         try:
-            print(f">>> Parsing {directory}{filename}{file_type}\n")
+            # code in blue
+            print(f"\033[94m>>> Parsing {directory}{filename}{file_type}\033[0m\n")
             input_stream = FileStream(directory + filename + file_type)
             # Create error listener
             error_listener = ErrorListener()
+            # Create lexer and parser
             lexer = MathLexer(input_stream)
+            parser = MathParser(CommonTokenStream(lexer))
             # Remove previous error listener and add new error listener to lexer
             lexer.removeErrorListeners()
             lexer.addErrorListener(error_listener)
-            parser = MathParser(CommonTokenStream(lexer))
             # Remove previous error listener and add new error listener to parser
             parser.removeErrorListeners()
             parser.addErrorListener(error_listener)
+            # Parse the input stream
             parse_tree = parser.math()
+            # create ast
             visitor = AstCreator(filename=directory + filename + file_type)
             ast = visitor.visit(parse_tree)
             # handle tree
@@ -32,9 +36,11 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # check if the main function exists
             if not ast.symbolTable.exists("main"):
                 raise Exception("No main function found")
+            # print the ast if verbose is true
             if verbose:
                 ast.print(4, True, filename)
                 ast.symbolTable.print(True)
+            # print warnings if there are any warnings and no_warning is false
             if not no_warning:
                 visitor.warn()
             # dot = Dot.dot(ast, "../Output/" + filename + ".dot")
@@ -43,11 +49,17 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # generator = LLVM(ast,  "../Output/" + filename + ".ll")
             # generator.convert()
             # generator.execute()
+
+            # create mips code
             generator = MIPS(ast, "../MIPS_output/" + filename + ".asm")
             generator.convert()
-            print(">>> Finished execution with exit code 0\n")
+            # execute mips code
+            generator.execute()
+            # code in green if no errors
+            print("\033[92m>>> Finished execution with exit code 0\033[0m\n")
         except Exception as e:
-            print(f'Excepted with error \"{str(e)}\"\n')
+            # code in red if error
+            print(f'\033[91m>>> Error: {e}\033[0m\n')
             continue
 
 
