@@ -186,6 +186,10 @@ class Node:
     def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
         return f" ", index
 
+    def mips(self, registers):
+        # place holder
+        return "" , ""
+
 
 class VarNode(Node):
 
