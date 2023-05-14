@@ -1134,14 +1134,14 @@ class PrintfAST(AST):
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
             if self.getType(list_format[i]) == 0:
-                out_local += f"li $a0, {list_format[i]}\n"
-                out_local += f"jal printf_int\n"
+                out_local += f"\tli $a0, {list_format[i]}\n"
+                out_local += f"\tjal printf_int\n"
             elif self.getType(list_format[i]) == 1:
-                out_local += f"li $a0, {list_format[i]}\n"
-                out_local += f"jal printf_float\n"
+                out_local += f"\tli $a0, {list_format[i]}\n"
+                out_local += f"\tjal printf_float\n"
             elif self.getType(list_format[i]) == 2:
-                out_local += f"la $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
-                out_local += f"jal printf_string\n"
+                out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
+                out_local += f"\tjal printf_string\n"
         return out_local, out_global
 
 
