@@ -1123,9 +1123,11 @@ class PrintfAST(AST):
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
             if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
-                    or isinstance(i, int) or isinstance(i, float):
+                    or isinstance(i, int):
                 continue
-            else:
+            elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
+                registers.globalObjects.data[0][i] = f"float_{len(registers.globalObjects.data[0].items())}"
+            elif isinstance(i, str):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
         # now syscall the list format in the right order with the right names
         for i in range(len(list_format)):
@@ -1146,15 +1148,16 @@ class PrintfAST(AST):
                 out_local += "\tli $v0, 1\n"
                 out_local += "\tsyscall\n"
             # temp fix for floats
-            # elif self.getType(list_format[i]) == 1: # if the type is a float
-            #     out_local += f"\tli $a0, {list_format[i]}\n"
-            #     out_local += "\tli $v0, 2\n"
-            #     out_local += "\tsyscall\n"
+            elif self.getType(list_format[i]) == 1: # if the type is a float
+                out_local += f"\tlwc1 $f12, {registers.globalObjects.data[1][list_format[i]]}\n"
+                out_local += f"\tli $a0, $f12\n"
+                out_local += "\tli $v0, 2\n"
+                out_local += "\tsyscall\n"
             elif self.getType(list_format[i]) == 2: # if the type is a string/char
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
-        return out_local, out_global, ['$ao']
+        return out_local, out_global, ['$ao', '$f12']
 
 
 

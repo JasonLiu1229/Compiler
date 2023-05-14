@@ -384,7 +384,7 @@ class singleManager:
 
 class dataManager:
     def __init__(self) -> None:
-        self.data: [] = [{}, {}] # asciiz
+        self.data: [] = [{}, {}] # asciiz, float
         self.index = 0
 
 class Registers:
