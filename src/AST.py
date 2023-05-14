@@ -968,7 +968,8 @@ class PrintfAST(AST):
     def format(self):
         # Split the format string into a list of strings and format specifiers (e.g. "%s") but not \%[A-Za-z] but keep the string
         # so if \%s is found, it is not split
-        format_ = re.split(r'((?<!\\)%[A-Za-z] | \\0A)', self.format_string)
+        format_ = re.split(r'((?<!(\\\\))%?([0-9]*("+") | (".", "-")[0-9]*)[A-Za-z]|\\0A)', self.format_string)
+        format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
         for i in range(len(format_)):
