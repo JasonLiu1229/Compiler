@@ -156,7 +156,7 @@ def visited_list_DFS(ast) -> list:
                 visited.append(v)
             if not isinstance(v, While_loopAST) or not isinstance(v, FuncDeclAST) \
                     or not isinstance(v, If_CondAST) \
-                    or not isinstance(v, FuncDefnAST):
+                    or not isinstance(v, FuncDefnAST) or not isinstance(v, For_loopAST):
                 if isinstance(v, AST):
                     for i in v.children:
                         if i is not ast:
@@ -303,6 +303,8 @@ class AST:
     def visitMIPSOp(self, current, registers):
         out_local = ""
         out_global = ""
+        # TODO: Implement MIPS operations
+        # TODO: use $t0
         return out_local, out_global
 
     @staticmethod
@@ -1459,9 +1461,9 @@ class Scope_AST(AST):
             current = not_visited.pop()
             if current not in visited:
                 visited.append(current)
-                if isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
+                if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
                         or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
-                        or isinstance(current, FuncDeclAST):
+                        or isinstance(current, FuncDeclAST)):
                     for i in current.children:
                         not_visited.append(i)
         out_local = out_global = ""
@@ -1548,31 +1550,39 @@ class If_CondAST(Scope_AST):
             index += 1
 
         return out, index
-
     def mips(self, registers: Registers):
         out = ""
         # condition first
-        visited = visited_list_DFS(self.condition)
+        visited = []
+        not_visited = [self.condition]
+        # DFS
+        while len(not_visited) != 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
+                        or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
+                        or isinstance(current, FuncDeclAST)):
+                    for i in current.children:
+                        not_visited.append(i)
+        out = f"if_{registers.globalObjects.index}: \n"
+        self.register = registers.globalObjects.index
+        registers.globalObjects.index += 1
+        # TODO: stack size
+        # TODO: condition
         for current in visited:
-            output_str, output_in = self.visitMipsOp(current, registers)
-            out += output_str
-        # if block
-        visited = visited_list_DFS(self.children[0])
-        for current in visited:
-            output = current.mips(registers)
+            output = tuple
+            if current.root.value in tokens:
+                output = self.visitMIPSOp(current, registers)
+            else:
+                output = current.mips(registers)
             out += output[0]
-        # TODO: else
-        # # else block if else ast exist do 'else mips' else do 'create block'
-        # else_bool = False
-        # for child in self.children:
-        #     if isinstance(child, Else_CondAST):
-        #         output = child.mips(registers)
-        #         out += output[0]
-        #         else_bool = True
-        #         break
-        # # create new block if else mips didn't pass
-        # if not else_bool:
-        #     out += f"else_{}:\n"
+        # TODO: if block
+        output = self.children[0].mips(registers)
+        out += output[0]
+        # TODO: add else block if exist
+        # else block if exist
+        # otherwise go back to the main block
         return out, ""
 
 
@@ -1607,8 +1617,30 @@ class Else_CondAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        # TODO: else mips
-        pass
+        # # DFS
+        # visited = []
+        # not_visited = [self.children[0]]
+        # while len(not_visited) > 0:
+        #     current = not_visited.pop()
+        #     visited.append(current)
+        #     if not (isinstance(current, Scope_AST) or isinstance(current, FuncDeclAST) or isinstance(current, FuncCallAST)
+        #             or isinstance(current, If_CondAST) or isinstance(current, Else_CondAST) or isinstance(current, For_loopAST)
+        #             or isinstance(current, While_loopAST)):
+        #         for i in current.children:
+        #             not_visited.append(i)
+        # # begin
+        # # TODO: allocate space in stack for local variables
+        # out = ""
+        # for current in visited:
+        #     output = current.mips(registers)
+        #     out += output[0]
+        # # end
+        # # TODO: deallocate space in stack for local variables
+        out = f"else_{self.register}: \n"
+        output = self.children[0].mips(registers)
+        out += output[0]
+        return out, ""
+
 
 
 class For_loopAST(Scope_AST):
@@ -1723,7 +1755,15 @@ class While_loopAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
+        out = f"while_{registers.globalObjects.index}: \n"
+        self.register = registers.globalObjects.index
+        registers.globalObjects.index += 1
+        # TODO: add the condition
+        # TODO: add the body
+        output = self.children[0].mips(registers)
+        out += output[0]
         pass
+
 
 class CondAST(TermAST):
 

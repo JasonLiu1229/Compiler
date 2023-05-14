@@ -167,3 +167,25 @@ class MIPS:
     @staticmethod
     def sw(rReg: str, op1: str, op2: str):
         return f"sw {rReg}, {op1}({op2})"
+
+    @staticmethod
+    def allocate_stack():
+        # Allocate every register to stack
+        out = "allocate_stack:\n"
+        out += f"addi $sp, $sp, -120\n"
+        for i in range(2,32):
+            out += f"sw ${i}, {i*4}($sp)\n"
+        # jump back to function
+        out += f"jr $ra\n"
+        return out
+
+    @staticmethod
+    def deallocate_stack():
+        # Deallocate every register from stack
+        out = "deallocate_stack:\n"
+        for i in range(2,32):
+            out += f"lw ${i}, {i*4}($sp)\n"
+        out += f"addi $sp, $sp, 120\n"
+        # jump back to function
+        out += f"jr $ra\n"
+        return out

@@ -148,6 +148,8 @@ antlr4 -o ../src/output -listener -visitor -Dlanguage=Python3 Math.g4
 <a href="https://llvm.org/docs/LangRef.html"> LLVM ref. page </a>  
 <br>
 <a href="https://courses.missouristate.edu/kenvollmar/mars/help/syscallhelp.html"> Mips syscall info </a>
+<br>
+<a href="https://people.cs.pitt.edu/~childers/CS0447/lectures/mips-isa4.pdf"> while loops mips </a>
 
 
 <a name="authors"></a>
