@@ -1123,7 +1123,7 @@ class PrintfAST(AST):
                     or isinstance(i, int) or isinstance(i, float):
                 continue
             else:
-                registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0])}"
+                registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
         # now syscall the list format in the right order with the right names
         for i in range(len(list_format)):
             # load the right variable in $a0
