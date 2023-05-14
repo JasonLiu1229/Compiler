@@ -1024,7 +1024,12 @@ class PrintfAST(AST):
                                      'p',
                                      'n']:
                     # if the format specifier is a string
-                    arg = self.args[counter]
+                    temp_arg = self.args[counter]
+                    arg = None
+                    if isinstance(temp_arg, Node):
+                        arg = temp_arg.value
+                    elif isinstance(temp_arg, VarNode):
+                        arg = temp_arg.value
                     # if the format specifier is an integer
                     if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X']:
                         # if the precision is valid
@@ -1114,7 +1119,8 @@ class PrintfAST(AST):
         list_format = self.format()
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
-            if i in registers.globalObjects.data[0].values():
+            if i in registers.globalObjects.data[0].items() or (isinstance(i, str) and len(i) == 0) \
+                    or isinstance(i, int) or isinstance(i, float):
                 continue
             else:
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0])}"
@@ -1125,14 +1131,16 @@ class PrintfAST(AST):
             # out_local += "li $v0, 4\n"
             # out_local += "syscall\n"
             # change so it call the right print function
-            if self.getType(i) == 0:
-                out_local += f"li $a0, {i}\n"
+            if isinstance(list_format[i], str) and len(list_format[i]) == 0:
+                continue
+            if self.getType(list_format[i]) == 0:
+                out_local += f"li $a0, {list_format[i]}\n"
                 out_local += f"jal print_int\n"
-            elif self.getType(i) == 1:
-                out_local += f"li $a0, {i}\n"
+            elif self.getType(list_format[i]) == 1:
+                out_local += f"li $a0, {list_format[i]}\n"
                 out_local += f"jal print_float\n"
-            elif self.getType(i) == 2:
-                out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
+            elif self.getType(list_format[i]) == 2:
+                out_local += f"la $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += f"jal print_string\n"
         return out_local, out_global
 
