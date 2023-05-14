@@ -1126,7 +1126,9 @@ class PrintfAST(AST):
                     or isinstance(i, int):
                 continue
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
-                registers.globalObjects.data[0][i] = f"float_{len(registers.globalObjects.data[0].items())}"
+                # cast the float to be representable in mips
+                i = array('f', [i])[0]
+                registers.globalObjects.data[1][i] = f"float_{len(registers.globalObjects.data[0].items())}"
             elif isinstance(i, str):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
         # now syscall the list format in the right order with the right names
@@ -1150,7 +1152,7 @@ class PrintfAST(AST):
             # temp fix for floats
             elif self.getType(list_format[i]) == 1: # if the type is a float
                 out_local += f"\tlwc1 $f12, {registers.globalObjects.data[1][list_format[i]]}\n"
-                out_local += f"\tli $a0, $f12\n"
+                # out_local += f"\tmov.s $a0, $f12\n"
                 out_local += "\tli $v0, 2\n"
                 out_local += "\tsyscall\n"
             elif self.getType(list_format[i]) == 2: # if the type is a string/char

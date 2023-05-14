@@ -51,7 +51,7 @@ class MIPS:
             for key, value in self.registers.globalObjects.data[0].items():
                 variables += f"\t{value}: .asciiz \"{key}\"\n"
             for key, value in self.registers.globalObjects.data[1].items():
-                variables += f"\t{value}: .float \"{key}\"\n"
+                variables += f"\t{value}: .float {key}\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)
