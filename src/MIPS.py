@@ -22,8 +22,7 @@ class MIPS:
             if temp not in visited:
                 # if a scope, skip
                 # if include instruction, skip
-                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or \
-                        isinstance(temp, PrintfAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
                         isinstance(temp, IncludeAST):
                     visited.append(temp)
                 if isinstance(temp, AST):
@@ -43,7 +42,7 @@ class MIPS:
         global_str += self.deallocate_stack()
         with open(self.mips, "w") as f:
             for node in self.nodes:
-                new_glob , new_loc = node.mips(self.registers)
+                new_loc, new_glob = node.mips(self.registers)
                 global_str += new_glob
                 local_str += new_loc
             variables += ".data\n"
