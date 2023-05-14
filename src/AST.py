@@ -2093,8 +2093,9 @@ class FuncScopeAST(AST):
         size += 4 # for the return address
         # Begin
         out_global = ""
-        out_local = f"\taddi $sp, $sp, -{size}\n"
-        out_local += "\tsw $ra, 4($sp)\n"
+        # out_local = f"\taddi $sp, $sp, -{size}\n"
+        # out_local += "\tsw $ra, 4($sp)\n"
+        out_local = "\t jal allocate_stack\n"
         # TODO: add the function body
         # DFS
         visited = []
@@ -2121,8 +2122,9 @@ class FuncScopeAST(AST):
             out_global += output[1]
 
         # End
-        out_local += "\tlw $ra, -4($sp)\n"
-        out_local += f"\taddi $sp, $sp, {size}\n"
+        # out_local += "\tlw $ra, -4($sp)\n"
+        # out_local += f"\taddi $sp, $sp, {size}\n"
+        out_local = "\t jal deallocate_stack\n"
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global
 
