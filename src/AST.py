@@ -750,6 +750,22 @@ class InstrAST(AST):
     def handle(self):
         return self
 
+    def mips(self, registers: Registers):
+        out_global = ""
+        out_local = ""
+        # if everything has been constant folded
+        if len(self.children) == 1 and isinstance(self.children[0], Node):
+            return self.children[0].mips(registers)
+        else:
+            for child in self.children:
+                out = child.mips(registers)
+                out_global += out[0]
+                out_local += out[1]
+                registers = out[2]
+
+
+        return "", "", registers
+
 
 class PrintfAST(AST):
 
@@ -2163,6 +2179,33 @@ class FuncScopeAST(AST):
         temp_list = []
         out_temp_global = ""
         out_temp_local = ""
+
+        # registers for each entry in the symbol table
+        for entry in self.symbolTable.table:
+            if isinstance(entry.object, VarNode):
+                # if entry.object.ptr:
+                #     registers.temporaryManager.LRU(entry.object)
+                #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, 8\n"
+                # elif entry.object.array:
+                #     registers.temporaryManager.LRU(entry.object)
+                #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, {4 * entry.size}\n"
+                # else:
+                #     registers.temporaryManager.LRU(entry.object)
+                #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, 4\n"
+                # temp_list.append(entry.object.register.name)
+                if entry.type == "int":
+                    # declare the variable in the global scope .data
+                    registers.globalObjects.data[0][entry.object.value] = entry.object.key
+                elif entry.type == "float":
+                    # declare the variable in the global scope .data
+                    registers.globalObjects.data[1][entry.object.value] = entry.object.key
+                elif entry.type == "char":
+                    # declare the variable in the global scope .data
+                    registers.globalObjects.data[0][entry.object.value] = entry.object.key
+
+
+
+        # mips code for each instruction
         for current in visited:
             output = tuple
             if current.root.value in tokens:
