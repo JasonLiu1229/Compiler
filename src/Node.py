@@ -188,7 +188,7 @@ class Node:
 
     def mips(self, registers):
         # place holder
-        return "" , ""
+        return "" , "", []
 
 
 class VarNode(Node):
@@ -356,6 +356,55 @@ class VarNode(Node):
             out += "\n"
         self.register = index
         return out, index + 1
+
+    def mips(self, registers):
+        if self.value is None:
+            return "", "", []
+        # assign itself to a register
+        if self.register is None:
+            if self.const:
+                registers.savedManager.LRU(self)
+                # registers.globalObjects.data[0][self.value] = self.key
+            elif self.type == "float":
+                registers.floatManager.LRU(self)
+                # registers.globalObjects.data[1][self.value] = self.key
+            else:
+                registers.temporaryManager.LRU(self)
+
+        # mips variable declaration
+        # if self.const, also declare in .data
+        # get right type
+        if self.type == "int":
+            out_type = ".word"
+        elif self.type == "float":
+            out_type = ".float"
+        elif self.type == "char":
+            out_type = ".byte"
+        else:
+            out_type = ".word"
+
+        # get right value
+        if isinstance(self.value, str):
+            out_val = f"\'{self.value}\'"
+        else:
+            out_val = f"{self.value}"
+
+        # if self.const or self.type == "float":
+        #     out_global = f"{self.key}: {out_type} {out_val}\n"
+        # # if not self.const, declare in .text
+        # else:
+        out_global = ""
+        # local variable declaration
+        if self.type == "float":
+            out_local = f"\tlwc1 ${self.register.name}, {self.key}\n"
+        else:
+            out_local = f"\tli ${self.register.name}, {out_val}\n"
+
+        out_reg = []
+        if self.register is not None:
+            out_reg.append(self.register.name)
+        return out_local, out_global, out_reg
+
 
 class ArrayNode(VarNode):
 
