@@ -58,15 +58,60 @@ class MIPS:
             f.write(local_str)
         print("MIPS code generated in " + self.mips)
 
-    def execute(self, execute_with: str = "Mars"):
+    def execute(self, execute_with: str = "Mars", disclaimer: bool = True):
         """
         Executes the MIPS code with Mars as default, but can be changed to SPIM
         :param execute_with: "Mars" or "SPIM"
+        :param disclaimer: True or False.
+        If True, does not remove the disclaimer from the log file
         """
-        if execute_with == "Mars":
-            os.system("java -jar ../Help/Mars4_5_Mod.jar " + self.mips)
-        elif execute_with == "SPIM":
-            os.system("spim -file " + self.mips)
+        if execute_with == "mars":
+            if disclaimer:
+                os.system("java -jar ../Help/Mars4_5_Mod.jar " + self.mips)
+                return
+            # get the filename without extension and directory. filename has format: ../MIPS_output/filename.asm
+            out_file = self.mips.split('/')[-1].split('.')[0]
+
+            os.system(f"java -jar ../Help/Mars4_5_Mod.jar {self.mips} > ../MIPS_output/logs/{out_file}.log.txt")
+
+            # open the log file and print the output
+            with open(f"../MIPS_output/logs/{out_file}.log.txt", "r") as f:
+                out = f.read()
+                out = out.replace("MARS 4.5  Copyright 2003-2014 Pete Sanderson and Kenneth Vollmar\n\n", "")
+                print(out)
+        elif execute_with == "spim":
+            if disclaimer:
+                os.system("spim -file " + self.mips)
+                return
+            # get the filename without extension and directory. filename has format: ../MIPS_output/filename.asm
+            out_file = self.mips.split('/')[-1].split('.')[0]
+            os.system(f"spim -file {self.mips} > ../MIPS_output/logs/{out_file}.log.txt")
+            # open the log file and print the output
+            with open(f"../MIPS_output/logs/{out_file}.log.txt", "r") as f:
+                out = f.read()
+                out = out.replace("SPIM Version 8.0 of January 8, 2010\nCopyright 1990-2010, James R. Larus.\n"
+                                  "All Rights Reserved.\nSee the file README for a full copyright notice.\n"
+                                  "Loaded: /usr/lib/spim/exceptions.s\n", "")
+                print(out)
+        elif execute_with == "both":
+            if disclaimer:
+                os.system("java -jar ../Help/Mars4_5_Mod.jar " + self.mips)
+                os.system("spim -file " + self.mips)
+                return
+            # get the filename without extension and directory. filename has format: ../MIPS_output/filename.asm
+            out_file = self.mips.split('/')[-1].split('.')[0]
+            os.system(f"java -jar ../Help/Mars4_5_Mod.jar {self.mips} > ../MIPS_output/logs/{out_file}.log.txt")
+            os.system(f"spim -file {self.mips} >> ../MIPS_output/logs/{out_file}.log.txt")
+            # open the log file and print the output
+            with open(f"../MIPS_output/logs/{out_file}.log.txt", "r") as f:
+                out = f.read()
+                out = out.replace("MARS 4.5  Copyright 2003-2014 Pete Sanderson and Kenneth Vollmar\n\n", "")
+                out = out.replace("SPIM Version 8.0 of January 8, 2010\n"
+                                  "Copyright 1990-2010, James R. Larus.\n"
+                                  "All Rights Reserved.\n"
+                                  "See the file README for a full copyright notice.\n"
+                                  "Loaded: /usr/lib/spim/exceptions.s\n", "")
+                print(out)
         else:
             print("Invalid execution method")
 

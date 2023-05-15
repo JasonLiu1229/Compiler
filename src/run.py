@@ -9,7 +9,7 @@ import argparse
 import Dot
 
 
-def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False):
+def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False, execute_with: str = None, disclaimer: bool = True):
     for filename in filenames:
         try:
             # code in blue
@@ -54,7 +54,8 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             generator = MIPS(ast, "../MIPS_output/" + filename + ".asm")
             generator.convert()
             # execute mips code
-            generator.execute()
+            if execute_with is not None:
+                generator.execute(execute_with, disclaimer)
             # code in green if no errors
             print("\033[92m>>> Finished execution with exit code 0\033[0m\n")
         except Exception as e:
@@ -72,21 +73,29 @@ def main():
     parser.add_argument('-i', '--index', help='index of which file it is in the directory')
     parser.add_argument('-v', '--verbose', action='store_true', help='this flag will print the AST')
     parser.add_argument('-nw', '--no_warning', action='store_true', help='this flag will not print the warnings')
+    # execute_with: mars, spim or both
+    parser.add_argument('-e', '--execute_with', help='this flag will execute the mips code with the given program',
+                        default="Mars", choices=["mars", "spim", "both"], type=str.lower, required=False)
+    # disclaimer
+    parser.add_argument('-nd', '--no_disclaimer', action='store_true', help='this flag will not print the disclaimer')
 
     try:
         args = parser.parse_args()
         filenames = []
         if args.files is not None:
-            run(directory=args.directory, file_type=args.type, filenames=args.files, verbose=args.verbose, no_warning=args.no_warning)
+            run(directory=args.directory, file_type=args.type, filenames=args.files, verbose=args.verbose,
+                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
         elif args.index is not None:
             files = os.listdir(args.directory)
             files_one = [files[int(args.index) - 1][:len(files[int(args.index) - 1]) - len(args.type)]]
-            run(directory=args.directory, file_type=args.type, filenames=files_one, verbose=args.verbose, no_warning=args.no_warning)
+            run(directory=args.directory, file_type=args.type, filenames=files_one, verbose=args.verbose,
+                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
         else:
             for file in os.listdir(args.directory):
                 if file.endswith(args.type):
                     filenames.append(file[:len(file) - len(args.type)])
-            run(directory=args.directory, file_type=args.type, filenames=filenames, verbose=args.verbose, no_warning=args.no_warning)
+            run(directory=args.directory, file_type=args.type, filenames=filenames, verbose=args.verbose,
+                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
     except Exception as e:
         print(f'Excepted with error \"{e}\"')
 
