@@ -1159,7 +1159,7 @@ class PrintfAST(AST):
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
-        return out_local, out_global, ['$ao', '$f12']
+        return out_local, out_global, ['a0', 'f12']
 
 
 
@@ -2144,14 +2144,6 @@ class FuncScopeAST(AST):
         # out_local += "\tsw $ra, 4($sp)\n"
         # out_local = "\tjal allocate_stack\n"
         out_local = ""
-        # TODO: add the function body
-        out_local += f"\taddi $sp, $sp, -100\n"
-        count = 0
-        for i in range(2, 32):
-            if i in [26, 27, 28, 29, 30]:
-                count += 1
-                continue
-            out_local += f"\tsw ${i}, {(i - count) * 4}($sp)\n"
         # DFS
         visited = []
         not_visited = [self]
@@ -2167,26 +2159,57 @@ class FuncScopeAST(AST):
                         if not isinstance(i, Node):
                             not_visited.append(i)
 
+        temp_list = []
+        out_temp_global = ""
+        out_temp_local = ""
         for current in visited:
             output = tuple
             if current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
                 output = current.mips(registers)
-            out_local += output[0]
+            out_temp_local += output[0]
             out_global += output[1]
+            temp_list += output[2]
+        # remove duplicates from the list
+        temp_list = list(dict.fromkeys(temp_list))
+        temp_list.append("ra")
+
+        size = len(temp_list) * 4
+        # save the registers
+        out_local += f"\taddi $sp, $sp, -{size}\n"
+        count = 0
+        for i in temp_list:
+            if i.startswith("f"):
+                out_local += f"\tswc1 ${i}, {count * 4}($sp)\n"
+            else:
+                out_local += f"\tsw ${i}, {count * 4}($sp)\n"
+            count += 1
+
+        out_local += out_temp_local
+        out_global += out_temp_global
+
+        # restore registers
+        count = 0
+        for i in temp_list:
+            if i.startswith("f"):
+                out_local += f"\tlwc1 ${i}, {count * 4}($sp)\n"
+            else:
+                out_local += f"\tlw ${i}, {count * 4}($sp)\n"
+            count += 1
+        out_local += f"\taddi $sp, $sp, {size}\n"
 
         # End
         # out_local += "\tlw $ra, -4($sp)\n"
         # out_local += f"\taddi $sp, $sp, {size}\n"
         # out_local += "\tjal deallocate_stack\n"
-        count = 0
-        for i in range(2, 32):
-            if i in [26, 27, 28, 29, 30]:
-                count += 1
-                continue
-            out_local += f"\tlw ${i}, {(i - count) * 4}($sp)\n"
-        out_local += f"\taddi $sp, $sp, 100\n"
+        # count = 0
+        # for i in range(2, 32):
+        #     if i in [26, 27, 28, 29, 30]:
+        #         count += 1
+        #         continue
+        #     out_local += f"\tlw ${i}, {(i - count) * 4}($sp)\n"
+        # out_local += f"\taddi $sp, $sp, 100\n"
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global
 
