@@ -879,9 +879,9 @@ class PrintfAST(AST):
                         else:
                             raise TypeError("Invalid type for printf")
 
-                if isinstance(current_child, VarNode):
-                    if current_child.type == "char":
-                        current_child.value = str(ord(current_child.value))
+                # if isinstance(current_child, VarNode):
+                #     if current_child.type == "char":
+                #         current_child.value = str(ord(current_child.value))
                 else:
                     current_child.value = str(ord(current_child.value))
             if current_specifier[-1] == 'f':
@@ -1469,6 +1469,7 @@ class Scope_AST(AST):
                         or isinstance(current, FuncDeclAST)):
                     for i in current.children:
                         not_visited.append(i)
+        visited.reverse()
         out_local = out_global = ""
         out_list = []
         size = 4
@@ -2158,7 +2159,7 @@ class FuncScopeAST(AST):
                     for i in current.children:
                         if not isinstance(i, Node):
                             not_visited.append(i)
-
+        visited.reverse()
         temp_list = []
         out_temp_global = ""
         out_temp_local = ""
