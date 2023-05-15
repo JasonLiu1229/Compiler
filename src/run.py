@@ -75,7 +75,7 @@ def main():
     parser.add_argument('-nw', '--no_warning', action='store_true', help='this flag will not print the warnings')
     # execute_with: mars, spim or both
     parser.add_argument('-e', '--execute_with', help='this flag will execute the mips code with the given program',
-                        default="Mars", choices=["mars", "spim", "both"], type=str.lower, required=False)
+                        default=None, choices=["mars", "spim", "both"], type=str.lower, required=False)
     # disclaimer
     parser.add_argument('-nd', '--no_disclaimer', action='store_true', help='this flag will not print the disclaimer')
 
