@@ -47,7 +47,7 @@ class MIPS:
                 new_loc, new_glob, new_list = node.mips(self.registers)
                 global_str += new_glob
                 local_str += new_loc
-            variables += "\t.data\n"
+            variables += ".data\n"
             for key, value in self.registers.globalObjects.data[0].items():
                 variables += f"\t{value}: .asciiz \"{key}\"\n"
             for key, value in self.registers.globalObjects.data[1].items():
