@@ -303,9 +303,41 @@ class AST:
     def visitMIPSOp(self, current, registers):
         out_local = ""
         out_global = ""
+        out_list = []
         # TODO: Implement MIPS operations
-        # TODO: use $t0
-        return out_local, out_global, []
+        token = current.root.value
+        if token == '<':
+            pass
+        elif token == '>':
+            pass
+        elif token == '==':
+            pass
+        elif token == '!=':
+            pass
+        elif token == '<=':
+            pass
+        elif token == '>=':
+            pass
+        elif token == '&&':
+            pass
+        elif token == '||':
+            pass
+        elif token == '+':
+            pass
+        elif token == '-':
+            pass
+        elif token == '/':
+            pass
+        elif token == '*':
+            pass
+        elif token == '%':
+            pass
+        elif token == '++':
+            pass
+        elif token == '--':
+            pass
+        # TODO: use $v1 as condition output
+        return out_local, out_global, out_list
 
     @staticmethod
     def getEntry(entry):
@@ -1610,22 +1642,23 @@ class If_CondAST(Scope_AST):
         output = self.children[0].mips(registers)
         temp_out = output[0]
         temp_list += output[2]
+        temp_list.append("v1")
         # stack size
         size = 4
         size += size * len(temp_list)
         # begin
         out_local += f"\taddi $sp, $sp, -{size}\n"
-        out_local += f"\tsw $ra, {4}($sp)\n"
-        count = 1
+        out_local += f"\tsw $ra, {0}($sp)\n"
+        count = 0
         for i in temp_list:
             count += 1
-            out_local += f"\tsw {i}, {count * 4}($sp)\n"
+            out_local += f"\tsw ${i}, {count * 4}($sp)\n"
         # middle
         out_local += out_cond
-        out_local += f"\tbeq $t0, $zero, else_{registers.globalObjects.index}\n"
+        out_local += f"\tbeq $v1, $zero, else_{registers.globalObjects.index}\n"
         out_else = f"else_{registers.globalObjects.index}: \n"
         for i in reversed(temp_list):
-            out_else += f"\tlw {i}, {count * 4}($sp)\n"
+            out_else += f"\tlw ${i}, {count * 4}($sp)\n"
             count -= 1
         out_else += f"\tlw $ra, {4}($sp)\n"
         if len(self.children) > 1:
@@ -1638,9 +1671,9 @@ class If_CondAST(Scope_AST):
         out_local += temp_out
         # end
         for i in reversed(temp_list):
-            out_local += f"\tlw {i}, {count * 4}($sp)\n"
+            out_local += f"\tlw ${i}, {count * 4}($sp)\n"
             count -= 1
-        out_local += f"\tlw $ra, {4}($sp)\n\n"
+        out_local += f"\tlw $ra, {0}($sp)\n\n"
         out_local += out_else
         return out_local, out_global, []
 
@@ -2153,8 +2186,6 @@ class FuncScopeAST(AST):
         return size
 
     def mips(self, registers: Registers):
-        size = self.calculateStackSize()
-        size += 4 # for the return address
         # Begin
         out_global = ""
         # out_local = f"\taddi $sp, $sp, -{size}\n"
@@ -2255,7 +2286,7 @@ class FuncScopeAST(AST):
         #     out_local += f"\tlw ${i}, {(i - count) * 4}($sp)\n"
         # out_local += f"\taddi $sp, $sp, 100\n"
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
-        return out_local, out_global
+        return out_local, out_global, []
 
 class ReturnInstr(InstrAST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
@@ -2298,6 +2329,7 @@ class ScanfAST(AST):
         self.format_string = None
         self.format_specifiers = []
         self.width: int = 0
+        self.buffer: str = ""
 
     def save(self):
         out, name = self.getDict()
@@ -2337,13 +2369,62 @@ class ScanfAST(AST):
         out += f"call i32 (ptr, ...) @__isoc99_scanf(ptr noundef @.str.{index}, {var_string})\n"
         return out, index
 
+    def format(self):
+        format_ = re.split(r'(%[0-9]*[discf])|(\\\\0A)', self.format_string)
+        format_ = [x for x in format_ if x is not None and x != '']
+        return format_
+
     def mips(self, registers: Registers):
         # scanf in mips
         # format the format string
         # ask for input depending on the format string, so different syscall for different types
         # store the input in the variables (registers that are assigned to the variables)
         # check if the completed format string is correct
-        pass
+        # if not, print error message and exit
+        # if yes, continue
+        out_local = ""
+        format_ = self.format()
+
+        # if self.format_string not in registers.globalObjects.data[0].keys():
+        #     registers.globalObjects.data[0][self.format_string] = f"format_{self.format_string}"
+        # out_local += f"\tla $a0, format_{self.format_string}\n"
+        # out_local += f"\tla $a1, input_buffer\n"
+        # out_local += f"\tli $a2, 100\n"
+        # out_local += f"\tli $v0, 8\n"
+        # out_local += f"\tsyscall\n"
+        #
+        # out_local += f"\tla $a0, format_{self.format_string}\n"
+        # out_local += f"\tla $a1, input_buffer\n"
+        # for i in range(len(format_)):
+        #     if format_[i][0] == '%':
+        #         if format_[i][-1] == "d":
+        # TODO: temporary solution
+        out_list = []
+        counter = 0
+        for i in format_:
+            if i.startswith('%'):
+                if i.endswith('d'):
+                    out_local += f"\tli $v0, 5\n"
+                elif i.endswith('f'):
+                    out_local += f"\tli $v0, 6\n"
+                elif i.endswith('c'):
+                    out_local += f"\tli $v0, 12\n"
+                elif i.endswith('s'):
+                    out_local += f"\tli $v0, 8\n"
+                elif i.endswith('i'):
+                    out_local += f"\tli $v0, 5\n"
+                else:
+                    out_local += f"\tli $v0, 5\n"
+                out_local += f"\tsyscall\n"
+                out_list.append("v0")
+                variable_register = self.variables[counter].register.name
+                out_local += f"\tsw $v0, ${variable_register}\n"
+                out_list.append(variable_register)
+                counter += 1
+        out_list = list(dict.fromkeys(out_list))
+        return out_local, "", out_list
+
+
 
 class ArrayDeclAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
@@ -2437,44 +2518,4 @@ class IncludeAST(AST):
 
     def mips(self, registers: Registers):
         # hardcode the printf and scanf functions
-        # printf for int
-        # out_global = "printf_int:\n"
-        # out_global += "\tli $v0, 1\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # printf for string
-        # out_global += "printf_string:\n"
-        # out_global += "\tli $v0, 4\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # printf for char
-        # out_global += "printf_char:\n"
-        # out_global += "\tli $v0, 11\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # printf for float
-        # out_global += "printf_float:\n"
-        # out_global += "\tli $v0, 2\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # scanf for int
-        # out_global += "scanf_int:\n"
-        # out_global += "\tli $v0, 5\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # scanf for string
-        # out_global += "scanf_string:\n"
-        # out_global += "\tli $v0, 8\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # scanf for char
-        # out_global += "scanf_char:\n"
-        # out_global += "\tli $v0, 12\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
-        # # scanf for float
-        # out_global += "scanf_float:\n"
-        # out_global += "\tli $v0, 6\n"
-        # out_global += "\tsyscall\n"
-        # out_global += "\tjr $ra\n\n"
         return "", "", []
