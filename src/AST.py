@@ -969,7 +969,7 @@ class PrintfAST(AST):
         # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
         # we ignore the %s specifier because it is not used in the format string
         # keep everything in-between the format specifiers too
-        format_ = re.split(r'(%[0-9]*[discf])', self.format_string)
+        format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
