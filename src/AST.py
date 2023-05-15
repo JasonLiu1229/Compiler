@@ -1991,7 +1991,7 @@ class FuncDeclAST(AST):
         return out, index
 
     def mips(self, registers: Registers):
-        return f"{self.root.key}:\n", f".globl {self.root.key}\n" if self.root.key == "main" else ""
+        return f"{self.root.key}:\n", f".globl {self.root.key}\n" if self.root.key == "main" else "" , []
 
 
 class FuncDefnAST(AST):
@@ -2068,10 +2068,10 @@ class FuncDefnAST(AST):
         # Parameters
         # TODO: Parameters
         # Body
-        out_l, out_g = self.children[0].mips(registers)
+        out_l, out_g, out_list = self.children[0].mips(registers)
         out_local += out_l
         out_global += out_g
-        return out_local, out_global, []
+        return out_local, out_global, out_list
 
 class FuncCallAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None,
