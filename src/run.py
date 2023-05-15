@@ -73,7 +73,6 @@ def main():
     parser.add_argument('-i', '--index', help='index of which file it is in the directory')
     parser.add_argument('-v', '--verbose', action='store_true', help='this flag will print the AST')
     parser.add_argument('-nw', '--no_warning', action='store_true', help='this flag will not print the warnings')
-    # execute_with: mars, spim or both
     parser.add_argument('-e', '--execute_with', help='this flag will execute the mips code with the given program',
                         default=None, choices=["mars", "spim", "both"], type=str.lower, required=False)
     # disclaimer
