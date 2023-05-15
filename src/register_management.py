@@ -303,27 +303,27 @@ class floatManager(Manager):
         self.tail = Register(in_prev=self.tail, in_name="f30")
         self.tail = Register(in_prev=self.tail, in_name="f31")
 
-def LRU(self, in_object):
-    # check if the registers are in use
-    # if f0 not in use, replace object of register f0 with in_object
-    # if f1 not in use, replace object of register f1 with in_object
-    tempHead = self.head
-    free = False
-    while tempHead is not None:
-        if tempHead.used is False:
-            tempHead.update(in_object)
-            free = True
-            break
-        tempHead = tempHead.next
-    if not free:
-        self.head.update(in_object)
-        newHead = self.head.next
-        self.tail.next = self.head
-        self.head.prev = self.tail
-        self.tail = self.head
-        self.tail.next = None
-        newHead.prev = None
-        self.head = newHead
+    def LRU(self, in_object):
+        # check if the registers are in use
+        # if f0 not in use, replace object of register f0 with in_object
+        # if f1 not in use, replace object of register f1 with in_object
+        tempHead = self.head
+        free = False
+        while tempHead is not None:
+            if tempHead.used is False:
+                tempHead.update(in_object)
+                free = True
+                break
+            tempHead = tempHead.next
+        if not free:
+            self.head.update(in_object)
+            newHead = self.head.next
+            self.tail.next = self.head
+            self.head.prev = self.tail
+            self.tail = self.head
+            self.tail.next = None
+            newHead.prev = None
+            self.head = newHead
 
     def clear(self):
         self.head = Register(in_name="f0")
