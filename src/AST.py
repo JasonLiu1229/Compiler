@@ -306,39 +306,92 @@ class AST:
         out_list = []
         # TODO: Implement MIPS operations
         token = current.root.value
+        leftRegister = None
+        rightRegister = None
+        leftType = None
+        rightType = None
         leftNode = current.children[0]
-        rightNode = current.children[1]
-        if token == '<':
-            pass
-        elif token == '>':
-            pass
-        elif token == '==':
-            pass
-        elif token == '!=':
-            pass
-        elif token == '<=':
-            pass
-        elif token == '>=':
-            pass
-        elif token == '&&':
-            pass
-        elif token == '||':
-            pass
-        elif token == '+':
-            pass
-        elif token == '-':
-            pass
-        elif token == '/':
-            pass
-        elif token == '*':
-            pass
-        elif token == '%':
-            pass
-        elif token == '++':
-            pass
-        elif token == '--':
-            pass
-        # TODO: use $v1 as condition output
+        rightNode = None
+        if len(current.children) > 1:
+            rightNode = current.children[1]
+        # register assignment
+        if isinstance(leftNode, VarNode):
+            leftRegister = leftNode.register.name
+            leftType = leftNode.type
+        else:
+            if leftNode.register is None:
+                # check if value is float, use float register
+                if isinstance(leftNode.value, float):
+                    registers.floatManager.LRU(leftNode)
+                    leftType = 'float'
+                else:
+                    registers.temporaryManager.LRU(leftNode)
+                    if isinstance(leftNode.value, int):
+                        leftType = 'int'
+                    else:
+                        leftType = 'char'
+            leftRegister = leftNode.register.name
+        if rightNode is not None:
+            if isinstance(rightNode, VarNode):
+                rightRegister = rightNode.register.name
+                rightType = rightNode.type
+            else:
+                if rightNode.register is None:
+                    # check if value is float, use float register
+                    if isinstance(rightNode.value, float):
+                        registers.floatManager.LRU(rightNode)
+                        rightType = 'float'
+                    else:
+                        registers.temporaryManager.LRU(rightNode)
+                        if isinstance(rightNode.value, int):
+                            rightType = 'int'
+                        else:
+                            rightType = 'char'
+                rightRegister = rightNode.register.name
+        if current.root.register is None:
+            if rightType == 'float' or leftType == 'float':
+                current.root.register = registers.floatManager.LRU(current.root)
+            else:
+                current.root.register = registers.temporaryManager.LRU(current.root)
+        new_register = current.root.register.name
+        # casting if necessary
+        if leftType != rightType and rightType is not None:
+            if leftType == 'float':
+                out_local += f"\tmtc1 ${rightRegister}, ${rightRegister}\n"
+
+
+        if rightNode is not None:
+            if token == '<':
+                pass
+            elif token == '>':
+                pass
+            elif token == '==':
+                pass
+            elif token == '!=':
+                pass
+            elif token == '<=':
+                pass
+            elif token == '>=':
+                pass
+            elif token == '&&':
+                pass
+            elif token == '||':
+                pass
+            elif token == '+':
+                pass
+            elif token == '-':
+                pass
+            elif token == '/':
+                pass
+            elif token == '*':
+                pass
+            elif token == '%':
+                pass
+        else:
+            if token == '++':
+                pass
+            elif token == '--':
+                pass
         return out_local, out_global, out_list
 
     @staticmethod

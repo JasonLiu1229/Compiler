@@ -74,6 +74,18 @@ class returnManager(Manager):
             newHead.prev = None
             self.head = newHead
 
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+
+
     def clear(self):
         self.head = Register(in_name="v0")
         self.tail = Register(in_prev=self.head, in_name="v1")
@@ -384,7 +396,7 @@ class singleManager:
 
 class dataManager:
     def __init__(self) -> None:
-        self.data: [] = [{}, {}] # asciiz, float
+        self.data: [] = [{}, {}, {}] # asciiz, float, word, halfword, byte, space
         self.index = 0
 
 class Registers:
@@ -422,3 +434,8 @@ class Register:
         self.object = in_object
         self.object.register = self
         self.used = True
+
+    def clear(self):
+        self.object.register = None
+        self.object = None
+        self.used = False
