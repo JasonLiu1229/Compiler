@@ -1,3 +1,5 @@
+from Node import Node, VarNode
+
 class Manager:  # Manager class for register management using LRU
     """
     Manager class for register management using LRU
@@ -39,6 +41,24 @@ class Manager:  # Manager class for register management using LRU
 
     def LRU(self, in_object):
         return
+
+    def LRU_delete(self, register_name: str):
+        return
+
+    def search(self, in_object):
+        temp_head = self.head
+        while temp_head is not None:
+            if temp_head.object is None:
+                temp_head = temp_head.next
+                continue
+            if isinstance(in_object, VarNode):
+                if temp_head.object == in_object:
+                    return temp_head.name
+            else:
+                if temp_head.object.key == in_object.value:
+                    return temp_head.name
+            temp_head = temp_head.next
+        return None
 
     def clear(self):
         return
@@ -531,8 +551,8 @@ class Registers:
         self.temporaryManager = temporaryManager()
         self.savedManager = savedManager()
         self.reservedManager = reservedManager()
-        self.singleManager = singleManager()
         self.floatManager = floatManager()
+        self.singleManager = singleManager()
         self.globalObjects: dataManager = dataManager()
 
     def clearAll(self):
@@ -544,6 +564,27 @@ class Registers:
         self.singleManager.clear()
         self.floatManager.clear()
 
+    def search(self, in_object):
+        temp = None
+        temp = self.returnManager.search(in_object)
+        if temp is not None:
+            return temp
+        temp = self.argumentManager.search(in_object)
+        if temp is not None:
+            return temp
+        temp = self.temporaryManager.search(in_object)
+        if temp is not None:
+            return temp
+        temp = self.savedManager.search(in_object)
+        if temp is not None:
+            return temp
+        temp = self.reservedManager.search(in_object)
+        if temp is not None:
+            return temp
+        temp = self.floatManager.search(in_object)
+        if temp is not None:
+            return temp
+        return None
 
 class Register:
 
