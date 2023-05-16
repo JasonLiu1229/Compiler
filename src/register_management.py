@@ -129,11 +129,12 @@ class argumentManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(4)
-        self.head = Register(in_name="a0")
-        self.tail = Register(in_prev=self.head, in_name="a1")
-        self.tail = Register(in_prev=self.tail, in_name="a2")
-        self.tail = Register(in_prev=self.tail, in_name="a3")
-        self.head.next = self.tail
+        list_objects = [self.add(Register(in_name="a" + str(i))) for i in range(4)]
+        self.head = list_objects[0]
+        self.tail = list_objects[-1]
+        for i in range(3):
+            list_objects[i].next = list_objects[i + 1]
+            list_objects[i + 1].prev = list_objects[i]
 
     def LRU(self, in_object):
         # check if the registers are in use
@@ -183,26 +184,25 @@ class argumentManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        self.head = Register(in_name="a0")
-        self.tail = Register(in_prev=self.head, in_name="a1")
-        self.tail = Register(in_prev=self.tail, in_name="a2")
-        self.tail = Register(in_prev=self.tail, in_name="a3")
-        self.head.next = self.tail
+        list_objects = [self.add(Register(in_name="a" + str(i))) for i in range(4)]
+        self.head = list_objects[0]
+        self.tail = list_objects[-1]
+        for i in range(3):
+            list_objects[i].next = list_objects[i + 1]
+            list_objects[i + 1].prev = list_objects[i]
 
 
 class temporaryManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(8)
-        self.head = Register(in_name="t0")
-        self.tail = Register(in_prev=self.head, in_name="t1")
-        self.tail = Register(in_prev=self.tail, in_name="t2")
-        self.tail = Register(in_prev=self.tail, in_name="t3")
-        self.tail = Register(in_prev=self.tail, in_name="t4")
-        self.tail = Register(in_prev=self.tail, in_name="t5")
-        self.tail = Register(in_prev=self.tail, in_name="t6")
-        self.tail = Register(in_prev=self.tail, in_name="t7")
-        self.head.next = self.tail
+        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 8)]
+        self.head = list_objects[0]
+        self.tail = list_objects[7]
+        for i in range(0, 7):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 8):
+            list_objects[i].prev = list_objects[i - 1]
 
     def LRU(self, in_object):
         # check if the registers are in use
@@ -256,30 +256,26 @@ class temporaryManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        self.head = Register(in_name="t0")
-        self.tail = Register(in_prev=self.head, in_name="t1")
-        self.tail = Register(in_prev=self.tail, in_name="t2")
-        self.tail = Register(in_prev=self.tail, in_name="t3")
-        self.tail = Register(in_prev=self.tail, in_name="t4")
-        self.tail = Register(in_prev=self.tail, in_name="t5")
-        self.tail = Register(in_prev=self.tail, in_name="t6")
-        self.tail = Register(in_prev=self.tail, in_name="t7")
-        self.head.next = self.tail
+        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 8)]
+        self.head = list_objects[0]
+        self.tail = list_objects[7]
+        for i in range(0, 7):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 8):
+            list_objects[i].prev = list_objects[i - 1]
 
 
 class savedManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(8)
-        self.head = Register(in_name="s0")
-        self.tail = Register(in_prev=self.head, in_name="s1")
-        self.tail = Register(in_prev=self.tail, in_name="s2")
-        self.tail = Register(in_prev=self.tail, in_name="s3")
-        self.tail = Register(in_prev=self.tail, in_name="s4")
-        self.tail = Register(in_prev=self.tail, in_name="s5")
-        self.tail = Register(in_prev=self.tail, in_name="s6")
-        self.tail = Register(in_prev=self.tail, in_name="s7")
-        self.head.next = self.tail
+        list_objects = [Register(in_name="s" + str(i)) for i in range(0, 8)]
+        self.head = list_objects[0]
+        self.tail = list_objects[7]
+        for i in range(0, 7):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 8):
+            list_objects[i].prev = list_objects[i - 1]
 
     def LRU(self, in_object):
         # check if the registers are in use
@@ -333,15 +329,13 @@ class savedManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        self.head = Register(in_name="s0")
-        self.tail = Register(in_prev=self.head, in_name="s1")
-        self.tail = Register(in_prev=self.tail, in_name="s2")
-        self.tail = Register(in_prev=self.tail, in_name="s3")
-        self.tail = Register(in_prev=self.tail, in_name="s4")
-        self.tail = Register(in_prev=self.tail, in_name="s5")
-        self.tail = Register(in_prev=self.tail, in_name="s6")
-        self.tail = Register(in_prev=self.tail, in_name="s7")
-        self.head.next = self.tail
+        list_objects = [Register(in_name="s" + str(i)) for i in range(0, 8)]
+        self.head = list_objects[0]
+        self.tail = list_objects[7]
+        for i in range(0, 7):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 8):
+            list_objects[i].prev = list_objects[i - 1]
 
 
 class reservedManager(Manager):
@@ -407,38 +401,13 @@ class floatManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(32)
-        self.head = Register(in_name="f0")
-        self.tail = Register(in_prev=self.head, in_name="f1")
-        self.tail = Register(in_prev=self.tail, in_name="f2")
-        self.tail = Register(in_prev=self.tail, in_name="f3")
-        self.tail = Register(in_prev=self.tail, in_name="f4")
-        self.tail = Register(in_prev=self.tail, in_name="f5")
-        self.tail = Register(in_prev=self.tail, in_name="f6")
-        self.tail = Register(in_prev=self.tail, in_name="f7")
-        self.tail = Register(in_prev=self.tail, in_name="f8")
-        self.tail = Register(in_prev=self.tail, in_name="f9")
-        self.tail = Register(in_prev=self.tail, in_name="f10")
-        self.tail = Register(in_prev=self.tail, in_name="f11")
-        self.tail = Register(in_prev=self.tail, in_name="f12")
-        self.tail = Register(in_prev=self.tail, in_name="f13")
-        self.tail = Register(in_prev=self.tail, in_name="f14")
-        self.tail = Register(in_prev=self.tail, in_name="f15")
-        self.tail = Register(in_prev=self.tail, in_name="f16")
-        self.tail = Register(in_prev=self.tail, in_name="f17")
-        self.tail = Register(in_prev=self.tail, in_name="f18")
-        self.tail = Register(in_prev=self.tail, in_name="f19")
-        self.tail = Register(in_prev=self.tail, in_name="f20")
-        self.tail = Register(in_prev=self.tail, in_name="f21")
-        self.tail = Register(in_prev=self.tail, in_name="f22")
-        self.tail = Register(in_prev=self.tail, in_name="f23")
-        self.tail = Register(in_prev=self.tail, in_name="f24")
-        self.tail = Register(in_prev=self.tail, in_name="f25")
-        self.tail = Register(in_prev=self.tail, in_name="f26")
-        self.tail = Register(in_prev=self.tail, in_name="f27")
-        self.tail = Register(in_prev=self.tail, in_name="f28")
-        self.tail = Register(in_prev=self.tail, in_name="f29")
-        self.tail = Register(in_prev=self.tail, in_name="f30")
-        self.tail = Register(in_prev=self.tail, in_name="f31")
+        list_objects = [Register(in_name="f" + str(i)) for i in range(0, 32)]
+        self.head = list_objects[0]
+        self.tail = list_objects[31]
+        for i in range(0, 31):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 32):
+            list_objects[i].prev = list_objects[i - 1]
 
     def LRU(self, in_object):
         # check if the registers are in use
@@ -486,39 +455,13 @@ class floatManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        self.head = Register(in_name="f0")
-        self.tail = Register(in_prev=self.head, in_name="f1")
-        self.tail = Register(in_prev=self.tail, in_name="f2")
-        self.tail = Register(in_prev=self.tail, in_name="f3")
-        self.tail = Register(in_prev=self.tail, in_name="f4")
-        self.tail = Register(in_prev=self.tail, in_name="f5")
-        self.tail = Register(in_prev=self.tail, in_name="f6")
-        self.tail = Register(in_prev=self.tail, in_name="f7")
-        self.tail = Register(in_prev=self.tail, in_name="f8")
-        self.tail = Register(in_prev=self.tail, in_name="f9")
-        self.tail = Register(in_prev=self.tail, in_name="f10")
-        self.tail = Register(in_prev=self.tail, in_name="f11")
-        self.tail = Register(in_prev=self.tail, in_name="f12")
-        self.tail = Register(in_prev=self.tail, in_name="f13")
-        self.tail = Register(in_prev=self.tail, in_name="f14")
-        self.tail = Register(in_prev=self.tail, in_name="f15")
-        self.tail = Register(in_prev=self.tail, in_name="f16")
-        self.tail = Register(in_prev=self.tail, in_name="f17")
-        self.tail = Register(in_prev=self.tail, in_name="f18")
-        self.tail = Register(in_prev=self.tail, in_name="f19")
-        self.tail = Register(in_prev=self.tail, in_name="f20")
-        self.tail = Register(in_prev=self.tail, in_name="f21")
-        self.tail = Register(in_prev=self.tail, in_name="f22")
-        self.tail = Register(in_prev=self.tail, in_name="f23")
-        self.tail = Register(in_prev=self.tail, in_name="f24")
-        self.tail = Register(in_prev=self.tail, in_name="f25")
-        self.tail = Register(in_prev=self.tail, in_name="f26")
-        self.tail = Register(in_prev=self.tail, in_name="f27")
-        self.tail = Register(in_prev=self.tail, in_name="f28")
-        self.tail = Register(in_prev=self.tail, in_name="f29")
-        self.tail = Register(in_prev=self.tail, in_name="f30")
-        self.tail = Register(in_prev=self.tail, in_name="f31")
-
+        list_objects = [Register(in_name="f" + str(i)) for i in range(0, 32)]
+        self.head = list_objects[0]
+        self.tail = list_objects[31]
+        for i in range(0, 31):
+            list_objects[i].next = list_objects[i + 1]
+        for i in range(1, 32):
+            list_objects[i].prev = list_objects[i - 1]
 
 class singleManager:
 

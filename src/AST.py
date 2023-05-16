@@ -305,7 +305,6 @@ class AST:
         out_local = ""
         out_global = ""
         out_list = []
-        # TODO: Implement MIPS operations
         token = current.root.value
         left_register = None
         right_register = None
@@ -344,7 +343,7 @@ class AST:
                     # find the register for the variable
                     right_register = registers.search(right_node)
                 if right_node.register is None:
-                    right_register = registers.search(right_node)
+                    # right_register = registers.search(right_node)
                     # check if value is float, use float register
                     if isinstance(right_node.value, float):
                         registers.floatManager.LRU(right_node)
