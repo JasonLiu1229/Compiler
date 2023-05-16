@@ -106,7 +106,7 @@ def getTypeFromFormat(inputValue):
         return "string"
     else:
         return None
-
+# ඞ
 def convert(value, d_type):
     """
     help function for casting
@@ -502,6 +502,7 @@ class AST:
         """
         if child is None:
             return
+        # ඞ
         if not isinstance(child, AST) and not isinstance(child, Node):
             if not isinstance(child, AST):
                 raise TypeError("child must be set to an AST")
@@ -540,7 +541,7 @@ class AST:
             self.dic_count[self.root.key] += 1
         else:
             name = f"\"{self.root.key}\""
-
+        # ඞ
         out = {name: self.root.value}
         if out[name] is None:
             out[name] = []
@@ -592,7 +593,7 @@ class AST:
     def dot_language(self, file_name, symbol_table: dict = None):
         """
         Create dot language format file
-
+        ඞ
         :param symbol_table:
         :param file_name: String that determines the file name
         :return: None
@@ -617,7 +618,7 @@ class AST:
 
     def connect(self, file_name: str, dictionary):
         """
-        connects the dictionary items together, to form a completed dot format file
+        connects the dictionary items together, to form a completed dot format file ඞ
         :return: None
         """
         with open(str(file_name), "w") as f:
@@ -784,7 +785,7 @@ class AST:
     def comp_eq(var_type: str, op1: str, op2: str):
         """
         Writes LLVM code for an is equal operation
-        :param var_type: the type of return value
+        :param var_type: the type of return value ඞ
         :param op1: the first operand
         :param op2: the second operand
         """
@@ -939,6 +940,7 @@ class PrintfAST(AST):
     def handle(self):
         warnings = []
         evaluate = True
+        # ඞ
         # replace all the arguments
         for i in range(len(self.args)):
             if isinstance(self.args[i], Node) and self.args[i].key == "string":
@@ -1113,6 +1115,8 @@ class PrintfAST(AST):
                 index += 1
         return out, index
 
+    # ඞ
+
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         out = ""
         var_string = ""
@@ -1276,6 +1280,7 @@ class PrintfAST(AST):
                                 # add spaces to the left of the string
                                 arg = " " * (self.width - len(str(arg))) + str(arg)
                         format_[i] = arg
+                        # ඞ
         return format_
 
     @staticmethod
@@ -1332,6 +1337,7 @@ class PrintfAST(AST):
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
+                # ඞ
         return out_local, out_global, ['a0', 'f12']
 
 
@@ -1340,6 +1346,27 @@ class DeclrAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, in_const: bool = False,
                  var_type: str = None):
+        """
+        ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣤⣤⣤⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠋⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣸⣿⡏⠀⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠁⠀⠀⢰⣿⣿⣯⠁⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣷⡄⠀
+⠀⠀⣀⣤⣴⣶⣶⣿⡟⠀⠀⠀⢸⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣷⠀
+⠀⢰⣿⡟⠋⠉⣹⣿⡇⠀⠀⠀⠘⣿⣿⣿⣿⣷⣦⣤⣤⣤⣶⣶⣶⣶⣿⣿⣿⠀
+⠀⢸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀
+⠀⣸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠉⠻⠿⣿⣿⣿⣿⡿⠿⠿⠛⢻⣿⡇⠀⠀
+⠀⣿⣿⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣧⠀⠀
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀
+⠀⢿⣿⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⠀⠀
+⠀⠸⣿⣧⡀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠃⠀⠀
+⠀⠀⠛⢿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⣰⣿⣿⣷⣶⣶⣶⣶⠶⠀⢠⣿⣿⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⣽⣿⡏⠁⠀⠀⢸⣿⡇⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⢹⣿⡆⠀⠀⠀⣸⣿⠇⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿⠁⠀⠈⠻⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+        """
         super().__init__(root, children, parent)
         self.const = in_const
         self.type = var_type
