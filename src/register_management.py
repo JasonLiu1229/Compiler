@@ -53,9 +53,11 @@ class Manager:  # Manager class for register management using LRU
                 continue
             if isinstance(in_object, VarNode):
                 if temp_head.object == in_object:
+                    in_object.register   = temp_head
                     return temp_head.name
             else:
                 if temp_head.object.key == in_object.value:
+                    in_object.register = temp_head
                     return temp_head.name
             temp_head = temp_head.next
         return None
