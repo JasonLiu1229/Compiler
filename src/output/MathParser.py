@@ -78,8 +78,8 @@ def serializedATN():
         38,1,38,1,38,1,38,1,38,1,38,1,38,1,38,3,38,762,8,38,1,39,1,39,1,
         39,1,329,2,70,72,40,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,
         34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,
-        78,0,8,2,0,1,1,56,56,3,0,39,39,41,41,43,43,3,0,38,38,40,40,42,42,
-        1,0,44,45,1,0,33,35,1,0,38,43,1,0,49,50,1,0,28,30,884,0,83,1,0,0,
+        78,0,8,2,0,1,1,56,56,1,0,44,45,3,0,39,39,41,41,43,43,3,0,38,38,40,
+        40,42,42,1,0,33,35,1,0,38,43,1,0,49,50,1,0,28,30,884,0,83,1,0,0,
         0,2,150,1,0,0,0,4,153,1,0,0,0,6,193,1,0,0,0,8,202,1,0,0,0,10,204,
         1,0,0,0,12,235,1,0,0,0,14,237,1,0,0,0,16,281,1,0,0,0,18,284,1,0,
         0,0,20,305,1,0,0,0,22,324,1,0,0,0,24,337,1,0,0,0,26,339,1,0,0,0,
@@ -283,7 +283,7 @@ def serializedATN():
         1,0,0,0,701,689,1,0,0,0,701,693,1,0,0,0,701,697,1,0,0,0,702,69,1,
         0,0,0,703,704,6,35,-1,0,704,705,3,72,36,0,705,717,1,0,0,0,706,707,
         10,3,0,0,707,708,5,36,0,0,708,716,3,72,36,0,709,710,10,2,0,0,710,
-        711,5,37,0,0,711,716,3,72,36,0,712,713,10,1,0,0,713,714,7,3,0,0,
+        711,5,37,0,0,711,716,3,72,36,0,712,713,10,1,0,0,713,714,7,1,0,0,
         714,716,3,72,36,0,715,706,1,0,0,0,715,709,1,0,0,0,715,712,1,0,0,
         0,716,719,1,0,0,0,717,715,1,0,0,0,717,718,1,0,0,0,718,71,1,0,0,0,
         719,717,1,0,0,0,720,721,6,36,-1,0,721,725,3,74,37,0,722,723,5,46,
@@ -4265,6 +4265,12 @@ class MathParser ( Parser ):
                 return self.getTypedRuleContext(MathParser.ExprContext,i)
 
 
+        def AND_OP(self):
+            return self.getToken(MathParser.AND_OP, 0)
+
+        def OR_OP(self):
+            return self.getToken(MathParser.OR_OP, 0)
+
         def GEQ(self):
             return self.getToken(MathParser.GEQ, 0)
 
@@ -4282,12 +4288,6 @@ class MathParser ( Parser ):
 
         def EQ(self):
             return self.getToken(MathParser.EQ, 0)
-
-        def AND_OP(self):
-            return self.getToken(MathParser.AND_OP, 0)
-
-        def OR_OP(self):
-            return self.getToken(MathParser.OR_OP, 0)
 
         def getRuleIndex(self):
             return MathParser.RULE_comp
@@ -4325,7 +4325,7 @@ class MathParser ( Parser ):
                 self.state = 690
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 11544872091648) != 0):
+                if not(_la==44 or _la==45):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -4341,7 +4341,7 @@ class MathParser ( Parser ):
                 self.state = 694
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 5772436045824) != 0):
+                if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 11544872091648) != 0):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -4357,7 +4357,7 @@ class MathParser ( Parser ):
                 self.state = 698
                 localctx.op = self._input.LT(1)
                 _la = self._input.LA(1)
-                if not(_la==44 or _la==45):
+                if not(((_la) & ~0x3f) == 0 and ((1 << _la) & 5772436045824) != 0):
                     localctx.op = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
