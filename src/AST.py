@@ -327,6 +327,7 @@ class AST:
                 if isinstance(left_node.value, float):
                     registers.floatManager.LRU(left_node)
                     left_type = 'float'
+                    out_local += f"\tlwc1 ${left_node.register.name}, {left_node.value}\n"
                 else:
                     registers.temporaryManager.LRU(left_node)
                     if isinstance(left_node.value, int):
@@ -343,17 +344,18 @@ class AST:
                     # find the register for the variable
                     right_register = registers.search(right_node)
                 if right_node.register is None:
-                    # right_register = registers.search(right_node)
                     # check if value is float, use float register
                     if isinstance(right_node.value, float):
                         registers.floatManager.LRU(right_node)
                         right_type = 'float'
+                        out_local += f"\tlwc1 ${right_node.register.name}, {right_node.value}\n"
                     else:
                         registers.temporaryManager.LRU(right_node)
                         if isinstance(right_node.value, int):
                             right_type = 'int'
                         else:
                             right_type = 'char'
+                        out_local += f"\tli ${right_node.register.name}, {right_node.value}\n"
                     right_register = right_node.register.name
         # create new node
         new_node = Node("", None)
