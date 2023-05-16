@@ -348,18 +348,37 @@ class AST:
                         else:
                             rightType = 'char'
                 rightRegister = rightNode.register.name
-        if current.root.register is None:
+        # create new node
+        new_node = Node("", None)
+        if new_node.register is None:
             if rightType == 'float' or leftType == 'float':
-                current.root.register = registers.floatManager.LRU(current.root)
+                registers.floatManager.LRU(new_node)
             else:
-                current.root.register = registers.temporaryManager.LRU(current.root)
-        new_register = current.root.register.name
+                registers.temporaryManager.LRU(new_node)
+        new_register = new_node.register.name
         # casting if necessary
         if leftType != rightType and rightType is not None:
-            if leftType == 'float':
-                out_local += f"\tmtc1 ${rightRegister}, ${rightRegister}\n"
-
-
+            if leftType == 'float' and rightType == 'int':
+                registers.floatManager.LRU_delete(rightRegister)
+                registers.floatManager.LRU(rightNode)
+                out_local += f"\tmtc1 ${rightRegister}, ${rightNode.register.name}\n"
+                rightRegister = new_node.register.name
+            elif rightType == 'float' and leftType == 'int':
+                registers.floatManager.LRU_delete(leftRegister)
+                registers.floatManager.LRU(leftNode)
+                out_local += f"\tmtc1 ${leftRegister}, ${leftNode.register.name}\n"
+            elif rightType == 'float' and leftType == 'char':
+                pass
+            elif leftType == 'float' and rightType == 'char':
+                pass
+            elif rightType == 'int' and leftType == 'char':
+                registers.temporaryManager.LRU_delete(leftRegister)
+                registers.temporaryManager.LRU(leftNode)
+                out_local += f"\tandi ${leftNode.register.name}, ${leftRegister}, 0x000000FF\n"
+            elif leftType == 'int' and rightType == 'char':
+                registers.temporaryManager.LRU_delete(rightRegister)
+                registers.temporaryManager.LRU(rightNode)
+                out_local += f"\tandi ${rightNode.register.name}, ${rightRegister}, 0x000000FF\n"
         if rightNode is not None:
             if token == '<':
                 pass

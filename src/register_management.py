@@ -137,6 +137,29 @@ class argumentManager(Manager):
             newHead.prev = None
             self.head = newHead
 
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
+
     def clear(self):
         self.head = Register(in_name="a0")
         self.tail = Register(in_prev=self.head, in_name="a1")
@@ -186,6 +209,29 @@ class temporaryManager(Manager):
             self.tail.next = None
             newHead.prev = None
             self.head = newHead
+
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
 
     def clear(self):
         self.head = Register(in_name="t0")
@@ -241,6 +287,29 @@ class savedManager(Manager):
             newHead.prev = None
             self.head = newHead
 
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
+
     def clear(self):
         self.head = Register(in_name="s0")
         self.tail = Register(in_prev=self.head, in_name="s1")
@@ -282,6 +351,29 @@ class reservedManager(Manager):
             self.tail.next = None
             newHead.prev = None
             self.head = newHead
+
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
 
     def clear(self):
         self.head = Register(in_name="k0")
@@ -348,6 +440,29 @@ class floatManager(Manager):
             newHead.prev = None
             self.head = newHead
 
+    def LRU_delete(self, register_name: str):
+        # delete the register with the name register_name and move the register to the tail
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == register_name:
+                tempHead.clear()
+                break
+            tempHead = tempHead.next
+        # move the tempHead to tail of the list
+        if tempHead is not None:
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
+
     def clear(self):
         self.head = Register(in_name="f0")
         self.tail = Register(in_prev=self.head, in_name="f1")
@@ -394,7 +509,6 @@ class singleManager:
         self.at = Register(in_name="at")
         self.lo = Register(in_name="lo")
         self.hi = Register(in_name="hi")
-
     def clear(self):
         self.gp = Register(in_name="gp")
         self.sp = Register(in_name="sp")
