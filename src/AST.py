@@ -306,161 +306,161 @@ class AST:
         out_list = []
         # TODO: Implement MIPS operations
         token = current.root.value
-        leftRegister = None
-        rightRegister = None
-        leftType = None
-        rightType = None
-        leftNode = current.children[0]
-        rightNode = None
+        left_register = None
+        right_register = None
+        left_type = None
+        right_type = None
+        left_node = current.children[0]
+        right_node = None
         if len(current.children) > 1:
-            rightNode = current.children[1]
+            right_node = current.children[1]
         # register assignment
-        if isinstance(leftNode, VarNode):
-            leftRegister = leftNode.register.name
-            leftType = leftNode.type
+        if isinstance(left_node, VarNode):
+            left_register = left_node.register.name
+            left_type = left_node.type
         else:
-            if leftNode.register is None:
+            if left_node.register is None:
                 # check if value is float, use float register
-                if isinstance(leftNode.value, float):
-                    registers.floatManager.LRU(leftNode)
-                    leftType = 'float'
+                if isinstance(left_node.value, float):
+                    registers.floatManager.LRU(left_node)
+                    left_type = 'float'
                 else:
-                    registers.temporaryManager.LRU(leftNode)
-                    if isinstance(leftNode.value, int):
-                        leftType = 'int'
+                    registers.temporaryManager.LRU(left_node)
+                    if isinstance(left_node.value, int):
+                        left_type = 'int'
                     else:
-                        leftType = 'char'
-            leftRegister = leftNode.register.name
-        if rightNode is not None:
-            if isinstance(rightNode, VarNode):
-                rightRegister = rightNode.register.name
-                rightType = rightNode.type
+                        left_type = 'char'
+            left_register = left_node.register.name
+        if right_node is not None:
+            if isinstance(right_node, VarNode):
+                right_register = right_node.register.name
+                right_type = right_node.type
             else:
-                if rightNode.register is None:
+                if right_node.register is None:
                     # check if value is float, use float register
-                    if isinstance(rightNode.value, float):
-                        registers.floatManager.LRU(rightNode)
-                        rightType = 'float'
+                    if isinstance(right_node.value, float):
+                        registers.floatManager.LRU(right_node)
+                        right_type = 'float'
                     else:
-                        registers.temporaryManager.LRU(rightNode)
-                        if isinstance(rightNode.value, int):
-                            rightType = 'int'
+                        registers.temporaryManager.LRU(right_node)
+                        if isinstance(right_node.value, int):
+                            right_type = 'int'
                         else:
-                            rightType = 'char'
-                rightRegister = rightNode.register.name
+                            right_type = 'char'
+                right_register = right_node.register.name
         # create new node
         new_node = Node("", None)
         if new_node.register is None:
-            if rightType == 'float' or leftType == 'float':
+            if right_type == 'float' or left_type == 'float':
                 registers.floatManager.LRU(new_node)
             else:
                 registers.temporaryManager.LRU(new_node)
         new_register = new_node.register.name
         # casting if necessary
-        if leftType != rightType and rightType is not None:
-            if leftType == 'float' and rightType == 'int':
-                registers.floatManager.LRU_delete(rightRegister)
-                registers.floatManager.LRU(rightNode)
-                out_local += f"\tmtc1 ${rightRegister}, ${rightNode.register.name}\n"
-                rightRegister = new_node.register.name
-                out_local += f"\tcvt.s.w ${rightRegister}, ${rightRegister}\n"
-            elif rightType == 'float' and leftType == 'int':
-                registers.floatManager.LRU_delete(leftRegister)
-                registers.floatManager.LRU(leftNode)
-                out_local += f"\tmtc1 ${leftRegister}, ${leftNode.register.name}\n"
-                leftRegister = new_node.register.name
-                out_local += f"\tcvt.s.w ${leftRegister}, ${leftRegister}\n"
-            elif rightType == 'float' and leftType == 'char':
+        if left_type != right_type and right_type is not None:
+            if left_type == 'float' and right_type == 'int':
+                registers.floatManager.LRU_delete(right_register)
+                registers.floatManager.LRU(right_node)
+                out_local += f"\tmtc1 ${right_register}, ${right_node.register.name}\n"
+                right_register = new_node.register.name
+                out_local += f"\tcvt.s.w ${right_register}, ${right_register}\n"
+            elif right_type == 'float' and left_type == 'int':
+                registers.floatManager.LRU_delete(left_register)
+                registers.floatManager.LRU(left_node)
+                out_local += f"\tmtc1 ${left_register}, ${left_node.register.name}\n"
+                left_register = new_node.register.name
+                out_local += f"\tcvt.s.w ${left_register}, ${left_register}\n"
+            elif right_type == 'float' and left_type == 'char':
                 # cast char to int first and then to float
-                out_local += f"\tsubu ${leftRegister}, ${leftRegister}, 48\n"
-                registers.floatManager.LRU_delete(leftRegister)
-                registers.floatManager.LRU(leftNode)
-                out_local += f"\tmtc1 ${leftRegister}, ${leftNode.register.name}\n"
-                leftRegister = new_node.register.name
-                out_local += f"\tcvt.s.w ${leftRegister}, ${leftRegister}\n"
-            elif leftType == 'float' and rightType == 'char':
+                out_local += f"\tsubu ${left_register}, ${left_register}, 48\n"
+                registers.floatManager.LRU_delete(left_register)
+                registers.floatManager.LRU(left_node)
+                out_local += f"\tmtc1 ${left_register}, ${left_node.register.name}\n"
+                left_register = new_node.register.name
+                out_local += f"\tcvt.s.w ${left_register}, ${left_register}\n"
+            elif left_type == 'float' and right_type == 'char':
                 # cast char to int first and then to float
-                out_local += f"\tsubu ${rightRegister}, ${rightRegister}, 48\n"
-                registers.floatManager.LRU_delete(rightRegister)
-                registers.floatManager.LRU(rightNode)
-                out_local += f"\tmtc1 ${rightRegister}, ${rightNode.register.name}\n"
-                rightRegister = new_node.register.name
-                out_local += f"\tcvt.s.w ${rightRegister}, ${rightRegister}\n"
-            elif rightType == 'int' and leftType == 'char':
-                registers.temporaryManager.LRU_delete(leftRegister)
-                registers.temporaryManager.LRU(leftNode)
-                out_local += f"\tandi ${leftNode.register.name}, ${leftRegister}, 0x000000FF\n"
-                leftRegister = new_node.register.name
-            elif leftType == 'int' and rightType == 'char':
-                registers.temporaryManager.LRU_delete(rightRegister)
-                registers.temporaryManager.LRU(rightNode)
-                out_local += f"\tandi ${rightNode.register.name}, ${rightRegister}, 0x000000FF\n"
-                rightRegister = new_node.register.name
-        out_list.append(leftRegister)
-        out_list.append(rightRegister)
+                out_local += f"\tsubu ${right_register}, ${right_register}, 48\n"
+                registers.floatManager.LRU_delete(right_register)
+                registers.floatManager.LRU(right_node)
+                out_local += f"\tmtc1 ${right_register}, ${right_node.register.name}\n"
+                right_register = new_node.register.name
+                out_local += f"\tcvt.s.w ${right_register}, ${right_register}\n"
+            elif right_type == 'int' and left_type == 'char':
+                registers.temporaryManager.LRU_delete(left_register)
+                registers.temporaryManager.LRU(left_node)
+                out_local += f"\tandi ${left_node.register.name}, ${left_register}, 0x000000FF\n"
+                left_register = new_node.register.name
+            elif left_type == 'int' and right_type == 'char':
+                registers.temporaryManager.LRU_delete(right_register)
+                registers.temporaryManager.LRU(right_node)
+                out_local += f"\tandi ${right_node.register.name}, ${right_register}, 0x000000FF\n"
+                right_register = new_node.register.name
+        out_list.append(left_register)
+        out_list.append(right_register)
         out_list.append(new_register)
-        if rightNode is not None:
+        if right_node is not None:
             if token == '<':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.lt.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $1\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
-                    out_local += f"\tslt ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tslt ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '>':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.le.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
                     out_local += f"\tmovf ${new_register}, $1\n"
                 else:
-                    out_local += f"\tslt ${new_register}, ${rightRegister}, ${leftRegister}\n"
+                    out_local += f"\tslt ${new_register}, ${right_register}, ${left_register}\n"
             elif token == '==':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.eq.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $1\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
-                    out_local += f"\tseq ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tseq ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '!=':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.eq.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
                     out_local += f"\tmovf ${new_register}, $1\n"
                 else:
-                    out_local += f"\tsne ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tsne ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '<=':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.le.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $1\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
-                    out_local += f"\tsle ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tsle ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '>=':
-                if leftType == 'float' or rightType == 'float':
-                    out_local += f"\tc.lt.s ${leftRegister}, ${rightRegister}\n"
+                if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
                     out_local += f"\tmovf ${new_register}, $1\n"
                 else:
-                    out_local += f"\tsge ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tsge ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '&&':
-                out_local += f"\tand ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tand ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '||':
-                out_local += f"\tor ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tor ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '+':
-                out_local += f"\tadd{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tadd{'.s' if left_register is 'float' or right_register is 'float' else ''} ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '-':
-                out_local += f"\tsub{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tsub{'.s' if left_register is 'float' or right_register is 'float' else ''} ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '/':
-                out_local += f"\tdiv{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tdiv{'.s' if left_register is 'float' or right_register is 'float' else ''} ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '*':
-                out_local += f"\tmul{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\tmul{'.s' if left_register is 'float' or right_register is 'float' else ''} ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '%':
-                out_local += f"\trem ${new_register}, ${leftRegister}, ${rightRegister}\n"
+                out_local += f"\trem ${new_register}, ${left_register}, ${right_register}\n"
         else:
             if token == '++':
-                out_local += f"\taddi ${new_register}, ${leftRegister}, 1\n"
+                out_local += f"\taddi ${new_register}, ${left_register}, 1\n"
             elif token == '--':
-                out_local += f"\taddi ${new_register}, ${leftRegister}, -1\n"
+                out_local += f"\taddi ${new_register}, ${left_register}, -1\n"
         return out_local, out_global, out_list
 
     @staticmethod
@@ -1137,7 +1137,7 @@ class PrintfAST(AST):
         for i in range(len(self.args)):
             self.args[i].register = self.children[i].register
 
-    def format(self):
+    def format(self, registers: Registers):
         # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
         # we ignore the %s specifier because it is not used in the format string
         # keep everything in-between the format specifiers too
@@ -1181,7 +1181,7 @@ class PrintfAST(AST):
                     precision = int(precision)
                     precision_valid = True
                 if format_[i][0].isdigit():
-                    # take the full integer as teh size
+                    # take the full integer as the size
                     size_str = ""
                     for j in range(len(format_[i])):
                         if not format_[i][j].isdigit():
@@ -1193,14 +1193,19 @@ class PrintfAST(AST):
                     self.width = int(size_str)
                 # replace the format specifier with the argument
                 # check first if the format specifier is in the list of valid specifiers
-                if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X', 'f', 'F', 'e', 'E', 'g', 'G', 'a', 'A', 'c', 's',
-                                     'p',
-                                     'n']:
+                if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X', 'f', 'F', 'e',
+                                     'E', 'g', 'G', 'a', 'A', 'c', 's', 'p', 'n']:
                     # if the format specifier is a string
                     temp_arg = self.args[counter]
                     arg = None
                     if isinstance(temp_arg, Node):
-                        arg = temp_arg.value
+                        if temp_arg.key == "var":
+                            # search for the variable in the registers
+                            reg = registers.search(temp_arg)
+                            if reg is not None:
+                                arg = Register(in_name=f"${reg}")
+                        else:
+                            arg = temp_arg.value
                     elif isinstance(temp_arg, VarNode):
                         arg = temp_arg.value
                     # if the format specifier is an integer
@@ -1291,7 +1296,7 @@ class PrintfAST(AST):
     def mips(self, registers: Registers):
         out_local = ""
         out_global = ""
-        list_format = self.format()
+        list_format = self.format(registers)
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
             if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
@@ -1317,6 +1322,22 @@ class PrintfAST(AST):
                 out_local += "\tla $a0, 0x0A\n"
                 out_local += "\tsyscall\n"
                 continue
+            if isinstance(list_format[i], Register):
+                out_local += f"\tmove $a0, {list_format[i].name}\n"
+                # get register type
+                if list_format[i].name[0] == 'f':
+                    out_local += "\tli $v0, 2\n"
+                else:
+                    # check a type of variable according to format
+                    # keep everything in-between the format specifiers too
+                    format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
+                    format_ = [x for x in format_ if x is not None and x != '']
+                    if format_[i].endswith('d'): # format for integer
+                        out_local += "\tli $v0, 1\n"
+                    elif format_[i].endswith('c'): # format for float
+                        out_local += "\tli $v0, 11\n"
+
+                out_local += "\tsyscall\n"
             if self.getType(list_format[i]) == 0: # if the type is an integer
                 out_local += f"\tli $a0, {list_format[i]}\n"
                 out_local += "\tli $v0, 1\n"
@@ -1488,6 +1509,37 @@ class TermAST(AST):
         node.parent = self.parent
         return node
 
+    def mips(self, registers: Registers):
+        out = ""
+        out_global = ""
+        out_list = []
+        # # load the first value into a register
+        # first = self.children[0]
+        # second = self.children[1]
+        # if isinstance(first, VarNode):
+        #     # if the first value is a variable, load it into a register
+        #     registers.temporaryManager.LRU(first)
+        #     out += f"lw{'c1' if first.type == 'float' else ''} ${first.register.name}, {first.value}\n"
+        # else:
+        #     # if the first value is a constant, load it into a register
+        #     registers.temporaryManager.LRU(first)
+        #     out += f"li{'c1' if first.key == 'float' else ''} ${first.register.name}, {first.value}\n"
+        # # load the second value into a register
+        # if isinstance(second, VarNode):
+        #     # if the second value is a variable, load it into a register
+        #     registers.temporaryManager.LRU(second)
+        #     out += f"lw{'c2' if second.type == 'float' else ''} ${second.register.name}, {second.value}\n"
+        # else:
+        #     # if the second value is a constant, load it into a register
+        #     registers.temporaryManager.LRU(second)
+        #     out += f"li{'c2' if second.key == 'float' else ''} ${second.register.name}, {second.value}\n"
+        # # add the registers to the list of registers in use
+        # out_list = [first.register.name, second.register.name]
+        # check what operation is being done
+        out , out_global, out_list = self.visitMIPSOp(self, registers)
+
+        return out, out_global, out_list
+
 
 class FactorAST(AST):
 
@@ -1640,8 +1692,9 @@ class Scope_AST(AST):
                 if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
                         or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
                         or isinstance(current, FuncDeclAST)):
-                    for i in current.children:
-                        not_visited.append(i)
+                    if isinstance(current, AST):
+                        for i in current.children:
+                            not_visited.append(i)
         visited.reverse()
         out_local = out_global = ""
         out_list = []
@@ -1649,6 +1702,8 @@ class Scope_AST(AST):
 
         output = None
         for current in visited:
+            if isinstance(current, Node):
+                continue
             if current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
@@ -1997,6 +2052,9 @@ class While_loopAST(Scope_AST):
             output_local += f"\tsw ${output_list[i]}, {4 * i}($sp)\n"
         output_local += f"\tsw $ra, {4 * len(output_list)}($sp)\n"
         # TODO: add the condition
+        out_condition = self.condition.mips(registers)
+        output_local += out_condition[0]
+        output_list += out_condition[2]
         # condition of the while loop
         output_local += output[0]
         output_global += output[1]
@@ -2028,12 +2086,14 @@ class CondAST(TermAST):
         out_global = ""
         out_list = []
         if self.last_eval is not None:
-            # registers.returnManager["v1"]
-            # out_list.append(self.register.name)
-            # add the condition to the registers
             out_local += f"\tli $v1, {self.last_eval}\n"
-            # out_local += f"\tbeq ${self.register.name}, $zero, else_{registers.globalObjects.index}\n"
-            # out_local += f"\tj if_{registers.globalObjects.index}\n"
+        else:
+            # the condition is still an ExprAST (thus, not evaluated)
+            for i in self.children:
+                output = i.mips(registers)
+                out_local += output[0]
+                out_global += output[1]
+                out_list += output[2]
 
 
         return out_local, out_global, []
