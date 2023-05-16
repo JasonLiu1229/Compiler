@@ -84,7 +84,18 @@ class returnManager(Manager):
             tempHead = tempHead.next
         # move the tempHead to tail of the list
         if tempHead is not None:
-
+            if tempHead.next is not None:
+                tempHead.next.prev = tempHead.prev
+            else:
+                self.tail = tempHead.prev
+            if tempHead.prev is not None:
+                tempHead.prev.next = tempHead.next
+            else:
+                self.head = tempHead.next
+            self.tail.next = tempHead
+            tempHead.prev = self.tail
+            tempHead.next = None
+            self.tail = tempHead
 
     def clear(self):
         self.head = Register(in_name="v0")
