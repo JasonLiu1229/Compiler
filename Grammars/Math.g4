@@ -145,9 +145,9 @@ lvar            :   ptr+=STR* name=VAR_NAME
 rvar            :   VAR_NAME
                 ;
 
-comp            :   expr op=(GEQ | LEQ | NEQ) expr
+comp            :   expr op=(AND_OP | OR_OP) expr
+                |   expr op=(GEQ | LEQ | NEQ) expr
                 |   expr op=(GT | LT | EQ) expr
-                |   expr op=(AND_OP | OR_OP) expr
                 ;
 
 expr            :   term
