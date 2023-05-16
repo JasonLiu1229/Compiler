@@ -409,20 +409,9 @@ class AST:
                     out_local += f"\tslt ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '>':
                 if leftType == 'float' or rightType == 'float':
-                    temp_node1 = Node("", None)
-                    temp_node2 = Node("", None)
-                    registers.temporaryManager.LRU(temp_node1)
-                    registers.temporaryManager.LRU(temp_node2)
-                    out_local += f"\tc.lt.s ${rightRegister}, ${leftRegister}\n"
-                    out_local += f"\tmovt ${temp_node1.register.name}, $1\n"
-                    out_local += f"\tmovf ${temp_node1.register.name}, $zero\n"
-                    # check if both are also not equal if both are true evaluate new_register to one else zero
-                    out_local += f"\tc.eq.s ${rightRegister}, ${leftRegister}\n"
-                    out_local += f"\tmovt ${temp_node2.register.name}, $zero\n"
-                    out_local += f"\tmovf ${temp_node2.register.name}, $1\n"
-                    out_local += f"\tand ${new_register}, ${temp_node1.register.name}, ${temp_node2.register.name}\n"
-                    out_list.append(temp_node1.register.name)
-                    out_list.append(temp_node2.register.name)
+                    out_local += f"\tc.le.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $zero\n"
+                    out_local += f"\tmovf ${new_register}, $1\n"
                 else:
                     out_local += f"\tslt ${new_register}, ${rightRegister}, ${leftRegister}\n"
             elif token == '==':
