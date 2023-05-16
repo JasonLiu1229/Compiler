@@ -1504,6 +1504,7 @@ class Scope_AST(AST):
             index = output[1]
         return out, index
 
+
     def mips(self, registers: Registers):
         visited = []
         not_visited = [self.children[0]]
@@ -1616,28 +1617,36 @@ class If_CondAST(Scope_AST):
         visited = []
         not_visited = [self.condition]
         # DFS
-        while len(not_visited) != 0:
-            current = not_visited.pop()
-            if current not in visited:
-                visited.append(current)
-                if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
-                        or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
-                        or isinstance(current, FuncDeclAST)):
-                    for i in current.children:
-                        not_visited.append(i)
+        # while len(not_visited) != 0:
+        #     current = not_visited.pop()
+        #     if current not in visited:
+        #         visited.append(current)
+        #         if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
+        #                 or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
+        #                 or isinstance(current, FuncDeclAST)):
+        #             if isinstance(current, AST):
+        #                 for i in current.children:
+        #                     not_visited.append(i)
+        # visited.reverse()
+        temp_list = out_list = []
+        out_global = out_cond = ""
+        # condition check and branch
+        out_cond, temp_glob, temp_list = self.condition.mips(registers)
+        out_list += temp_list
         out_local = f"if_{registers.globalObjects.index}: \n"
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
-        temp_list = out_list = []
-        out_global = out_cond = ""
-        for current in visited:
-            output = tuple
-            if current.root.value in tokens:
-                output = self.visitMIPSOp(current, registers)
-            else:
-                output = current.mips(registers)
-            out_cond += output[0]
-            temp_list += output[2]
+
+        # for current in visited:
+        #     output = tuple
+        #     if isinstance(current, Node):
+        #         continue
+        #     if current.root.value in tokens:
+        #         output = self.visitMIPSOp(current, registers)
+        #     else:
+        #         output = current.mips(registers)
+        #     # out_cond += output[0]
+        #     temp_list += output[2]
 
         output = self.children[0].mips(registers)
         temp_out = output[0]
@@ -1652,13 +1661,13 @@ class If_CondAST(Scope_AST):
         count = 0
         for i in temp_list:
             count += 1
-            out_local += f"\tsw ${i}, {count * 4}($sp)\n"
+            out_local += f"\t{'sw' if not i.startswith('f') else 'swc1'} ${i}, {count * 4}($sp)\n"
         # middle
         out_local += out_cond
         out_local += f"\tbeq $v1, $zero, else_{registers.globalObjects.index}\n"
         out_else = f"else_{registers.globalObjects.index}: \n"
         for i in reversed(temp_list):
-            out_else += f"\tlw ${i}, {count * 4}($sp)\n"
+            out_else += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
             count -= 1
         out_else += f"\tlw $ra, {4}($sp)\n"
         if len(self.children) > 1:
@@ -1666,14 +1675,16 @@ class If_CondAST(Scope_AST):
             output = self.children[1].mips(registers)
             out_else += output[0]
         else:
-            out_else += f"\tjr $ra\n"
+            pass
+            # out_else += f"\tjr $ra\n\n"
         registers.globalObjects.index += 1
         out_local += temp_out
         # end
         for i in reversed(temp_list):
-            out_local += f"\tlw ${i}, {count * 4}($sp)\n"
+            out_local += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
             count -= 1
-        out_local += f"\tlw $ra, {0}($sp)\n\n"
+        out_local += f"\tlw $ra, {0}($sp)\n"
+        # out_local += f"\tjr $ra\n\n"
         out_local += out_else
         return out_local, out_global, []
 
@@ -1881,6 +1892,21 @@ class CondAST(TermAST):
 
     def llvm(self, scope: bool = False, index: int = 1) -> tuple[str, int]:
         pass
+
+    def mips(self, registers: Registers):
+        out_local = ""
+        out_global = ""
+        out_list = []
+        if self.last_eval is not None:
+            # registers.returnManager["v1"]
+            # out_list.append(self.register.name)
+            # add the condition to the registers
+            out_local += f"\tli $v1, {self.last_eval}\n"
+            # out_local += f"\tbeq ${self.register.name}, $zero, else_{registers.globalObjects.index}\n"
+            # out_local += f"\tj if_{registers.globalObjects.index}\n"
+
+
+        return out_local, out_global, []
 
 
 class InitAST(DeclrAST):
@@ -2200,9 +2226,9 @@ class FuncScopeAST(AST):
             if current not in visited:
                 if current is not self:
                     visited.append(current)
-                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
-                    or not isinstance(current, If_CondAST) \
-                    or not isinstance(current, FuncDefnAST) and not isinstance(current, FuncScopeAST):
+                if not (isinstance(current, While_loopAST) or isinstance(current, FuncDeclAST)
+                        or isinstance(current, If_CondAST)
+                        or isinstance(current, FuncDefnAST)):
                     for i in current.children:
                         if not isinstance(i, Node):
                             not_visited.append(i)
