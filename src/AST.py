@@ -306,6 +306,8 @@ class AST:
         out_list = []
         # TODO: Implement MIPS operations
         token = current.root.value
+        leftNode = current.children[0]
+        rightNode = current.children[1]
         if token == '<':
             pass
         elif token == '>':
@@ -1648,6 +1650,7 @@ class If_CondAST(Scope_AST):
         #     # out_cond += output[0]
         #     temp_list += output[2]
 
+        # body of the if loop
         output = self.children[0].mips(registers)
         temp_out = output[0]
         temp_list += output[2]
@@ -1656,6 +1659,7 @@ class If_CondAST(Scope_AST):
         size = 4
         size += size * len(temp_list)
         # begin
+        # allocate register on stack
         out_local += f"\taddi $sp, $sp, -{size}\n"
         out_local += f"\tsw $ra, {0}($sp)\n"
         count = 0
@@ -1663,13 +1667,16 @@ class If_CondAST(Scope_AST):
             count += 1
             out_local += f"\t{'sw' if not i.startswith('f') else 'swc1'} ${i}, {count * 4}($sp)\n"
         # middle
+        # condition
         out_local += out_cond
+        # branch if condition is false to else block
         out_local += f"\tbeq $v1, $zero, else_{registers.globalObjects.index}\n"
         out_else = f"else_{registers.globalObjects.index}: \n"
         for i in reversed(temp_list):
             out_else += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
             count -= 1
         out_else += f"\tlw $ra, {4}($sp)\n"
+        # if else block exist then create else default
         if len(self.children) > 1:
             self.children[1].register = registers.globalObjects.index
             output = self.children[1].mips(registers)
@@ -1680,6 +1687,7 @@ class If_CondAST(Scope_AST):
         registers.globalObjects.index += 1
         out_local += temp_out
         # end
+        # release registers on stack, deallocate
         for i in reversed(temp_list):
             out_local += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
             count -= 1
