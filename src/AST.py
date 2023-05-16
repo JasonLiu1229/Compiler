@@ -363,54 +363,115 @@ class AST:
                 registers.floatManager.LRU(rightNode)
                 out_local += f"\tmtc1 ${rightRegister}, ${rightNode.register.name}\n"
                 rightRegister = new_node.register.name
+                out_local += f"\tcvt.s.w ${rightRegister}, ${rightRegister}\n"
             elif rightType == 'float' and leftType == 'int':
                 registers.floatManager.LRU_delete(leftRegister)
                 registers.floatManager.LRU(leftNode)
                 out_local += f"\tmtc1 ${leftRegister}, ${leftNode.register.name}\n"
+                leftRegister = new_node.register.name
+                out_local += f"\tcvt.s.w ${leftRegister}, ${leftRegister}\n"
             elif rightType == 'float' and leftType == 'char':
-                pass
+                # cast char to int first and then to float
+                out_local += f"\tsubu ${leftRegister}, ${leftRegister}, 48\n"
+                registers.floatManager.LRU_delete(leftRegister)
+                registers.floatManager.LRU(leftNode)
+                out_local += f"\tmtc1 ${leftRegister}, ${leftNode.register.name}\n"
+                leftRegister = new_node.register.name
+                out_local += f"\tcvt.s.w ${leftRegister}, ${leftRegister}\n"
             elif leftType == 'float' and rightType == 'char':
-                pass
+                # cast char to int first and then to float
+                out_local += f"\tsubu ${rightRegister}, ${rightRegister}, 48\n"
+                registers.floatManager.LRU_delete(rightRegister)
+                registers.floatManager.LRU(rightNode)
+                out_local += f"\tmtc1 ${rightRegister}, ${rightNode.register.name}\n"
+                rightRegister = new_node.register.name
+                out_local += f"\tcvt.s.w ${rightRegister}, ${rightRegister}\n"
             elif rightType == 'int' and leftType == 'char':
                 registers.temporaryManager.LRU_delete(leftRegister)
                 registers.temporaryManager.LRU(leftNode)
                 out_local += f"\tandi ${leftNode.register.name}, ${leftRegister}, 0x000000FF\n"
+                leftRegister = new_node.register.name
             elif leftType == 'int' and rightType == 'char':
                 registers.temporaryManager.LRU_delete(rightRegister)
                 registers.temporaryManager.LRU(rightNode)
                 out_local += f"\tandi ${rightNode.register.name}, ${rightRegister}, 0x000000FF\n"
+                rightRegister = new_node.register.name
+        out_list.append(leftRegister)
+        out_list.append(rightRegister)
+        out_list.append(new_register)
         if rightNode is not None:
             if token == '<':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    out_local += f"\tc.lt.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, $zero\n"
+                else:
+                    out_local += f"\tslt ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '>':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    temp_node1 = Node("", None)
+                    temp_node2 = Node("", None)
+                    registers.temporaryManager.LRU(temp_node1)
+                    registers.temporaryManager.LRU(temp_node2)
+                    out_local += f"\tc.lt.s ${rightRegister}, ${leftRegister}\n"
+                    out_local += f"\tmovt ${temp_node1.register.name}, $1\n"
+                    out_local += f"\tmovf ${temp_node1.register.name}, $zero\n"
+                    # check if both are also not equal if both are true evaluate new_register to one else zero
+                    out_local += f"\tc.eq.s ${rightRegister}, ${leftRegister}\n"
+                    out_local += f"\tmovt ${temp_node2.register.name}, $zero\n"
+                    out_local += f"\tmovf ${temp_node2.register.name}, $1\n"
+                    out_local += f"\tand ${new_register}, ${temp_node1.register.name}, ${temp_node2.register.name}\n"
+                    out_list.append(temp_node1.register.name)
+                    out_list.append(temp_node2.register.name)
+                else:
+                    out_local += f"\tslt ${new_register}, ${rightRegister}, ${leftRegister}\n"
             elif token == '==':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    out_local += f"\tc.eq.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, $zero\n"
+                else:
+                    out_local += f"\tseq ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '!=':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    out_local += f"\tc.eq.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $zero\n"
+                    out_local += f"\tmovf ${new_register}, $1\n"
+                else:
+                    out_local += f"\tsne ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '<=':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    out_local += f"\tc.le.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, $zero\n"
+                else:
+                    out_local += f"\tsle ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '>=':
-                pass
+                if leftType == 'float' or rightType == 'float':
+                    out_local += f"\tc.lt.s ${leftRegister}, ${rightRegister}\n"
+                    out_local += f"\tmovt ${new_register}, $zero\n"
+                    out_local += f"\tmovf ${new_register}, $1\n"
+                else:
+                    out_local += f"\tsge ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '&&':
-                pass
+                out_local += f"\tand ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '||':
-                pass
+                out_local += f"\tor ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '+':
-                pass
+                out_local += f"\tadd{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '-':
-                pass
+                out_local += f"\tsub{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '/':
-                pass
+                out_local += f"\tdiv{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '*':
-                pass
+                out_local += f"\tmul{'.s' if leftRegister is 'float' or rightRegister is 'float' else ''} ${new_register}, ${leftRegister}, ${rightRegister}\n"
             elif token == '%':
-                pass
+                out_local += f"\trem ${new_register}, ${leftRegister}, ${rightRegister}\n"
         else:
             if token == '++':
-                pass
+                out_local += f"\taddi ${new_register}, ${leftRegister}, 1\n"
             elif token == '--':
-                pass
+                out_local += f"\taddi ${new_register}, ${leftRegister}, -1\n"
         return out_local, out_global, out_list
 
     @staticmethod
