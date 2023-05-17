@@ -467,11 +467,13 @@ class AST:
                 out_local += f"\trem ${new_register}, ${left_register}, ${right_register}\n"
         else:
             if token == '++':
-                out_local += f"\taddi ${new_register}, ${left_register}, 1\n"
+                out_local += f"\taddi ${left_register}, ${left_register}, 1\n"
+                # out_local += f"\tmove ${left_register}, ${new_register}\n"
             elif token == '--':
-                out_local += f"\taddi ${new_register}, ${left_register}, -1\n"
+                out_local += f"\taddi ${left_register}, ${left_register}, -1\n"
+                # out_local += f"\tmove ${left_register}, ${new_register}\n"
         current.parent.children[current.parent.children.index(current)] = new_node
-        return out_local, out_global, out_list
+        return out_local, out_global, [_ for _ in out_list if _ is not None]
 
     @staticmethod
     def getEntry(entry):
@@ -1222,6 +1224,11 @@ class PrintfAST(AST):
                             arg = temp_arg.value
                     elif isinstance(temp_arg, VarNode):
                         arg = temp_arg.value
+                    elif isinstance(temp_arg, SymbolEntry):
+                        # search for the variable in the registers
+                        reg = registers.search(temp_arg.object)
+                        if reg is not None:
+                            arg = Register(in_name=f"${reg}")
                     # if the format specifier is an integer
                     if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X']:
                         # if the precision is valid
@@ -1720,14 +1727,15 @@ class Scope_AST(AST):
 
     def mips(self, registers: Registers):
         visited = []
-        not_visited = [self.children[0]]
+        not_visited = self.children
+        # not_visited.reverse()
         # DFS
         while len(not_visited) != 0:
             current = not_visited.pop()
             if current not in visited:
                 visited.append(current)
-                if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)\
-                        or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)\
+                if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
+                        or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
                         or isinstance(current, FuncDeclAST)):
                     if isinstance(current, AST):
                         for i in current.children:
@@ -2084,10 +2092,10 @@ class While_loopAST(Scope_AST):
         output_list += output[2]
         size = 4 * len(output_list)
         size += 4
-        output_local += f"\taddi $sp, $sp, -{size}\n"
-        for i in range(len(output_list)):
-            output_local += f"\tsw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
-        output_local += f"\tsw $ra, {4 * len(output_list)}($sp)\n"
+        # output_local += f"\taddi $sp, $sp, -{size}\n"
+        # for i in range(len(output_list)):
+        #     output_local += f"\tsw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
+        # output_local += f"\tsw $ra, {4 * len(output_list)}($sp)\n"
         # TODO: add the condition
         out_condition = self.condition.mips(registers)
         output_local += out_condition[0]
@@ -2096,10 +2104,10 @@ class While_loopAST(Scope_AST):
         # condition of the while loop
         output_local += output[0]
         output_global += output[1]
-        output_local += f"\tlw $ra, {4 * len(output_list)}($sp)\n"
-        for i in range(len(output_list)):
-            output_local += f"\tlw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
-        output_local += f"\taddi $sp, $sp, {size}\n"
+        # output_local += f"\tlw $ra, {4 * len(output_list)}($sp)\n"
+        # for i in range(len(output_list)):
+        #     output_local += f"\tlw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
+        # output_local += f"\taddi $sp, $sp, {size}\n"
         output_local += f"\tj while_{self.register}\n"
         # end of the while loop
         output_local += f"end_while_{registers.globalObjects.index}: \n"
