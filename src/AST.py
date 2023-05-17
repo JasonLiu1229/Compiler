@@ -1780,6 +1780,7 @@ class If_CondAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
+        self.exit: int = -1
 
     def handle(self):
         return self
@@ -1880,24 +1881,26 @@ class If_CondAST(Scope_AST):
         # stack size
         size = 4
         size += size * len(temp_list)
+        count = 0
         # begin
         # allocate register on stack
-        out_local += f"\taddi $sp, $sp, -{size}\n"
-        out_local += f"\tsw $ra, {0}($sp)\n"
-        count = 0
-        for i in temp_list:
-            count += 1
-            out_local += f"\t{'sw' if not i.startswith('f') else 'swc1'} ${i}, {count * 4}($sp)\n"
+        # out_local += f"\taddi $sp, $sp, -{size}\n"
+        # out_local += f"\tsw $ra, {0}($sp)\n"
+        # count = 0
+        # for i in temp_list:
+        #     count += 1
+        #     out_local += f"\t{'sw' if not i.startswith('f') else 'swc1'} ${i}, {count * 4}($sp)\n"
         # middle
         # condition
         out_local += out_cond
-        # branch if condition is false to else block
-        out_local += f"\tbeq $v1, $zero, else_{registers.globalObjects.index}\n"
-        out_else = f"else_{registers.globalObjects.index}: \n"
-        for i in reversed(temp_list):
-            out_else += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
-            count -= 1
-        out_else += f"\tlw $ra, {4}($sp)\n"
+        if isinstance(self.children[-1], Else_CondAST):
+            # branch if condition is false to else block
+            out_local += f"\tbeq $v1, $zero, else_{registers.globalObjects.index}\n"
+            out_else = f"else_{registers.globalObjects.index}: \n"
+        else:
+            out_local += f"\tbeq $v1, $zero, exit_{registers.globalObjects.index}\n"
+            self.exit = registers.globalObjects.index
+            out_else = ""
         # if else block exist then create else default
         if len(self.children) > 1:
             self.children[1].register = registers.globalObjects.index
@@ -1908,14 +1911,12 @@ class If_CondAST(Scope_AST):
             # out_else += f"\tjr $ra\n\n"
         registers.globalObjects.index += 1
         out_local += temp_out
-        # end
-        # release registers on stack, deallocate
-        for i in reversed(temp_list):
-            out_local += f"\t{'lw' if not i.startswith('f') else 'lwc1'} ${i}, {count * 4}($sp)\n"
-            count -= 1
-        out_local += f"\tlw $ra, {0}($sp)\n"
-        # out_local += f"\tjr $ra\n\n"
+        if self.exit == -1:
+            self.exit = registers.globalObjects.index
+        out_local += f"\tj exit_{self.exit}\n"
         out_local += out_else
+        out_local += f"exit_{self.exit}: \n"
+        registers.globalObjects.index += 1
         return out_local, out_global, []
 
 
@@ -1953,21 +1954,21 @@ class Else_CondAST(Scope_AST):
         out = ""
         output = self.children[0].mips(registers)
         temp_list = output[2]
-        size = 4
-        size += size * len(temp_list)
-        out += f"\taddi $sp, $sp, -{size}\n"
-        out += f"\tsw $ra, {4}($sp)\n"
-        count = 1
-        for i in temp_list:
-            count += 1
-            out += f"\tsw {i}, {count * 4}($sp)\n"
-        out += output[0]
-        for i in reversed(temp_list):
-            out += f"\tlw {i}, {count * 4}($sp)\n"
-            count -= 1
-        out += f"\tlw $ra, {4}($sp)\n"
-        out += f"\tjr $ra\n"
-        return out, "", []
+        # size = 4
+        # size += size * len(temp_list)
+        # out += f"\taddi $sp, $sp, -{size}\n"
+        # out += f"\tsw $ra, {4}($sp)\n"
+        # count = 1
+        # for i in temp_list:
+        #     count += 1
+        #     out += f"\tsw {i}, {count * 4}($sp)\n"
+        # out += output[0]
+        # for i in reversed(temp_list):
+        #     out += f"\tlw {i}, {count * 4}($sp)\n"
+        #     count -= 1
+        # out += f"\tlw $ra, {4}($sp)\n"
+        # out += f"\tjr $ra\n"
+        return output
 
 
 
