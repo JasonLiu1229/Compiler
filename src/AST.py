@@ -2040,7 +2040,7 @@ class While_loopAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
-
+        self.end_while : int = 0
     def handle(self):
         return self
 
@@ -2128,6 +2128,7 @@ class While_loopAST(Scope_AST):
         output_list = []
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
+        self.end_while = registers.globalObjects.index
         output = self.children[0].mips(registers)
         output_list += output[2]
         size = 4 * len(output_list)
@@ -2139,7 +2140,7 @@ class While_loopAST(Scope_AST):
         # TODO: add the condition
         out_condition = self.condition.mips(registers)
         output_local += out_condition[0]
-        output_local += f"\tbeq $v1, $zero, end_while_{registers.globalObjects.index}\n"
+        output_local += f"\tbeq $v1, $zero, end_while_{self.end_while}\n"
         output_list += out_condition[2]
         # condition of the while loop
         output_local += output[0]
@@ -2150,7 +2151,7 @@ class While_loopAST(Scope_AST):
         # output_local += f"\taddi $sp, $sp, {size}\n"
         output_local += f"\tj while_{self.register}\n"
         # end of the while loop
-        output_local += f"end_while_{registers.globalObjects.index}: \n"
+        output_local += f"end_while_{self.end_while}: \n"
         registers.globalObjects.index += 1
 
         return output_local, output_global, []
@@ -2224,7 +2225,14 @@ class BreakAST(InstrAST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
+        parent = self.parent
+        while True:
+            if isinstance(parent, While_loopAST):
+                break
+            parent = parent.parent
+        end_while_register = parent.end_while
+        out = f"\tj end_while_{end_while_register}\n"
+        return out, "", []
 
 
 class ContAST(InstrAST):
@@ -2239,7 +2247,15 @@ class ContAST(InstrAST):
 
     def mips(self, registers: Registers):
         # get the name of it's block
-        pass
+        # search for the parent block that's a while
+        parent = self.parent
+        while True:
+            if isinstance(parent, While_loopAST):
+                break
+            parent = parent.parent
+        while_register = parent.register
+        out = f"\tj while_{while_register}\n"
+        return out, "", []
 
 class FuncParametersAST(AST):
 
