@@ -175,7 +175,7 @@ class AstCreator(MathVisitor):
         for child in base.children[:]:
             if isinstance(child, AST):
                 if child.root.key in ["expr", "term"] and child.root.value is not None:
-                    if child.root.value in ["++", "--", "!"]:
+                    if child.root.value in ["++", "--", "!", "const"]:
                         child.children = base.children[index - 1: index]
                         base.children[index - 1: index] = []
                         index -= 1

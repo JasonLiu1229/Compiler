@@ -129,7 +129,7 @@ class argumentManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(4)
-        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 4)]
+        list_objects = [Register(in_name="a" + str(i)) for i in range(0, 4)]
         self.head = list_objects[0]
         self.tail = list_objects[-1]
         for i in range(3):
@@ -184,7 +184,7 @@ class argumentManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 4)]
+        list_objects = [Register(in_name="a" + str(i)) for i in range(0, 4)]
         self.head = list_objects[0]
         self.tail = list_objects[-1]
         for i in range(3):
@@ -486,7 +486,7 @@ class singleManager:
 
 class dataManager:
     def __init__(self) -> None:
-        self.data: [] = [{}, {}, {}] # asciiz, float, word, halfword, byte, space
+        self.data: [] = [{}, {}, {}, {}, {}, {}] # asciiz, float, word, halfword, byte, space
         self.index = 0
 
 class Registers:

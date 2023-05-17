@@ -196,6 +196,26 @@ class AST:
     def mips(self, registers: Registers):
         out_global = ""
         out_local = ""
+        if self.parent is None:
+            # declare symbol table in .data
+            for entry in self.symbolTable.table:
+                if isinstance(entry, FuncSymbolEntry):
+                    continue
+                if entry.type == "int":
+                    if entry.object.value in registers.globalObjects.data[2]:
+                        continue
+                    # out_global += f"{entry.name}: .word {entry.object.value if entry.object.value is not None else ''}\n"
+                    registers.globalObjects.data[2][entry.object.value] = entry.name
+                elif entry.type == "float":
+                    if entry.object.value in registers.globalObjects.data[1]:
+                        continue
+                    # out_global += f"{entry.name}: .float {entry.object.value if entry.object.value is not None else ''}\n"
+                    registers.globalObjects.data[1][entry.object.value] = entry.name
+                elif entry.type == "char":
+                    if entry.object.value in registers.globalObjects.data[0]:
+                        continue
+                    # out_global += f"{entry.name}: .byte {entry.object.value if entry.object.value is not None else ''}\n"
+                    registers.globalObjects.data[0][entry.object.value] = entry.name
         return out_local, out_global, []
 
     def searchBlocks(self):
@@ -322,7 +342,7 @@ class AST:
             if left_node.key == "var":
                 # find the register for the variable
                 left_register = registers.search(left_node)
-            if left_node.register is None:
+            elif left_node.register is None:
                 # check if value is float, use float register
                 if isinstance(left_node.value, float):
                     registers.floatManager.LRU(left_node)
@@ -335,6 +355,8 @@ class AST:
                     else:
                         left_type = 'char'
                 left_register = left_node.register.name
+            else:
+                left_register = left_node.register.name
         if right_node is not None:
             if isinstance(right_node, VarNode):
                 right_register = right_node.register.name
@@ -343,7 +365,7 @@ class AST:
                 if right_node.key == "var":
                     # find the register for the variable
                     right_register = registers.search(right_node)
-                if right_node.register is None:
+                elif right_node.register is None:
                     # check if value is float, use float register
                     if isinstance(right_node.value, float):
                         registers.floatManager.LRU(right_node)
@@ -356,6 +378,8 @@ class AST:
                         else:
                             right_type = 'char'
                         out_local += f"\tli ${right_node.register.name}, {right_node.value}\n"
+                    right_register = right_node.register.name
+                else:
                     right_register = right_node.register.name
         # create new node
         new_node = Node("", None)
@@ -1214,21 +1238,25 @@ class PrintfAST(AST):
                     # if the format specifier is a string
                     temp_arg = self.args[counter]
                     arg = None
-                    if isinstance(temp_arg, Node):
+                    if isinstance(temp_arg, VarNode):
+                        if temp_arg.value is not None:
+                            arg = temp_arg.value
+                        else:
+                            registers.search(temp_arg)
+                            arg = temp_arg.register
+                    elif isinstance(temp_arg, Node):
                         if temp_arg.key == "var":
                             # search for the variable in the registers
-                            reg = registers.search(temp_arg)
-                            if reg is not None:
-                                arg = Register(in_name=f"${reg}")
+                            registers.search(temp_arg)
+                            if temp_arg.register is not None:
+                                arg = temp_arg.register
                         else:
                             arg = temp_arg.value
-                    elif isinstance(temp_arg, VarNode):
-                        arg = temp_arg.value
                     elif isinstance(temp_arg, SymbolEntry):
                         # search for the variable in the registers
                         reg = registers.search(temp_arg.object)
                         if reg is not None:
-                            arg = Register(in_name=f"${reg}")
+                            arg = Register(in_name=f"{reg}")
                     # if the format specifier is an integer
                     if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X']:
                         # if the precision is valid
@@ -1319,6 +1347,8 @@ class PrintfAST(AST):
         out_local = ""
         out_global = ""
         list_format = self.format(registers)
+        registers.search(self.root)
+        self.register = self.root.register
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
             if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
@@ -1327,6 +1357,8 @@ class PrintfAST(AST):
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
                 # cast the float to be representable in mips
                 # i = array('f', [i])[0]
+                if i in registers.globalObjects.data[1].keys():
+                    continue
                 registers.globalObjects.data[1][i] = f"float_{len(registers.globalObjects.data[1].items())}"
             elif isinstance(i, str):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
@@ -1345,7 +1377,7 @@ class PrintfAST(AST):
                 out_local += "\tsyscall\n"
                 continue
             if isinstance(list_format[i], Register):
-                out_local += f"\tmove $a0, {list_format[i].name}\n"
+                out_local += f"\tmove $a0, ${list_format[i].name}\n"
                 # get register type
                 if list_format[i].name[0] == 'f':
                     out_local += "\tli $v0, 2\n"
@@ -1366,7 +1398,9 @@ class PrintfAST(AST):
                 out_local += "\tsyscall\n"
             # temp fix for floats
             elif self.getType(list_format[i]) == 1: # if the type is a float
-                out_local += f"\tlwc1 $f12, {registers.globalObjects.data[1][list_format[i]]}\n"
+                registers.floatManager.LRU(self.root)
+                self.register = self.root.register
+                out_local += f"\tlwc1 ${self.register.name}, {registers.globalObjects.data[1][list_format[i]]}\n"
                 # out_local += f"\tmov.s $a0, $f12\n"
                 out_local += "\tli $v0, 2\n"
                 out_local += "\tsyscall\n"
@@ -1375,7 +1409,12 @@ class PrintfAST(AST):
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
                 # ඞ
-        return out_local, out_global, ['a0', 'f12']
+        out_list = [registers.argumentManager.head.name]
+        self.register = registers.argumentManager.head
+        self.register.object = self.root
+        if self.root.register is not None:
+            out_list.append(self.root.register.name)
+        return out_local, out_global, out_list
 
 
 
@@ -1748,8 +1787,8 @@ class Scope_AST(AST):
         output = None
         for current in visited:
             if isinstance(current, Node):
-                continue
-            if current.root.value in tokens:
+                output = current.mips(registers)
+            elif current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
                 output = current.mips(registers)
@@ -2505,13 +2544,19 @@ class FuncScopeAST(AST):
                 #     registers.temporaryManager.LRU(entry.object)
                 #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, 4\n"
                 # temp_list.append(entry.object.register.name)
-                if entry.type == "int":
+                if entry.type == "int" and entry.object.value is not None:
+                    if entry.object.key in registers.globalObjects.data[2].values():
+                        continue
                     # declare the variable in the global scope .data
-                    registers.globalObjects.data[0][entry.object.value] = entry.object.key
-                elif entry.type == "float":
+                    registers.globalObjects.data[2][entry.object.value] = entry.object.key
+                elif entry.type == "float" and entry.object.value is not None:
+                    if entry.object.key in registers.globalObjects.data[1].values():
+                        continue
                     # declare the variable in the global scope .data
                     registers.globalObjects.data[1][entry.object.value] = entry.object.key
-                elif entry.type == "char":
+                elif entry.type == "char" and entry.object.value is not None:
+                    if entry.object.key in registers.globalObjects.data[0].values():
+                        continue
                     # declare the variable in the global scope .data
                     registers.globalObjects.data[0][entry.object.value] = entry.object.key
 
@@ -2664,7 +2709,17 @@ class ScanfAST(AST):
         # if not, print error message and exit
         # if yes, continue
         out_local = ""
+        out_reg = []
         format_ = self.format()
+        for var in self.variables:
+            if registers.temporaryManager.search(var) is not None:
+                var.register = registers.temporaryManager.search(var)
+            # assign registers to variables
+            if var.type == "float":
+                registers.floatManager.LRU(var)
+            else:
+                registers.temporaryManager.LRU(var)
+            out_reg.append(var.register)
 
         # if self.format_string not in registers.globalObjects.data[0].keys():
         #     registers.globalObjects.data[0][self.format_string] = f"format_{self.format_string}"
@@ -2699,7 +2754,7 @@ class ScanfAST(AST):
                 out_local += f"\tsyscall\n"
                 out_list.append("v0")
                 variable_register = self.variables[counter].register.name
-                out_local += f"\tsw $v0, ${variable_register}\n"
+                out_local += f"\tmove ${variable_register}, $v0\n"
                 out_list.append(variable_register)
                 counter += 1
         out_list = list(dict.fromkeys(out_list))

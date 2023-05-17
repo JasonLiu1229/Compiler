@@ -187,8 +187,26 @@ class Node:
         return f" ", index
 
     def mips(self, registers):
+        out_global = ""
+        out_local = ""
+        out_list = []
+        if self.value is None and self.key != "var":
+            return "", "", []
+        # check if the value is already in a register
+        registers.search(self)
+        if self.register is not None:
+            return "", "", [self.register.name]
+        else:
+            # load the value in a register
+            registers.temporaryManager.LRU(self)
+            if self.key == "var":
+                # variable is declared in the data section
+                out_local += f"\tla ${self.register.name}, {self.value}\n"
+            else:
+                out_local += f"\tli ${self.register.name}, {self.value}\n"
+            out_list.append(self.register.name)
         # place holder
-        return "" , "", []
+        return out_local, out_global, out_list
 
 
 class VarNode(Node):

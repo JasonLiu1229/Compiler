@@ -24,7 +24,7 @@ class MIPS:
             if temp not in visited:
                 # if a scope, skip
                 # if include instruction, skip
-                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or isinstance(temp, ScanfAST) or isinstance(temp, ArrayDeclAST) or \
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or isinstance(temp, ArrayDeclAST) or \
                         isinstance(temp, IncludeAST):
                     visited.append(temp)
                 if isinstance(temp, AST):
@@ -43,6 +43,7 @@ class MIPS:
         # global_str += self.allocate_stack()
         # global_str += self.deallocate_stack()
         with open(self.mips, "w") as f:
+            global_str, local_str, new_list = self.ast.mips(self.registers)
             for node in self.nodes:
                 new_loc, new_glob, new_list = node.mips(self.registers)
                 global_str += new_glob
@@ -52,6 +53,10 @@ class MIPS:
                 variables += f"\t{value}: .asciiz \"{key}\"\n"
             for key, value in self.registers.globalObjects.data[1].items():
                 variables += f"\t{value}: .float {key}\n"
+            for key, value in self.registers.globalObjects.data[2].items():
+                variables += f"\t{value}: .word {key}\n"
+            for key, value in self.registers.globalObjects.data[3].items():
+                variables += f"\t{value}: .byte {key}\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)
