@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+// expected output: a = 0 a= 1
 int main(){
     int a = 0;
     while (1){
