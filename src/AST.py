@@ -381,6 +381,7 @@ class AST:
                     right_register = right_node.register.name
                 else:
                     right_register = right_node.register.name
+
         # create new node
         new_node = Node("", None)
         if new_node.register is None:
@@ -389,6 +390,15 @@ class AST:
             else:
                 registers.temporaryManager.LRU(new_node)
         new_register = new_node.register.name
+        if new_register in [left_register, right_register]:
+            # assign new register
+            new_node = Node("", None)
+            if new_node.register is None:
+                if right_type == 'float' or left_type == 'float':
+                    registers.floatManager.LRU(new_node)
+                else:
+                    registers.temporaryManager.LRU(new_node)
+            new_register = new_node.register.name
         # casting if necessary
         if left_type != right_type and right_type is not None:
             if left_type == 'float' and right_type == 'int':
@@ -433,6 +443,16 @@ class AST:
         out_list.append(right_register)
         out_list.append(new_register)
         if right_node is not None:
+            # add commentaries
+            if left_node.value is not None and left_node.key != "":
+                out_local += f"\t# {left_node.key if isinstance(left_node, VarNode) else left_node.value}"
+            else:
+                out_local += f"\t# ${left_register}"
+            out_local += f" {token} "
+            if right_node.value is not None and right_node.key != "":
+                out_local += f"{right_node.key if isinstance(right_node, VarNode) else right_node.value} --> ${new_register}\n"
+            else:
+                out_local += f"${right_register} --> ${new_register}\n"
             if token == '<':
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
