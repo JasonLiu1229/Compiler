@@ -45,6 +45,9 @@ class SymbolTable:
         :type in_object: SymbolEntry
         """
         self.table.insert(index, copy.deepcopy(in_object))
+        for entry in self.table:
+            if entry.object == in_object.object.value:
+                entry.object.parent = in_object.object
         return self.table[index]
 
     def update(self, in_object: VarNode | FunctionNode) -> bool:
@@ -53,6 +56,9 @@ class SymbolTable:
         for entry in self.table:
             if entry.object == in_object:
                 entry.object = copy.deepcopy(in_object)
+                if self.exists(entry.object.parent):
+                    match = self.lookup(entry.object.parent)[0].object
+                    match.value = entry.object
                 return True
 
     def refresh(self):

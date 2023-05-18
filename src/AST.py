@@ -1472,6 +1472,14 @@ class VarDeclrAST(AST):
             if self.children[0].ptr:
                 self.children[0].value = self.children[1]
                 self.children[1].parent = self.children[0]
+                # connect deref_level
+                # self.children[0].total_deref += 1
+                # self.children[1].total_deref = self.children[0].total_deref
+                temp_value = self.children[0].value
+                while isinstance(temp_value, VarNode):
+                    temp_value.total_deref = self.children[0].total_deref
+                    temp_value.deref_level += 1
+                    temp_value = temp_value.value
             else:
                 self.children[0].value = self.children[1].value
                 self.children[0].cast = self.children[1].cast
@@ -1697,10 +1705,10 @@ class DerefAST(AST):
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child = child.value
-        if not isinstance(self.children[0], FuncParameter):
-            child.parent = self.children[0]
-        if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
-            child.deref_level += 1
+        # if not isinstance(self.children[0], FuncParameter):
+        #     child.parent = self.children[0]
+        # if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
+        #     child.deref_level += 1
         return child
 
 class ArrayElementAST(AST):
@@ -2544,7 +2552,9 @@ class FuncScopeAST(AST):
                 #     registers.temporaryManager.LRU(entry.object)
                 #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, 4\n"
                 # temp_list.append(entry.object.register.name)
-                if entry.type == "int" and entry.object.value is not None:
+                if entry.object.ptr:
+                    continue
+                elif entry.type == "int" and entry.object.value is not None:
                     if entry.object.key in registers.globalObjects.data[2].values():
                         continue
                     # declare the variable in the global scope .data
