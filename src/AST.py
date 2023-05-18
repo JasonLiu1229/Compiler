@@ -342,6 +342,9 @@ class AST:
             if left_node.key == "var":
                 # find the register for the variable
                 left_register = registers.search(left_node)
+                if left_register is None:
+                    registers.temporaryManager.LRU(left_node)
+                    left_register = left_node.register.name
             elif left_node.register is None:
                 # check if value is float, use float register
                 if isinstance(left_node.value, float):
@@ -365,6 +368,9 @@ class AST:
                 if right_node.key == "var":
                     # find the register for the variable
                     right_register = registers.search(right_node)
+                    if right_register is None:
+                        registers.temporaryManager.LRU(right_node)
+                        right_register = right_node.register.name
                 elif right_node.register is None:
                     # check if value is float, use float register
                     if isinstance(right_node.value, float):
