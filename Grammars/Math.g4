@@ -78,6 +78,7 @@ scope           :   '{' (
                         | break_instr | cont_instr | instr | comp ((';')+ | DELIM)
                         )* '}'
                 ;
+// TODO: add switch case to the grammar
 
 cont_instr      :   CONTINUE (';' | DELIM) instr*
                 ;

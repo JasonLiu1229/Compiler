@@ -186,12 +186,22 @@ class AST:
         self.line = None
         self.in_loop = False
         self.in_func = False
+        self.stack_indexes = []
 
     # def __eq__(self, o: object) -> bool:
     #     return( self.root == o.root) and (self.children == o.children) and (self.parent == o.parent)
     #
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
+
+    def globalCheck(self) -> bool:
+        """
+        Check if the current node is in the global scope
+        * yes: return True
+        * no: return False
+        :return: bool
+        """
+        return self.symbolTable.parent is None
 
     def mips(self, registers: Registers):
         out_global = ""
@@ -2788,6 +2798,7 @@ class ArrayDeclAST(AST):
         self.values = values
         self.ptr_size = ptr_size
         self.type = arr_type
+        self.stack_indexes = [] # indexes of the array that are stored on the stack
 
     def handle(self):
         return self
@@ -2849,8 +2860,60 @@ class ArrayDeclAST(AST):
         return out, index
 
     def mips(self, registers: Registers):
-        pass
-
+        glb = self.globalCheck()
+        out_local = out_global = ""
+        out_list = []
+        if glb:
+            # make use of data segment to make global variables
+            # if values are defined in the array
+            # check type first
+            if self.type == "int":
+                if self.root.key not in registers.globalObjects.data[2].values():
+                    temp_string = ""
+                    for i in self.values:
+                        temp_string += f"{i.value}"
+                        if i != self.values[-1]:
+                            temp_string += ", "
+                    if len(self.values) < self.size:
+                        temp_string += ", 0" * (self.size - len(self.values))
+                    registers.globalObjects.data[2][temp_string] = self.root.key
+            elif self.type == "float":
+                if self.root.key not in registers.globalObjects.data[1].values():
+                    temp_string = ""
+                    for i in self.values:
+                        temp_string += f"{i.value}"
+                        if i != self.values[-1]:
+                            temp_string += ", "
+                    if len(self.values) < self.size:
+                        temp_string += ", 0.0" * (self.size - len(self.values))
+                    registers.globalObjects.data[1][temp_string] = self.root.key
+            elif self.type == "char":
+                if self.root.key not in registers.globalObjects.data[4].values():
+                    temp_string = ""
+                    for i in self.values:
+                        temp_string += f"\'{i.value}\'"
+                        if i != self.values[-1]:
+                            temp_string += ", "
+                    registers.globalObjects.data[4][temp_string] = self.root.key
+                    if len(self.values) < self.size:
+                        temp_string += ", 0" * (self.size - len(self.values))
+        else:
+            # make use of stack to make local variables
+            # allocate memory for the array
+            out_local += f"\taddiu $sp, $sp, {self.size * 4}\n"
+            # store the values of the array in the stack
+            temp_node = Node("temp", None, None, None)
+            if self.type == "float":
+                registers.floatManager.LRU(temp_node)
+            else:
+                registers.temporaryManager.LRU(temp_node)
+            for i in range(len(self.values)):
+                out_local += f"\tli{'.s' if self.type == 'float' else ''} ${temp_node.register.name}, {self.values[i].value}\n"
+                out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, {i * 4}($sp)\n\n"
+                self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
+            registers.globalObjects.stackSize += self.size * 4
+            out_list.append(temp_node.register.name)
+        return out_local, out_global, out_list
 
 class IncludeAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -2871,3 +2934,9 @@ class IncludeAST(AST):
     def mips(self, registers: Registers):
         # hardcode the printf and scanf functions
         return "", "", []
+
+class SwitchAST(AST):
+    pass
+
+class CaseAST(Scope_AST):
+    pass
