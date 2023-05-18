@@ -64,7 +64,7 @@ func_call       :   name=VAR_NAME '(' args=arg_list? ')'
 func_scope      :   '{'(
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM) | instr
-                        | comp ((';')+ | DELIM)
+                        | comp ((';')+ | DELIM) | switch_instr ((';')* | DELIM)
                            )* '}'
                 ;
 
@@ -75,10 +75,25 @@ return_instr    :   RETURN (ret_val=expr)? ';' (instr | return_instr)*
 scope           :   '{' (
                         printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
                         | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
-                        | break_instr | cont_instr | instr | comp ((';')+ | DELIM)
+                        | break_instr | cont_instr | instr | comp ((';')+ | DELIM) | switch_instr ((';')* | DELIM)
                         )* '}'
                 ;
-// TODO: add switch case to the grammar
+
+switch_instr    :   SWITCH '(' rvar ')' '{' (case_instr)* default_instr?'}'
+                ;
+
+case_instr      :   CASE (INT | FLOAT | CHAR) ':' switch_scope
+                ;
+
+default_instr   :   DEFAULT ':' switch_scope
+                ;
+
+switch_scope    :   (
+                        printf ((';')+ | DELIM) | scanf ((';')+ | DELIM) | return_instr | if_cond ((';')* | DELIM)
+                        | while_loop ((';')* | DELIM) | for_loop ((';')* | DELIM) | assign ((';')+ | DELIM)
+                        | break_instr | cont_instr | instr | comp ((';')+ | DELIM) | switch_instr ((';')* | DELIM)
+                    )*
+                ;
 
 cont_instr      :   CONTINUE (';' | DELIM) instr*
                 ;
