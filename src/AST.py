@@ -2484,10 +2484,34 @@ class FuncCallAST(AST):
         # arguments
         arg_string = ""
         count = 0
+        # check if one of the arguments is a float, check if one of the arguments is a int
+        float_arg = False
+        temp_arg = False
         for arg in self.args:
-            # TODO: add support for arguments
+            if isinstance(arg, Node):
+                if arg.key == "float":
+                    float_arg = True
+                elif arg.key == "int" or arg.key == "char":
+                    temp_arg = True
+            else:
+                if arg.type == "float":
+                    float_arg = True
+                elif arg.type == "int" or arg.type == "char":
+                    temp_arg = True
+        temp_float = Node("float", None)
+        temp_ = Node("temp", None)
+        if float_arg:
+            registers.floatManager.LRU(temp_float)
+        elif temp_arg:
+            registers.temporaryManager.LRU(temp_)
+        for arg in self.args:
+            #TODO: arguments on stack
             pass
         # end string
+        if float_arg:
+            registers.floatManager.LRU_delete(temp_float.register.name)
+        elif temp_arg:
+            registers.temporaryManager.LRU(temp_.register.name)
         out += f"jal {self.root.key}\n"
         return out, "", []
 
@@ -2943,6 +2967,10 @@ class ArrayDeclAST(AST):
                 self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
             registers.globalObjects.stackSize += self.size * 4
             out_list.append(temp_node.register.name)
+            if self.type == "float":
+                registers.floatManager.LRU_delete(temp_node.register.name)
+            else:
+                registers.temporaryManager.LRU_delete(temp_node.register.name)
         return out_local, out_global, out_list
 
 class IncludeAST(AST):
@@ -2969,4 +2997,7 @@ class SwitchAST(AST):
     pass
 
 class CaseAST(Scope_AST):
+    pass
+
+class DefaultAST(Scope_AST):
     pass
