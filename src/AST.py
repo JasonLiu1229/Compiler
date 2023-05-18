@@ -2085,6 +2085,9 @@ class While_loopAST(Scope_AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
         self.end_while : int = 0
+        if len(self.children) > 0:
+            for child in self.children:
+                child.parent = self
     def handle(self):
         return self
 

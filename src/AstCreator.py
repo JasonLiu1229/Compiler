@@ -519,11 +519,11 @@ class AstCreator(MathVisitor):
                     visited.append(temp)
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
                         temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
-                    if isinstance(temp, For_loopAST):
-                        if temp.initialization is not None:
-                            not_visited.append(temp.initialization)
-                        if temp.incr is not None:
-                            not_visited.append(temp.incr)
+                    # if isinstance(temp, For_loopAST):
+                    #     if temp.initialization is not None:
+                    #         not_visited.append(temp.initialization)
+                        # if temp.incr is not None:
+                        #     not_visited.append(temp.incr)
                     if isinstance(temp, While_loopAST) or isinstance(temp, If_CondAST) or isinstance(temp, For_loopAST):
                         # not_visited.append(temp.condition)
                         visited.append(temp)
@@ -710,7 +710,12 @@ class AstCreator(MathVisitor):
                 # handle what's in the function scope
                 ast.children[-1].symbolTable = ast.symbolTable
                 symbol_table = self.resolve(ast.children[-1], in_func=True).symbolTable
-                ast.symbolTable.parent = symbol_table
+                # update symbol table of function definition
+                symbol_table.parent = ast.symbolTable.parent
+                ast.symbolTable = symbol_table
+                symbol_table.owner = ast
+                # link symbol table to function entry in global symbol table
+                ast.symbolTable.parent.lookup(ast.root)[0].symbol_table = ast.symbolTable
                 # print symbol table
                 # print(f"Symbol table for {ast.root.key}:")
                 # symbol_table.print()
@@ -827,7 +832,7 @@ class AstCreator(MathVisitor):
                         temp_ast = ast
                         # search in parent scopes if not found
                         while not exists_state and temp_ast is not None and temp_ast.parent is not None:
-                            temp_symbol = temp_ast.parent.symbolTable
+                            temp_symbol = temp_symbol.parent
                             temp_ast = temp_ast.parent
                             if temp_symbol is not None:
                                 exists_state = temp_symbol.exists(child.value)
@@ -875,21 +880,39 @@ class AstCreator(MathVisitor):
                 node = ast
 
             elif isinstance(ast, For_loopAST):
-                self.resolve(ast.condition)
-                entry = AST.getEntry(ast.incr.children[0])
+                self.resolve(ast.initialization, in_loop=True)
+                self.resolve(ast.condition, in_loop=True)
+                self.resolve(ast.incr, in_loop=True)
+                self.resolve(ast.children[0], in_loop=True)
+                # check if increaser is declared
+                while not temp_symbol.exists(ast.incr.children[0].value) and temp_symbol.parent is not None:
+                    temp_symbol = temp_symbol.parent
+                if temp_symbol.exists(ast.incr.children[0].value):
+                    entry = temp_symbol.lookup(ast.incr.children[0].value)[0].object
+                else:
+                    raise ReferenceError(f"Variable {ast.incr.children[0].key} was not declared")
                 if entry is None:
-                    raise ReferenceError(f"Variable {ast.incr.children[0].value} was not declared")
-                ast.incr.children[0] = entry
+                    if isinstance(ast.incr.children[0], VarNode):
+                        raise ReferenceError(f"Variable {ast.incr.children[0].key} was not declared")
+                    raise ReferenceError(f"Incrementer must be a variable")
+                # ast.incr.children[0] = entry
+                # entry.parent = ast.incr
                 ast.children[0].children.append(InstrAST(Node("instr", None), [ast.incr]))
+                ast.incr.parent = ast.children[0].children[-1]
                 ast.children[0].children[-1].parent = ast.children[0]
+                for child in ast.children[0].children:
+                    child.parent = ast.children[0]
                 # self.resolve(ast.initialization)
                 temp = While_loopAST(Node("while", None), ast.children, ast.parent)
                 temp.condition = ast.condition
+                temp.symbolTable = ast.symbolTable
+                temp.symbolTable.parent = ast.parent.symbolTable
                 index = ast.parent.children.index(ast)
                 ast.parent.children[index] = temp
                 ast = temp
                 for child in ast.children:
                     child.parent = ast
+                ast.condition.parent = ast
                 node = ast
             # Variable assignment handling
             elif ast.root.key == "assign" and ast.root.value is not None:
@@ -924,6 +947,9 @@ class AstCreator(MathVisitor):
                     raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
             elif isinstance(ast, InitAST):
+                # go up one level in symbol table tree
+                temp_symbol = temp_symbol.parent
+                temp_symbol.owner.symbolTable = temp_symbol
                 # check if variable already exists
                 if symbol_table.exists(ast.children[0]):
                     raise ReferenceError(f"Redeclaration of variable {ast.children[0].key}")
@@ -932,11 +958,14 @@ class AstCreator(MathVisitor):
                 new_entry.const = ast.const
                 new_entry.value = ast.children[1].value
                 temp_symbol.insert(SymbolEntry(new_entry))
+                temp_symbol.refresh()
                 updates_queue.append(new_entry)
                 old_parent = ast.parent
                 ast.parent = ast.parent.parent
-                ast.parent.children.insert(ast.parent.children.index(old_parent), ast.children[0])
                 node = InstrAST(Node("instr", None), [new_entry])
+                ast.parent.children.insert(ast.parent.children.index(old_parent), node)
+                new_entry.parent = node
+                node.parent = ast.parent
             elif isinstance(ast, DeclrAST):
                 # if len(ast.children) != 1 or not isinstance(ast.children[0], VarNode):
                 #     raise RuntimeError("Faulty declaration")
@@ -1536,10 +1565,10 @@ class AstCreator(MathVisitor):
     def visitIncr(self, ctx: MathParser.IncrContext):
         if isinstance(ctx.children[0], antlr4.tree.Tree.TerminalNodeImpl):
             # case for rvar INCR and rvar DECR
-            out = TermAST(Node("term", ctx.children[0].getText()))
+            out = TermAST(Node("factor", ctx.children[0].getText()))
         else:
             # case for INCR rvar and DECR rvar
-            out = FactorAST(Node("factor", ctx.children[1].getText()))
+            out = FactorAST(Node("term", ctx.children[1].getText()))
         out.column = ctx.start.column
         out.line = ctx.start.line
         return out
