@@ -226,7 +226,7 @@ class VarNode(Node):
         self.array = is_array
 
     def __repr__(self) -> str:
-        rep = f"{self.type} {'*' * self.total_deref} {self.key} : {self.value}"
+        rep = f"{self.type} {'*' * (self.total_deref - self.deref_level - 1)} {self.key} : {self.value}"
         return rep
 
     def __eq__(self, o):
@@ -378,6 +378,14 @@ class VarNode(Node):
     def mips(self, registers):
         if self.value is None:
             return "", "", []
+        if self.ptr and isinstance(self.value, VarNode):
+            if self.value.register is None:
+                if self.value.const:
+                    registers.savedManager.LRU(self.value)
+                elif self.value.type == "float":
+                    registers.floatManager.LRU(self.value)
+                else:
+                    registers.temporaryManager.LRU(self.value)
         # assign itself to a register
         if self.register is None:
             if self.const:
@@ -412,13 +420,25 @@ class VarNode(Node):
         # # if not self.const, declare in .text
         # else:
         out_global = ""
-        # local variable declaration
-        if self.type == "float":
-            out_local = f"\tlwc1 ${self.register.name}, {self.key}\n"
-        else:
-            out_local = f"\tli ${self.register.name}, {out_val}\n"
-
+        out_local = ""
         out_reg = []
+        # local variable declaration
+        if not (self.ptr and isinstance(self.value, VarNode)):
+            if self.type == "float":
+                out_local = f"\tlwc1 ${self.register.name}, {self.key}\n"
+            else:
+                out_local = f"\tli ${self.register.name}, {out_val}\n"
+        else:
+            # Load the pointed value into the register
+            # if self.register is None:
+            output = self.value.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+            out_reg += output[2]
+            # load the address of the variable
+            out_local += f"\tla ${self.register.name}, {self.value.key if not self.value.ptr else f'(${self.value.register.name})'}\n"
+            # store the address in the register
+            out_local += f"\tsw ${self.value.register.name}, (${self.register.name})\n"
         if self.register is not None:
             out_reg.append(self.register.name)
         return out_local, out_global, out_reg

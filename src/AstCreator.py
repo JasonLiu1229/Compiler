@@ -915,7 +915,7 @@ class AstCreator(MathVisitor):
                             and ast.children[0].ptr and ast.children[1].ptr:
                         if ast.children[0].total_deref != ast.children[1].total_deref + 1:
                             raise AttributeError(
-                                f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                                f"Assignment of pointer {ast.children[1]} to {ast.children[0]} failed")
                     updates_queue.append(ast.children[0])
                     node = ast.children[0]
                     # refresh symbol table
@@ -1033,7 +1033,7 @@ class AstCreator(MathVisitor):
                 if isinstance(ast.children[0], VarNode) and not isinstance(ast.children[1], VarNode):
                     if ast.children[0].total_deref - ast.children[0].deref_level != 0:
                         raise AttributeError(
-                            f"Incompatible types for {ast.children[0].key} and {ast.children[1].key}.")
+                            f"Assigning to pointer {ast.children[0].key} requires a pointer value.")
                 if not isinstance(assignee.parent, ArrayNode):
                     assignee.value = ast.children[1].value
                     if isinstance(assignee.parent, VarNode) and assignee.parent.ptr:

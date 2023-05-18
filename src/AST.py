@@ -391,6 +391,7 @@ class AST:
                     right_register = right_node.register.name
                 else:
                     right_register = right_node.register.name
+
         # create new node
         new_node = Node("", None)
         if new_node.register is None:
@@ -399,6 +400,15 @@ class AST:
             else:
                 registers.temporaryManager.LRU(new_node)
         new_register = new_node.register.name
+        if new_register in [left_register, right_register]:
+            # assign new register
+            new_node = Node("", None)
+            if new_node.register is None:
+                if right_type == 'float' or left_type == 'float':
+                    registers.floatManager.LRU(new_node)
+                else:
+                    registers.temporaryManager.LRU(new_node)
+            new_register = new_node.register.name
         # casting if necessary
         if left_type != right_type and right_type is not None:
             if left_type == 'float' and right_type == 'int':
@@ -443,6 +453,16 @@ class AST:
         out_list.append(right_register)
         out_list.append(new_register)
         if right_node is not None:
+            # add commentaries
+            if left_node.value is not None and left_node.key != "":
+                out_local += f"\t# {left_node.key if isinstance(left_node, VarNode) else left_node.value}"
+            else:
+                out_local += f"\t# ${left_register}"
+            out_local += f" {token} "
+            if right_node.value is not None and right_node.key != "":
+                out_local += f"{right_node.key if isinstance(right_node, VarNode) else right_node.value} --> ${new_register}\n"
+            else:
+                out_local += f"${right_register} --> ${new_register}\n"
             if token == '<':
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
@@ -1482,6 +1502,14 @@ class VarDeclrAST(AST):
             if self.children[0].ptr:
                 self.children[0].value = self.children[1]
                 self.children[1].parent = self.children[0]
+                # connect deref_level
+                # self.children[0].total_deref += 1
+                # self.children[1].total_deref = self.children[0].total_deref
+                temp_value = self.children[0].value
+                while isinstance(temp_value, VarNode):
+                    temp_value.total_deref = self.children[0].total_deref
+                    temp_value.deref_level += 1
+                    temp_value = temp_value.value
             else:
                 self.children[0].value = self.children[1].value
                 self.children[0].cast = self.children[1].cast
@@ -1707,10 +1735,10 @@ class DerefAST(AST):
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child = child.value
-        if not isinstance(self.children[0], FuncParameter):
-            child.parent = self.children[0]
-        if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
-            child.deref_level += 1
+        # if not isinstance(self.children[0], FuncParameter):
+        #     child.parent = self.children[0]
+        # if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
+        #     child.deref_level += 1
         return child
 
 class ArrayElementAST(AST):
@@ -2570,7 +2598,9 @@ class FuncScopeAST(AST):
                 #     registers.temporaryManager.LRU(entry.object)
                 #     out_temp_local += f"\taddi ${entry.object.register.name}, $sp, 4\n"
                 # temp_list.append(entry.object.register.name)
-                if entry.type == "int" and entry.object.value is not None:
+                if entry.object.ptr:
+                    continue
+                elif entry.type == "int" and entry.object.value is not None:
                     if entry.object.key in registers.globalObjects.data[2].values():
                         continue
                     # declare the variable in the global scope .data
