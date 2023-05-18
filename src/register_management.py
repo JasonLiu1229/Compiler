@@ -488,6 +488,7 @@ class dataManager:
     def __init__(self) -> None:
         self.data: [] = [{}, {}, {}, {}, {}, {}] # asciiz, float, word, halfword, byte, space
         self.index = 0
+        self.stackSize = 0
 
 class Registers:
     def __init__(self) -> None:
