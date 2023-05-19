@@ -999,14 +999,19 @@ class AstCreator(MathVisitor):
                     new_node.symbolTable = ast.cases[i].symbolTable
                     # create new condition: ast.condition == ast.cases[i].condition
                     if not isinstance(ast.cases[i], DefaultAST):
-                        new_cond = TermAST(Node("==", None))
+                        new_cond = TermAST(Node("cond", "=="))
                         new_cond.parent = new_node
                         new_cond.children.append(ast.condition)
                         new_cond.children.append(ast.cases[i].condition[0])
                         new_node.condition = new_cond
+                        for child in new_cond.children:
+                            child.parent = new_cond
                     new_nodes.append(new_node)
                 index = ast.parent.children.index(ast)
                 ast.parent.children[index:index + 1] = new_nodes
+                for cond in new_nodes:
+                    if not in_loop and cond.condition is not None:
+                        cond.condition = cond.condition.handle()
                 continue
             elif isinstance(ast, While_loopAST):
                 self.resolve(ast.condition)
