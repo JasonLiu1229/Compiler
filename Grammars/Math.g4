@@ -79,10 +79,10 @@ scope           :   '{' (
                         )* '}'
                 ;
 
-switch_instr    :   SWITCH '(' rvar ')' '{' (case_instr)* default_instr?'}'
+switch_instr    :   SWITCH '(' switch_cond=expr ')' '{' (case_list+=case_instr)* default=default_instr?'}'
                 ;
 
-case_instr      :   CASE (INT | FLOAT | CHAR) ':' switch_scope
+case_instr      :   CASE case_cond=expr ':' switch_scope
                 ;
 
 default_instr   :   DEFAULT ':' switch_scope

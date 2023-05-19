@@ -94,6 +94,26 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#switch_instr.
+    def visitSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#case_instr.
+    def visitCase_instr(self, ctx:MathParser.Case_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#default_instr.
+    def visitDefault_instr(self, ctx:MathParser.Default_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#switch_scope.
+    def visitSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#cont_instr.
     def visitCont_instr(self, ctx:MathParser.Cont_instrContext):
         return self.visitChildren(ctx)

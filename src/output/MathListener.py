@@ -161,6 +161,42 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#switch_instr.
+    def enterSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#switch_instr.
+    def exitSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#case_instr.
+    def enterCase_instr(self, ctx:MathParser.Case_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#case_instr.
+    def exitCase_instr(self, ctx:MathParser.Case_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#default_instr.
+    def enterDefault_instr(self, ctx:MathParser.Default_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#default_instr.
+    def exitDefault_instr(self, ctx:MathParser.Default_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#switch_scope.
+    def enterSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#switch_scope.
+    def exitSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#cont_instr.
     def enterCont_instr(self, ctx:MathParser.Cont_instrContext):
         pass
