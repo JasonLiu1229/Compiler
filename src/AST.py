@@ -2450,6 +2450,11 @@ class FuncDefnAST(AST):
         # Begin
         # Parameters
         # TODO: Parameters
+        # if len(self.params) > 0:
+        #     count = 0
+        #     for param in self.params:
+        #         if isinstance(param.register, Register):
+        #             out_local += f"lw{'c1' if param.type == 'float' else ''} {param.register}, {}($fp)\n"
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
         out_local += out_l
@@ -2491,36 +2496,52 @@ class FuncCallAST(AST):
     def mips(self, registers: Registers):
         out = ""
         # arguments
-        arg_string = ""
-        count = 0
         # check if one of the arguments is a float, check if one of the arguments is a int
-        float_arg = False
-        temp_arg = False
-        for arg in self.args:
-            if isinstance(arg, Node):
-                if arg.key == "float":
-                    float_arg = True
-                elif arg.key == "int" or arg.key == "char":
-                    temp_arg = True
-            else:
-                if arg.type == "float":
-                    float_arg = True
-                elif arg.type == "int" or arg.type == "char":
-                    temp_arg = True
-        temp_float = Node("float", None)
-        temp_ = Node("temp", None)
-        if float_arg:
-            registers.floatManager.LRU(temp_float)
-        elif temp_arg:
-            registers.temporaryManager.LRU(temp_)
-        for arg in self.args:
-            #TODO: arguments on stack
-            pass
-        # end string
-        if float_arg:
-            registers.floatManager.LRU_delete(temp_float.register.name)
-        elif temp_arg:
-            registers.temporaryManager.LRU(temp_.register.name)
+        if len(self.args) > 0:
+            float_arg = False
+            temp_arg = False
+            for arg in self.args:
+                if isinstance(arg, Node):
+                    if arg.key == "float" and not isinstance(arg.register, Register):
+                        float_arg = True
+                    elif not isinstance(arg.register, Register):
+                        temp_arg = True
+                else:
+                    if arg.type == "float" and not isinstance(arg.register, Register):
+                        float_arg = True
+                    elif not isinstance(arg.register, Register):
+                        temp_arg = True
+            # make temporary registers
+            temp_ = Node("temp", None)
+            temp_float = Node("temp_float", None)
+            if temp_arg:
+                registers.temporaryManager.LRU(temp_)
+            if float_arg:
+                registers.floatManager.LRU(temp_float)
+
+
+            out += f"addi $sp, $sp, -{len(self.args) * 4}\n"
+            count = 0
+            for arg in self.args:
+                type_ = None
+                if isinstance(arg, Node):
+                    type_ = arg.key
+                elif isinstance(arg, VarNode):
+                    type_ = arg.type
+                # check if the argument has a register
+                if isinstance(arg.register, Register):
+                    out += f"sw{'c1' if type_ == 'float' else ''} {arg.register.name}, {count * 4}($sp)\n"
+                else:
+                    out += f"sw{'c1' if type_ == 'float' else ''} ${temp_.register.name if type_ != 'float' else temp_float.register.name}, {count * 4}($sp)\n"
+                count += 1
+            for i in range(0, len(self.args)):
+                self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
+            registers.globalObjects.stackSize += len(self.args) * 4
+            # end string
+            if float_arg:
+                registers.floatManager.LRU_delete(temp_float.register.name)
+            elif temp_arg:
+                registers.temporaryManager.LRU_delete(temp_.register.name)
         out += f"jal {self.root.key}\n"
         return out, "", []
 

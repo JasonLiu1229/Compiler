@@ -169,6 +169,20 @@ class AstCreator(MathVisitor):
                 return i
         return -1
 
+    @staticmethod
+    def lastDefaultOrCase(index: int, in_list):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], CaseAST) or isinstance(in_list[i], DefaultAST):
+                return i
+        return -1
+
+    @staticmethod
+    def lastSwitchScope(index: int, in_list):
+        for i in reversed(range(index)):
+            if isinstance(in_list[i], SwitchScopeAST):
+                return i
+        return -1
+
     def resolveTree(self, base: AST):
         """
         visit the right visit function for the give context
@@ -221,7 +235,40 @@ class AstCreator(MathVisitor):
                     if len(child.values) > 0:
                         base.children[index - 1 - len(child.values) - 1: index] = []
                     index = base.children.index(child)
-
+                elif isinstance(child, SwitchAST):
+                    last_token = self.searchPrevToken(index, base.children, token="{")
+                    child.condition = base.children[last_token: index]
+                    base.children[last_token: index] = []
+                    child.condition.pop(0)
+                    child.condition.reverse()
+                    index = base.children.index(child)
+                    last_token = self.searchPrevToken(index, base.children)
+                    child.cases = base.children[last_token: index]
+                    # delete the switch token
+                    child.cases.pop(0)
+                    child.cases.reverse()
+                    base.children[last_token: index] = []
+                    index = base.children.index(child)
+                elif isinstance(child, DefaultAST):
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    index = base.children.index(child)
+                elif isinstance(child, CaseAST):
+                    last_switch_scope = self.lastSwitchScope(index, base.children)
+                    child.condition = base.children[last_switch_scope + 1: index]
+                    child.condition.reverse()
+                    base.children[last_switch_scope + 1: index] = []
+                    index = base.children.index(child)
+                    child.children = base.children[index - 1: index]
+                    base.children[index - 1: index] = []
+                    index = base.children.index(child)
+                elif isinstance(child, SwitchScopeAST):
+                    last_case_default = self.lastDefaultOrCase(index, base.children)
+                    last_token = self.searchPrevToken(index, base.children)
+                    child.children = base.children[max(last_case_default, last_token) + 1: index]
+                    child.children.reverse()
+                    base.children[max(last_case_default, last_token) + 1: index] = []
+                    index = base.children.index(child)
                 elif isinstance(child, ScanfAST):
                     child.children = base.children[index - len(child.variables): index]
                     child.children.reverse()
@@ -276,8 +323,9 @@ class AstCreator(MathVisitor):
                         index = base.children.index(child)
 
                 elif isinstance(child, ContAST) or isinstance(child, BreakAST):
-                    last_token = self.searchPrevToken(index=index, token="}", in_list=base.children) + 1
-                    base.children[last_token: index] = []
+                    last_token = self.searchPrevToken(index=index, token="}", in_list=base.children)
+                    last_case_default = self.lastDefaultOrCase(index=index, in_list=base.children)
+                    base.children[max(last_case_default, last_token) + 1: index] = []
                     index = base.children.index(child)
 
                 elif isinstance(child, FuncParametersAST):
@@ -1598,7 +1646,7 @@ class AstCreator(MathVisitor):
 
     def visitParam_declr(self, ctx: MathParser.Param_declrContext):
         out = FuncParameter(key=ctx.var.text, value=None, vtype=ctx.type_.text, const=(ctx.const is not None),
-                            ptr=(ctx.ptr is not None),
+                            ptr=(ctx.ptr is not None and len(ctx.ptr) > 0),
                             deref_level=0,
                             total_deref=(len(ctx.ptr) if ctx.ptr is not None else 0),
                             const_ptr=(ctx.const is not None and ctx.ptr is not None),

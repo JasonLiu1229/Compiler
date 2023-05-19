@@ -63,9 +63,9 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
         except Exception as e:
             # code in red if error
             # log the error
+            print(f'\033[91m>>> Error: {e}\033[0m\n')
             with open(f"../MIPS_output/logs/{filename}.log.txt", "w") as f:
                 f.write(f"Error: {e}\n")
-            print(f'\033[91m>>> Error: {e}\033[0m\n')
             continue
 
 def main():
