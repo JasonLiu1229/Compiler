@@ -3003,10 +3003,27 @@ class IncludeAST(AST):
         return "", "", []
 
 class SwitchAST(AST):
-    pass
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+        self.cases = []
+        self.has_default = False
+        self.default = None
+        self.condition = None
+
+
+class SwitchScopeAST(Scope_AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
+        super().__init__(root, children, parent, condition)
+
 
 class CaseAST(Scope_AST):
-    pass
 
-class DefaultAST(Scope_AST):
-    pass
+    def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
+        super().__init__(root, children, parent, condition)
+
+
+class DefaultAST(CaseAST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
+        super().__init__(root, children, parent, condition)
