@@ -107,7 +107,14 @@ class AstCreator(MathVisitor):
             return self.visitScanf(ctx)
         elif isinstance(ctx, MathParser.CompContext):
             return self.visitComp(ctx)
-
+        elif isinstance(ctx, MathParser.Switch_instrContext):
+            return self.visitSwitch_instr(ctx)
+        elif isinstance(ctx, MathParser.Case_instrContext):
+            return self.visitCase_instr(ctx)
+        elif isinstance(ctx, MathParser.Default_instrContext):
+            return self.visitDefault_instr(ctx)
+        elif isinstance(ctx, MathParser.Switch_scopeContext):
+            return self.visitSwitch_scope(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -1748,6 +1755,32 @@ class AstCreator(MathVisitor):
             out = ExprAST(Node("expr", ctx.op.text))
         else:
             out = TermAST(Node("term" , ctx.op.text))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitSwitch_instr(self, ctx: MathParser.Switch_instrContext):
+        out = SwitchAST(Node("switch", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        out.cases = [None] * len(ctx.case_list)
+        out.has_default = ctx.default is not None
+        return out
+
+    def visitCase_instr(self, ctx: MathParser.Case_instrContext):
+        out = CaseAST(Node("case", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitDefault_instr(self, ctx: MathParser.Default_instrContext):
+        out = DefaultAST(Node("default", None))
+        out.column = ctx.start.column
+        out.line = ctx.start.line
+        return out
+
+    def visitSwitch_scope(self, ctx: MathParser.Switch_scopeContext):
+        out = SwitchScopeAST(Node("switch_scope", None))
         out.column = ctx.start.column
         out.line = ctx.start.line
         return out
