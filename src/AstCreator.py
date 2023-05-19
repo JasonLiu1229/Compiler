@@ -147,7 +147,8 @@ class AstCreator(MathVisitor):
                     (isinstance(in_list[i], Node) and in_list[i].key == token) or \
                     isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
                     isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST)\
-                    or isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST):
+                    or isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST)\
+                    or isinstance(in_list[i], SwitchAST):
                 return i
         return -1
 
@@ -240,31 +241,44 @@ class AstCreator(MathVisitor):
                     index = base.children.index(child)
                 elif isinstance(child, SwitchAST):
                     last_token = self.searchPrevToken(index, base.children, token="{")
-                    child.condition = base.children[last_token: index]
+                    child.condition = base.children[last_token+1]
                     base.children[last_token: index] = []
-                    child.condition.pop(0)
-                    child.condition.reverse()
+                    # child.condition.pop(0)
+                    # child.condition.reverse()
+                    # if len(child.condition) == 1 and isinstance(child.condition[0], Node):
+                    #     if child.condition[0].key != "var":
+                    #         child.root.value = child.condition[0].value
+                    if isinstance(child.condition, Node):
+                       if child.condition.key != "var":
+                           child.root.value = child.condition.value
                     index = base.children.index(child)
                     last_token = self.searchPrevToken(index, base.children)
-                    child.cases = base.children[last_token: index]
+                    child.cases = base.children[last_token + 1: index]
                     # delete the switch token
-                    child.cases.pop(0)
+                    # child.cases.pop(0)
                     child.cases.reverse()
+                    child.children = child.cases
                     base.children[last_token: index] = []
                     index = base.children.index(child)
+
                 elif isinstance(child, DefaultAST):
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index = base.children.index(child)
+
                 elif isinstance(child, CaseAST):
                     last_switch_scope = self.lastSwitchScope(index, base.children)
                     child.condition = base.children[last_switch_scope + 1: index]
                     child.condition.reverse()
+                    if len(child.condition) == 1 and isinstance(child.condition[0], Node):
+                        if child.condition[0].key != "var":
+                            child.root.value = child.condition[0].value
                     base.children[last_switch_scope + 1: index] = []
                     index = base.children.index(child)
                     child.children = base.children[index - 1: index]
                     base.children[index - 1: index] = []
                     index = base.children.index(child)
+
                 elif isinstance(child, SwitchScopeAST):
                     last_case_default = self.lastDefaultOrCase(index, base.children)
                     last_token = self.searchPrevToken(index, base.children)
@@ -864,7 +878,7 @@ class AstCreator(MathVisitor):
                         temp_parent = temp_parent.parent
                     if isinstance(ast, For_loopAST):
                         break
-                    if isinstance(child, AST) and not isinstance(ast, Scope_AST):
+                    if isinstance(child, AST) and not isinstance(ast, Scope_AST) and not isinstance(ast, SwitchAST):
                         handle = False
                         break
                     if isinstance(ast, ArrayElementAST):
@@ -939,6 +953,61 @@ class AstCreator(MathVisitor):
                 self.resolve(ast.children[-1], in_cond=True, in_loop=in_loop)
                 node = ast
 
+            elif isinstance(ast, SwitchAST):
+                # resolve the condition
+                if not isinstance(ast.condition, Node):
+                    self.resolve(ast.condition, in_cond=True, in_loop=in_loop)
+                else:
+                    # check if the condition is a variable
+                    if ast.condition.key == "var":
+                        while not temp_symbol.exists(ast.condition.value):
+                            temp_symbol = temp_symbol.parent
+                            if temp_symbol is None:
+                                # get instruction in the file where the warning is by using column and line number
+                                f = open(self.file_name, "r")
+                                lines = f.readlines()
+                                line = lines[ast.line - 1]
+                                f.close()
+                                # insert squiggly line
+                                line = line[:ast.column] + '\u0332' + line[ast.column:]
+                                line = "\033[95mError:\033[0m" + line.replace('\t', ' ')
+                                raise AttributeError(f"Error at line {ast.line}:{ast.column}: Array {ast.root.key} was not declared\n"
+                                                     f"{line}")
+                        match = temp_symbol.lookup(ast.condition.value)
+                        if len(match) == 0:
+                            raise ReferenceError(f"Variable {ast.condition.value} undeclared")
+                        elif not in_loop:
+                            ast.condition = match[0].object
+                # resolve the cases
+                for case in ast.cases:
+                    self.resolve(case, in_cond=True, in_loop=in_loop)
+                # transform the switch into if-else
+                new_nodes = []
+                for i in range(len(ast.cases)):
+                    if not isinstance(ast.cases[i], DefaultAST):
+                        new_node = If_CondAST(Node(f"case_{i}", None), ast.cases[i].children)
+                    else:
+                        new_node = Else_CondAST(Node("default", None) ,ast.cases[i].children)
+                        new_nodes[-1].children.append(new_node)
+                    for child in new_node.children:
+                        child.parent = new_node
+                    new_node.parent = ast.parent if not isinstance(ast.cases[i], DefaultAST) else new_nodes[-1]
+                    new_node.in_loop = ast.in_loop
+                    new_node.in_func = ast.in_func
+                    new_node.column = ast.cases[i].column
+                    new_node.line = ast.cases[i].line
+                    new_node.symbolTable = ast.cases[i].symbolTable
+                    # create new condition: ast.condition == ast.cases[i].condition
+                    if not isinstance(ast.cases[i], DefaultAST):
+                        new_cond = TermAST(Node("==", None))
+                        new_cond.parent = new_node
+                        new_cond.children.append(ast.condition)
+                        new_cond.children.append(ast.cases[i].condition[0])
+                        new_node.condition = new_cond
+                    new_nodes.append(new_node)
+                index = ast.parent.children.index(ast)
+                ast.parent.children[index:index + 1] = new_nodes
+                continue
             elif isinstance(ast, While_loopAST):
                 self.resolve(ast.condition)
                 ast.symbolTable = temp_symbol

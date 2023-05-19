@@ -3035,6 +3035,7 @@ class SwitchAST(AST):
         self.has_default = False
         self.default = None
         self.condition = None
+        self.symbolTable = SymbolTable()
 
 
 class SwitchScopeAST(Scope_AST):
