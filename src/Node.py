@@ -376,8 +376,6 @@ class VarNode(Node):
         return out, index + 1
 
     def mips(self, registers):
-        if self.value is None:
-            return "", "", []
         if self.ptr and isinstance(self.value, VarNode):
             if self.value.register is None:
                 if self.value.const:
@@ -396,7 +394,8 @@ class VarNode(Node):
                 # registers.globalObjects.data[1][self.value] = self.key
             else:
                 registers.temporaryManager.LRU(self)
-
+        if self.value is None:
+            return "", "", []
         # mips variable declaration
         # if self.const, also declare in .data
         # get right type

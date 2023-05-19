@@ -226,6 +226,9 @@ class AST:
                         continue
                     # out_global += f"{entry.name}: .byte {entry.object.value if entry.object.value is not None else ''}\n"
                     registers.globalObjects.data[0][entry.object.value] = entry.name
+        # assign output registers to self
+        registers.temporaryManager.LRU(self.root)
+        self.register = self.root.register
         return out_local, out_global, []
 
     def searchBlocks(self):
@@ -374,7 +377,7 @@ class AST:
             if isinstance(right_node, VarNode):
                 right_register = right_node.register.name
                 right_type = right_node.type
-            else:
+            elif isinstance(right_node, Node):
                 if right_node.key == "var":
                     # find the register for the variable
                     right_register = registers.search(right_node)
@@ -465,10 +468,11 @@ class AST:
             else:
                 out_local += f"\t# ${left_register}"
             out_local += f" {token} "
-            if right_node.value is not None and right_node.key != "":
-                out_local += f"{right_node.key if isinstance(right_node, VarNode) else right_node.value} --> ${new_register}\n"
-            else:
-                out_local += f"${right_register} --> ${new_register}\n"
+            if isinstance(right_node, Node):
+                if right_node.value is not None and right_node.key != "":
+                    out_local += f"{right_node.key if isinstance(right_node, VarNode) else right_node.value} --> ${new_register}\n"
+                else:
+                    out_local += f"${right_register} --> ${new_register}\n"
             if token == '<':
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
@@ -982,6 +986,7 @@ class InstrAST(AST):
     def mips(self, registers: Registers):
         out_global = ""
         out_local = ""
+        out_list = []
         # if everything has been constant folded
         if len(self.children) == 1 and isinstance(self.children[0], Node):
             return self.children[0].mips(registers)
@@ -990,10 +995,10 @@ class InstrAST(AST):
                 out = child.mips(registers)
                 out_global += out[0]
                 out_local += out[1]
-                registers = out[2]
+                out_list += out[2]
 
 
-        return "", "", registers
+        return out_local, out_global, out_list
 
 
 class PrintfAST(AST):
