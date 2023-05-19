@@ -63,7 +63,7 @@ class MIPS:
             f.write(local_str)
         print("MIPS code generated in " + self.mips)
 
-    def execute(self, execute_with: str = "Mars", disclaimer: bool = True):
+    def execute(self, execute_with: str = "Mars", disclaimer: bool = True, silent: bool = False):
         """
         Executes the MIPS code with Mars as default, but can be changed to SPIM
         :param execute_with: "Mars" or "SPIM"
@@ -83,6 +83,7 @@ class MIPS:
             with open(f"../MIPS_output/logs/{out_file}.log.txt", "r") as f:
                 out = f.read()
                 out = out.replace("MARS 4.5  Copyright 2003-2014 Pete Sanderson and Kenneth Vollmar\n\n", "")
+            if not silent:
                 print(out)
         elif execute_with == "spim":
             if disclaimer:
@@ -97,6 +98,7 @@ class MIPS:
                 out = out.replace("SPIM Version 8.0 of January 8, 2010\nCopyright 1990-2010, James R. Larus.\n"
                                   "All Rights Reserved.\nSee the file README for a full copyright notice.\n"
                                   "Loaded: /usr/lib/spim/exceptions.s\n", "")
+            if not silent:
                 print(out)
         elif execute_with == "both":
             if disclaimer:
@@ -116,6 +118,7 @@ class MIPS:
                                   "All Rights Reserved.\n"
                                   "See the file README for a full copyright notice.\n"
                                   "Loaded: /usr/lib/spim/exceptions.s\n", "")
+            if not silent:
                 print(out)
         else:
             print("Invalid execution method")

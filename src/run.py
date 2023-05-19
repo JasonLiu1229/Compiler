@@ -8,8 +8,8 @@ import os
 import argparse
 import Dot
 
-
-def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False, execute_with: str = None, disclaimer: bool = True):
+def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False,
+        execute_with: str = None, disclaimer: bool = True, silent: bool = False):
     for filename in filenames:
         try:
             # code in blue
@@ -37,11 +37,11 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             if not ast.symbolTable.exists("main"):
                 raise Exception("No main function found")
             # print the ast if verbose is true
-            if verbose:
+            if verbose and not silent:
                 ast.print(4, True, filename)
                 ast.symbolTable.print(True)
             # print warnings if there are any warnings and no_warning is false
-            if not no_warning:
+            if not no_warning and not silent:
                 visitor.warn()
             # dot = Dot.dot(ast, "../Output/" + filename + ".dot")
             # dot.connect()
@@ -55,14 +55,18 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             generator.convert()
             # execute mips code
             if execute_with is not None:
-                generator.execute(execute_with, disclaimer)
+                generator.execute(execute_with, disclaimer, silent)
             # code in green if no errors
+            with open(f"../MIPS_output/logs/{filename}.log.txt", "a") as f:
+                f.write(f"Finished execution with exit code 0\n")
             print("\033[92m>>> Finished execution with exit code 0\033[0m\n")
         except Exception as e:
             # code in red if error
+            # log the error
+            with open(f"../MIPS_output/logs/{filename}.log.txt", "w") as f:
+                f.write(f"Error: {e}\n")
             print(f'\033[91m>>> Error: {e}\033[0m\n')
             continue
-
 
 def main():
     parser = argparse.ArgumentParser(prog="Compiler", description="Compiles the C files")
@@ -75,29 +79,36 @@ def main():
     parser.add_argument('-nw', '--no_warning', action='store_true', help='this flag will not print the warnings')
     parser.add_argument('-e', '--execute_with', help='this flag will execute the mips code with the given program',
                         default=None, choices=["mars", "spim", "both"], type=str.lower, required=False)
+    parser.add_argument('-s', '--silent', action='store_true', help='this flag will not print the output of the program')
     # disclaimer
     parser.add_argument('-nd', '--no_disclaimer', action='store_true', help='this flag will not print the disclaimer')
 
-    try:
-        args = parser.parse_args()
-        filenames = []
-        if args.files is not None:
-            run(directory=args.directory, file_type=args.type, filenames=args.files, verbose=args.verbose,
-                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
-        elif args.index is not None:
-            files = os.listdir(args.directory)
-            files_one = [files[int(args.index) - 1][:len(files[int(args.index) - 1]) - len(args.type)]]
-            run(directory=args.directory, file_type=args.type, filenames=files_one, verbose=args.verbose,
-                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
-        else:
-            for file in os.listdir(args.directory):
-                if file.endswith(args.type):
-                    filenames.append(file[:len(file) - len(args.type)])
-            run(directory=args.directory, file_type=args.type, filenames=filenames, verbose=args.verbose,
-                no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer)
-    except Exception as e:
-        print(f'Excepted with error \"{e}\"')
-
+    # try:
+    args = parser.parse_args()
+    filenames = args.files if args.files is not None else []
+    if args.files is not None:
+        run(directory=args.directory, file_type=args.type, filenames=args.files, verbose=args.verbose,
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+    elif args.index is not None:
+        files = os.listdir(args.directory)
+        files_one = [files[int(args.index) - 1][:len(files[int(args.index) - 1]) - len(args.type)]]
+        run(directory=args.directory, file_type=args.type, filenames=files_one, verbose=args.verbose,
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+    else:
+        for file in os.listdir(args.directory):
+            if file.endswith(args.type):
+                filenames.append(file[:len(file) - len(args.type)])
+        run(directory=args.directory, file_type=args.type, filenames=filenames, verbose=args.verbose,
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+    expected_outputs = []
+    actual_outputs = []
+    # for filename in filenames:
+    #     expected_outputs.append(open(f"../Output/Expected_output/{filename}.log.txt", "r").read())
+    #     actual_outputs.append(open(f"../MIPS_output/logs/{filename}.log.txt", "r").read())
+    # for i in range(len(actual_outputs)):
+    #     TestCase().assertEqual(expected_outputs[i], actual_outputs[i])
+    # # except Exception as e:
+    #     print(f'Excepted with error \"{e}\"')
 
 if __name__ == '__main__':
     main()
