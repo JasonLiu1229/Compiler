@@ -836,7 +836,7 @@ class AstCreator(MathVisitor):
                             exists_state = False
                         temp_ast = ast
                         # search in parent scopes if not found
-                        while not exists_state and temp_ast is not None and temp_ast.parent is not None:
+                        while not exists_state and temp_ast is not None and temp_ast.parent is not None and temp_symbol.parent is not None:
                             temp_symbol = temp_symbol.parent
                             temp_ast = temp_ast.parent
                             if temp_symbol is not None:
