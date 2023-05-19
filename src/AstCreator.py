@@ -149,21 +149,21 @@ class AstCreator(MathVisitor):
         return -1
 
     @staticmethod
-    def lastInit(index: int, in_list, token: str = '}'):
+    def lastInit(index: int, in_list):
         for i in reversed(range(index)):
             if isinstance(in_list[i], CondAST):
                 return i
         return -1
 
     @staticmethod
-    def lastElse(index: int, in_list, token: str = '}'):
+    def lastElse(index: int, in_list):
         for i in reversed(range(index)):
             if isinstance(in_list[i], Else_CondAST):
                 return i
         return -1
 
     @staticmethod
-    def lastFuncScope(index: int, in_list, token: str = '}'):
+    def lastFuncScope(index: int, in_list):
         for i in reversed(range(index)):
             if isinstance(in_list[i], FuncScopeAST):
                 return i
@@ -343,7 +343,7 @@ class AstCreator(MathVisitor):
                     child.condition = child.children[0]
                     child.condition.parent = child
                     child.children = child.children[1:]
-                    # set in_loop flag to false for all children in scope if if condition
+                    # set the in_loop flag to false for all children in scope if "IF_condition"
                     if isinstance(child, If_CondAST):
                         for ch in child.children[0].children:
                             ch.in_loop = child.in_loop
@@ -554,14 +554,12 @@ class AstCreator(MathVisitor):
         incr_queue = []
         decr_queue = []
         # flags
-        conditional = False
         evaluate = True
         temp_symbol = None
         nodes = []
         for ast in list_ast:
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
-            temp_symbol = ast.symbolTable
             while symbol_table is None and temp_parent is not None:
                 symbol_table = temp_parent.symbolTable
                 temp_parent = temp_parent.parent
@@ -581,7 +579,6 @@ class AstCreator(MathVisitor):
                 continue
             if isinstance(ast, FuncCallAST):
                 # check whether function is in symbol table
-                match = None
                 temp_parent = ast
                 temp_symbol = ast.symbolTable
                 while temp_parent.parent is not None and temp_symbol is None:
@@ -796,7 +793,8 @@ class AstCreator(MathVisitor):
                     temp_parent = temp_parent.parent
                 for child in ast.children:
                     # unhandled trees
-                    # check parent line: if it is dereferenced from a function parameter, then evaluate is false
+                    # check parent line:
+                    # if it is referenced from a function parameter, then evaluate is false
                     temp_parent = child.parent
                     while temp_parent is not None:
                         if isinstance(temp_parent, FuncParameter):
@@ -824,7 +822,7 @@ class AstCreator(MathVisitor):
                                 raise AttributeError(f"Error at line {ast.line}:{ast.column}: Array {ast.root.key} was not declared\n"
                                                      f"{line}")
                         # if not, throw error
-                    # unreplaced rvars
+                    # un-replaced rvars
                     if isinstance(child, Node) and child.key == "var":
                         # temp_parent = child.parent
                         # temp_symbol = child.parent.symbolTable
@@ -954,7 +952,7 @@ class AstCreator(MathVisitor):
                     raise AttributeError(f"Attempting to modify a const variable {ast.children[0]}")
             # declaration handling
             elif isinstance(ast, InitAST):
-                # go up one level in symbol table tree
+                # go up one level in the symbol table tree
                 temp_symbol = temp_symbol.parent
                 temp_symbol.owner.symbolTable = temp_symbol
                 # check if variable already exists
@@ -1814,7 +1812,7 @@ class AstCreator(MathVisitor):
                 if isinstance(value, str):
                     return value
                 return chr(value)
-        except Exception as e:
+        except Exception:
             raise RuntimeError("Bad Cast")
 
     def warn(self):
