@@ -134,7 +134,8 @@ class AstCreator(MathVisitor):
                 isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
                 isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or \
                 isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
-                isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST):
+                isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST) or \
+                isinstance(in_list[i], SwitchAST):
                 return i
         return -1
 
