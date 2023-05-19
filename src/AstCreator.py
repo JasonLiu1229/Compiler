@@ -133,7 +133,8 @@ class AstCreator(MathVisitor):
             if isinstance(in_list[i], PrintfAST) or isinstance(in_list[i], VarDeclrAST) or \
                 isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
                 isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or \
-                isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST):
+                isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
+                isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST):
                 return i
         return -1
 
@@ -144,7 +145,8 @@ class AstCreator(MathVisitor):
                     isinstance(in_list[i], AssignAST) or isinstance(in_list[i], InstrAST) or \
                     (isinstance(in_list[i], Node) and in_list[i].key == token) or \
                     isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
-                    isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST):
+                    isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST)\
+                    or isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST):
                 return i
         return -1
 
@@ -411,7 +413,7 @@ class AstCreator(MathVisitor):
                     update_index = last_decl
                     update_index += 1
 
-                elif isinstance(child, AssignAST) or isinstance(child, VarDeclrAST):
+                elif isinstance(child, AssignAST):
                     child.children = base.children[index - 2: index]
                     child.children.reverse()
                     base.children[index - 2: index] = []
@@ -423,7 +425,17 @@ class AstCreator(MathVisitor):
                     # else:
                     #     raise AttributeError(f"Redeclaration of variable {child.children[0].key}")
                     index -= 2
-
+                elif isinstance(child, VarDeclrAST):
+                    if child.root.key == "assign":
+                        child.children = base.children[index - 2: index]
+                        child.children.reverse()
+                        base.children[index - 2: index] = []
+                        index -= 2
+                    else:
+                        child.children = base.children[index - 1: index]
+                        child.children.reverse()
+                        base.children[index - 1: index] = []
+                        index -= 1
                 elif isinstance(child, PrintfAST):
                     if child.root.value is None:
                         if len(child.children) > 0:
@@ -1445,7 +1457,10 @@ class AstCreator(MathVisitor):
             out.line = ctx.start.line
             return out
         else:
-            return None
+            out = VarDeclrAST(Node("var_declr", None))
+            out.column = ctx.start.column
+            out.line = ctx.start.line
+            return out
 
     def visitLvar(self, ctx: MathParser.LvarContext):
         """
