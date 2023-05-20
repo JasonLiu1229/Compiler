@@ -89,6 +89,7 @@ class returnManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
@@ -155,6 +156,7 @@ class argumentManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
@@ -229,6 +231,7 @@ class temporaryManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
@@ -304,6 +307,7 @@ class savedManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
@@ -369,6 +373,7 @@ class reservedManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
@@ -434,6 +439,7 @@ class floatManager(Manager):
                 break
             tempHead = tempHead.next
         if not free:
+            self.head.clear()
             self.head.update(in_object)
             newHead = self.head.next
             self.tail.next = self.head
