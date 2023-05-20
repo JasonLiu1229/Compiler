@@ -1415,6 +1415,7 @@ class AstCreator(MathVisitor):
                     index = ast.parent.children.index(ast)
                     if len(nodes) == 0:
                         ast.parent.children[index] = node
+                        node.parent = ast.parent
                     else:
                         ast.parent.children = nodes
                         nodes = []

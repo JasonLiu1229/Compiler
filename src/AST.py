@@ -1,3 +1,4 @@
+import os
 import random
 import re
 import string
@@ -623,24 +624,24 @@ class AST:
         else:
             out["children"] = []
 
-        # Check symbol table for functions
-        try:
-            for val in dictionary_function.values():
-                function_dict = {}
-                if isinstance(val, VarNode):
-                    continue
-                elif isinstance(val[0], FunctionNode):
-                    function_dict[val[0].key] = []
-                    for i in val:
-                        parameter_array = []
-                        count = 0
-                        for j in i.value.values():
-                            parameter_array.append("par" + str(count) + "=" + str(j.value))
-                            count += 1
-                        function_dict[val[0].key].append(parameter_array)
-                out[name].append(function_dict)
-        except Exception as e:
-            raise e
+        # # Check symbol table for functions
+        # try:
+        #     for val in dictionary_function.values():
+        #         function_dict = {}
+        #         if isinstance(val, VarNode):
+        #             continue
+        #         elif isinstance(val[0], FunctionNode):
+        #             function_dict[val[0].key] = []
+        #             for i in val:
+        #                 parameter_array = []
+        #                 count = 0
+        #                 for j in i.value.values():
+        #                     parameter_array.append("par" + str(count) + "=" + str(j.value))
+        #                     count += 1
+        #                 function_dict[val[0].key].append(parameter_array)
+        #         out[name].append(function_dict)
+        # except Exception as e:
+        #     raise e
 
         # The rest
         for i in range(len(self.children)):
@@ -648,7 +649,7 @@ class AST:
                                                                                            FunctionNode):
                 out[name].append(self.children[i].save_dot())
             elif self.children[i] is not None and not isinstance(self.children[i], FunctionNode):
-                out["children"].insert(len(out["children"]), self.children[i].save_dot())
+                out["children"].insert(len(out["children"]), self.children[i].get_str())
         return out
 
     def print(self, indent: int = 4, save: bool = False, filename: str = ""):
@@ -674,24 +675,15 @@ class AST:
         :return: None
         """
         # Create file
-        file = open("../Output/" + file_name + ".dot", "w+")
-        file.close()
-
+        open("../Output/graphics/" + file_name + ".dot", "w+").close()
         # Start of dot language
         # self.recursive_dot(new_dictionary, count)
-        self.connect("../Output/" + file_name + ".dot", self.save_dot(symbol_table))
+        self.connect("../Output/graphics/" + file_name + ".dot")
+        # render the dot language file to png
+        os.system(f"dot -Tpng ../Output/graphics/{file_name}.dot -o ../Output/graphics/{file_name}.png")
 
-        # print dot language
 
-        file = open("../Output/" + file_name + ".dot", "r")
-
-        file_contents = file.read()
-
-        # print(file_contents)
-
-        file.close()
-
-    def connect(self, file_name: str, dictionary):
+    def connect(self, file_name: str):
         """
         connects the dictionary items together, to form a completed dot format file ඞ
         :return: None
@@ -700,28 +692,125 @@ class AST:
             # A = AGraph(dictionary , directed=True)
             # A.graph_attr["shape"] = "tree"
             # A.write(file_name)
-            f.write("digraph { \n\tnode [shape=tree];\n\tgraph[smothing=avg_dist]\ncompound=true;\n")
-            for key, value in dictionary.items():
-                string = ""
-                for v in value:
-                    string += str(key) + "\t->\t"
-                    if isinstance(v, dict):
-                        for fk, fv in v.items():
-                            string += fk + '\n'
-                            string += f"subgraph {fk}" + '{\n'
-                            mini_dict = {}
-                            for i in range(len(fv)):
-                                sub_string = ""
-                                for j in fv[i]:
-                                    sub_string += j
-                                string += '\t' + f"{fk};"
-                                mini_dict[fk + str(i)] = sub_string
-                            string += "}\n"
-                            for mk, mv in mini_dict.items():
-                                string += f"\"{mk[:-1]}\"" + "\t->\t" + f"\"{mv}\"" + "\n"
+            # graph needs to be a spanning tree of nodes representing the ast
+            out_begin = "digraph G {\n\tgraph [ordering=\"out\"];\n\tnode[shape=box, fontname=\"Liberation Sans\"]\n\t" \
+                        "edge[fontname=\"Liberation Sans\", fontsize=10, penwidth=2, color=\"#000000\"]\n\tlayout=dot;\n\t" \
+                        "label=\"AST\";\n\tsmoothing=avg_dist;\n\n"
+            f.write(out_begin)
+            # for key, value in dictionary.items():
+            #     string = ""
+            #     for v in value:
+            #         string += str(key) + "\t->\t"
+            #         if isinstance(v, dict):
+            #             for fk, fv in v.items():
+            #                 string += fk + '\n'
+            #                 string += f"subgraph {fk}" + '{\n'
+            #                 mini_dict = {}
+            #                 for i in range(len(fv)):
+            #                     sub_string = ""
+            #                     for j in fv[i]:
+            #                         sub_string += j
+            #                     string += '\t' + f"{fk};"
+            #                     mini_dict[fk + str(i)] = sub_string
+            #                 string += "}\n"
+            #                 for mk, mv in mini_dict.items():
+            #                     string += f"\"{mk[:-1]}\"" + "\t->\t" + f"\"{mv}\"" + "\n"
+            #         else:
+            #             string += "\t" + str(v) + "\n"
+            #     f.write(string)
+
+            # get all the nodes via DFS
+            not_visited = self.children
+            visited = []
+            while len(not_visited) > 0:
+                current = not_visited.pop()
+                visited.append(current)
+                if isinstance(current, Node):
+                    continue
+                for child in current.children:
+                    if child is not None:
+                        not_visited.append(child)
+            visited.reverse()
+            nodes = {} # array to keep track of used names
+            f.write("\t// Nodes:\n")
+            # declare all the nodes. no edges yet
+            for node in visited:
+                if isinstance(node, FuncScopeAST) or isinstance(node, Scope_AST) or isinstance(node, IncludeAST):
+                    continue
+                if isinstance(node, Node):
+                    new_key = node.key
+                else:
+                    new_key = node.root.key
+                if new_key not in nodes.keys():
+                    nodes[new_key] = [node]
+                    if isinstance(node, InstrAST) or isinstance(node, PrintfAST) or isinstance(node, FuncDefnAST):
+                        continue
+                    if isinstance(node, Node):
+                        out = f"\t\"{new_key}\" [label=\"{node.value if node.value is not None else new_key}\"];\n"
                     else:
-                        string += "\t" + str(v) + "\n"
-                f.write(string)
+                        out = f"\t\"{new_key}\" [label=\"{node.root.value if node.root.value is not None else new_key}\"];\n"
+                else:
+                    nodes[new_key].append(node)
+                    if isinstance(node, InstrAST) or isinstance(node, PrintfAST) or isinstance(node, FuncDefnAST):
+                        continue
+                    if isinstance(node, Node):
+                        out = f"\t\"{new_key}_{str(len(nodes[new_key]) - 1)}\" [label=\"{node.value if node.value is not None else new_key}\"];\n"
+                    else:
+                        out = f"\t\"{new_key}_{str(len(nodes[new_key]) - 1)}\" [label=\"{node.root.value if node.root.value is not None else new_key}\"];\n"
+
+                f.write(out)
+            f.write("\n\t// Edges:\n")
+            in_func = False
+            new_out = ""
+            visited.reverse()
+            # connect the nodes
+            for node in visited:
+                if isinstance(node, FuncScopeAST) or isinstance(node, Scope_AST):
+                    if in_func:
+                        f.write(new_out)
+                        f.write("\t}\n")
+                        in_func = False
+                        new_out = ""
+                    f.write(f"\tsubgraph cluster_{node.root.key} {{\n")
+                    f.write(f"\t\tlabel=\"{node.root.key}\"\n")
+                    new_out = ""
+                    in_func = True
+                    continue
+                if isinstance(node, Node) or isinstance(node, IncludeAST):
+                    continue
+                new_key = node.root.key
+                if node.children is not None:
+                    for child in node.children:
+                        if isinstance(child, FuncScopeAST) or isinstance(child, Scope_AST):
+                            continue
+                        if isinstance(child, Node):
+                            child_key = child.key
+                        else:
+                            child_key = child.root.key
+                        # get the right node to connect to from the nodes dictionary
+                        index = None
+                        child_index = None
+                        for i in range(len(nodes[new_key])):
+                            if isinstance(nodes[new_key][i], Node):
+                                continue
+                            if child in nodes[new_key][i].children:
+                                # child = nodes[new_key][i]
+                                index = i
+                                break
+                        for i in range(len(nodes[child_key])):
+                            if nodes[child_key][i].parent == child.parent:
+                                child_index = i if i > 0 else None
+                                break
+                        out = f"\t\"{new_key}{'_' + str(index) if index is not None else '' }\" -> " \
+                              f"\"{child.root.key if isinstance(child, AST) else child.key}" \
+                              f"{'_' + str(child_index) if child_index is not None else ''}\";\n"
+                        new_out += out
+                        if not in_func:
+                            f.write(out)
+            if in_func:
+                new_out = new_out.replace('\t', '\t\t')
+                f.write(new_out)
+                f.write("\t}\n")
             f.write("}")
 
     def get_str(self):
@@ -729,7 +818,7 @@ class AST:
         string version of the root
         :return: str
         """
-        return self.root.key + '\t' + ':' + '\t' + str(self.root.value)
+        return f"{self.root.key} : {self.root.value if self.root.value is not None else 'NaN'}"
 
     def get_dot(self):
         """
@@ -1016,6 +1105,8 @@ class PrintfAST(AST):
     def handle(self):
         warnings = []
         evaluate = True
+        for child in self.children:
+            child.parent = self
         # ඞ
         # replace all the arguments
         for i in range(len(self.args)):
@@ -2278,11 +2369,23 @@ class BreakAST(InstrAST):
 
     def mips(self, registers: Registers):
         parent = self.parent
-        while True:
+        found_last = False
+        while parent is not None:
             if isinstance(parent, While_loopAST):
                 break
             parent = parent.parent
-        end_while_register = parent.end_while
+        if isinstance(parent, While_loopAST):
+            end_while_register = parent.end_while
+        else:
+            # search for the last if/else in the switch
+            for child in parent.parent.children:
+                if not isinstance(child, If_CondAST) and not isinstance(child, Else_CondAST):
+                    found_last = True
+                    end_while_register = child.end_register
+                    break
+            if not found_last:
+                raise Exception("Break outside of a loop or switch")
+
         out = f"\tj end_while_{end_while_register}\n"
         return out, "", []
 
