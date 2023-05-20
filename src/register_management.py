@@ -78,6 +78,8 @@ class returnManager(Manager):
         # check if the registers are in use
         # if v0 not in use, replace object of register v0 with in_object
         # if v1 not in use, replace object of register v1 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
@@ -142,6 +144,8 @@ class argumentManager(Manager):
         # if a1 not in use, replace object of register a1 with in_object
         # if a2 not in use, replace object of register a2 with in_object
         # if a3 not in use, replace object of register a3 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
@@ -214,6 +218,8 @@ class temporaryManager(Manager):
         # if t5 not in use, replace object of register t5 with in_object
         # if t6 not in use, replace object of register t6 with in_object
         # if t7 not in use, replace object of register t7 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
@@ -287,6 +293,8 @@ class savedManager(Manager):
         # if s5 not in use, replace object of register s5 with in_object
         # if s6 not in use, replace object of register s6 with in_object
         # if s7 not in use, replace object of register s7 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
@@ -350,6 +358,8 @@ class reservedManager(Manager):
         # check if the registers are in use
         # if k0 not in use, replace object of register k0 with in_object
         # if k1 not in use, replace object of register k1 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
@@ -413,6 +423,8 @@ class floatManager(Manager):
         # check if the registers are in use
         # if f0 not in use, replace object of register f0 with in_object
         # if f1 not in use, replace object of register f1 with in_object
+        if self.search(in_object) is not None:
+            return
         tempHead = self.head
         free = False
         while tempHead is not None:
