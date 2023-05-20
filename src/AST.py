@@ -1481,6 +1481,7 @@ class PrintfAST(AST):
     def mips(self, registers: Registers):
         out_local = ""
         out_global = ""
+        out_list = ['v0']
         list_format = self.format(registers)
         registers.search(self.root)
         self.register = self.root.register
@@ -1510,13 +1511,18 @@ class PrintfAST(AST):
                 out_local += "\tli $v0, 11\n"
                 out_local += "\tla $a0, 0x0A\n"
                 out_local += "\tsyscall\n"
+                if 'a0' not in out_list:
+                    out_list.append('a0')
                 continue
             if isinstance(list_format[i], Register):
-                out_local += f"\tmove $a0, ${list_format[i].name}\n"
                 # get register type
                 if list_format[i].name[0] == 'f':
+                    out_local += f"\tmov.s $f12, ${list_format[i].name}\n"
                     out_local += "\tli $v0, 2\n"
                 else:
+                    out_local += f"\tmove $a0, ${list_format[i].name}\n"
+                    if 'a0' not in out_list:
+                        out_list.append('a0')
                     # check a type of variable according to format
                     # keep everything in-between the format specifiers too
                     format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
@@ -1531,6 +1537,8 @@ class PrintfAST(AST):
                 out_local += f"\tli $a0, {list_format[i]}\n"
                 out_local += "\tli $v0, 1\n"
                 out_local += "\tsyscall\n"
+                if 'a0' not in out_list:
+                    out_list.append('a0')
             # temp fix for floats
             elif self.getType(list_format[i]) == 1: # if the type is a float
                 registers.floatManager.LRU(self.root)
@@ -1539,16 +1547,20 @@ class PrintfAST(AST):
                 out_local += f"\tmov.s $f12, ${self.register.name}\n"
                 out_local += "\tli $v0, 2\n"
                 out_local += "\tsyscall\n"
+                if 'f12' not in out_list:
+                    out_list.append('f12')
             elif self.getType(list_format[i]) == 2: # if the type is a string/char
                 out_local += f"\tla $a0, {registers.globalObjects.data[0][list_format[i]]}\n"
                 out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
+                if 'a0' not in out_list:
+                    out_list.append('a0')
                 # ඞ
-        out_list = [registers.argumentManager.head.name]
-        self.register = registers.argumentManager.head
-        self.register.object = self.root
-        if self.root.register is not None:
-            out_list.append(self.root.register.name)
+        # out_list = [registers.argumentManager.head.name]
+        # self.register = registers.argumentManager.head
+        # self.register.object = self.root
+        # if self.root.register is not None:
+        #     out_list.append(self.root.register.name)
         return out_local, out_global, out_list
 
 
