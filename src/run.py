@@ -9,7 +9,7 @@ import argparse
 import Dot
 
 def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False,
-        execute_with: str = None, disclaimer: bool = True, silent: bool = False):
+        execute_with: str = None, disclaimer: bool = True, silent: bool = False, visualise: bool = False):
     for filename in filenames:
         try:
             # code in blue
@@ -43,9 +43,9 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # print warnings if there are any warnings and no_warning is false
             if not no_warning and not silent:
                 visitor.warn()
-            # dot = Dot.dot(ast, "../Output/" + filename + ".dot")
-            # dot.connect()
-            # ast.dot_language(filename, visitor.symbol_table)
+            # create dot file
+            if visualise:
+                ast.dot_language(filename, visitor.symbol_table)
             # generator = LLVM(ast,  "../Output/" + filename + ".ll")
             # generator.convert()
             # generator.execute()
@@ -82,24 +82,28 @@ def main():
     parser.add_argument('-s', '--silent', action='store_true', help='this flag will not print the output of the program')
     # disclaimer
     parser.add_argument('-nd', '--no_disclaimer', action='store_true', help='this flag will not print the disclaimer')
-
+    # visualise
+    parser.add_argument('-vs', '--visualise', action='store_true', help='this flag will create a dot file and a png file')
     # try:
     args = parser.parse_args()
     filenames = args.files if args.files is not None else []
     if args.files is not None:
         run(directory=args.directory, file_type=args.type, filenames=args.files, verbose=args.verbose,
-            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer,
+            silent=args.silent, visualise=args.visualise)
     elif args.index is not None:
         files = os.listdir(args.directory)
         files_one = [files[int(args.index) - 1][:len(files[int(args.index) - 1]) - len(args.type)]]
         run(directory=args.directory, file_type=args.type, filenames=files_one, verbose=args.verbose,
-            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer,
+            silent=args.silent, visualise=args.visualise)
     else:
         for file in os.listdir(args.directory):
             if file.endswith(args.type):
                 filenames.append(file[:len(file) - len(args.type)])
         run(directory=args.directory, file_type=args.type, filenames=filenames, verbose=args.verbose,
-            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer, silent=args.silent)
+            no_warning=args.no_warning, execute_with=args.execute_with, disclaimer=not args.no_disclaimer,
+            silent=args.silent, visualise=args.visualise)
     expected_outputs = []
     actual_outputs = []
     # for filename in filenames:
