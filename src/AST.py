@@ -1512,13 +1512,14 @@ class PrintfAST(AST):
                     out_list.append('a0')
                 continue
             if isinstance(list_format[i], Register):
-                out_local += f"\tmove $a0, ${list_format[i].name}\n"
-                if 'a0' not in out_list:
-                    out_list.append('a0')
                 # get register type
                 if list_format[i].name[0] == 'f':
+                    out_local += f"\tmov.s $f12, ${list_format[i].name}\n"
                     out_local += "\tli $v0, 2\n"
                 else:
+                    out_local += f"\tmove $a0, ${list_format[i].name}\n"
+                    if 'a0' not in out_list:
+                        out_list.append('a0')
                     # check a type of variable according to format
                     # keep everything in-between the format specifiers too
                     format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
