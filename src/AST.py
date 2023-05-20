@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import re
@@ -720,13 +721,15 @@ class AST:
             #     f.write(string)
 
             # get all the nodes via DFS
-            not_visited = self.children
+            not_visited = copy.copy(self.children)
             visited = []
             while len(not_visited) > 0:
                 current = not_visited.pop()
                 visited.append(current)
                 if isinstance(current, Node):
                     continue
+                if isinstance(current, FuncScopeAST) or isinstance(current, Scope_AST):
+                    current.children.reverse()
                 for child in current.children:
                     if child is not None:
                         not_visited.append(child)
@@ -743,7 +746,7 @@ class AST:
                     new_key = node.root.key
                 if new_key not in nodes.keys():
                     nodes[new_key] = [node]
-                    if isinstance(node, InstrAST) or isinstance(node, PrintfAST) or isinstance(node, FuncDefnAST):
+                    if (isinstance(node, InstrAST) and not isinstance(node, ReturnInstr)) or isinstance(node, FuncDefnAST):
                         continue
                     if isinstance(node, Node):
                         out = f"\t\"{new_key}\" [label=\"{node.value if node.value is not None else new_key}\"];\n"
@@ -751,7 +754,7 @@ class AST:
                         out = f"\t\"{new_key}\" [label=\"{node.root.value if node.root.value is not None else new_key}\"];\n"
                 else:
                     nodes[new_key].append(node)
-                    if isinstance(node, InstrAST) or isinstance(node, PrintfAST) or isinstance(node, FuncDefnAST):
+                    if isinstance(node, InstrAST) or isinstance(node, FuncDefnAST):
                         continue
                     if isinstance(node, Node):
                         out = f"\t\"{new_key}_{str(len(nodes[new_key]) - 1)}\" [label=\"{node.value if node.value is not None else new_key}\"];\n"
@@ -793,9 +796,9 @@ class AST:
                         for i in range(len(nodes[new_key])):
                             if isinstance(nodes[new_key][i], Node):
                                 continue
-                            if child in nodes[new_key][i].children:
+                            if nodes[new_key][i] == child.parent:
                                 # child = nodes[new_key][i]
-                                index = i
+                                index = i if i > 0 else None
                                 break
                         for i in range(len(nodes[child_key])):
                             if nodes[child_key][i].parent == child.parent:
@@ -1541,7 +1544,7 @@ class PrintfAST(AST):
                 registers.floatManager.LRU(self.root)
                 self.register = self.root.register
                 out_local += f"\tlwc1 ${self.register.name}, {registers.globalObjects.data[1][list_format[i]]}\n"
-                # out_local += f"\tmov.s $a0, $f12\n"
+                out_local += f"\tmov.s $f12, ${self.register.name}\n"
                 out_local += "\tli $v0, 2\n"
                 out_local += "\tsyscall\n"
                 if 'f12' not in out_list:
@@ -2942,13 +2945,12 @@ class ScanfAST(AST):
         out_reg = []
         format_ = self.format()
         for var in self.variables:
-            if registers.temporaryManager.search(var) is not None:
-                var.register = registers.temporaryManager.search(var)
-            # assign registers to variables
-            if var.type == "float":
-                registers.floatManager.LRU(var)
-            else:
-                registers.temporaryManager.LRU(var)
+            if registers.temporaryManager.search(var) is None:
+                # assign registers to variables
+                if var.type == "float":
+                    registers.floatManager.LRU(var)
+                else:
+                    registers.temporaryManager.LRU(var)
             out_reg.append(var.register)
 
         # if self.format_string not in registers.globalObjects.data[0].keys():
