@@ -3261,9 +3261,6 @@ class SwitchScopeAST(Scope_AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, condition)
 
-    def mips(self, registers: Registers):
-        pass
-
 
 
 class CaseAST(Scope_AST):
@@ -3273,7 +3270,19 @@ class CaseAST(Scope_AST):
         self.index = 0
 
     def mips(self, registers: Registers):
-        pass
+        out_local = out_global = ""
+        out_list = []
+        # case
+        self.index = registers.globalObjects.index
+        registers.globalObjects.index += 1
+        out_local += f"case_{self.index}:\n"
+        for child in self.children:
+            output = child.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+            out_list += output[2]
+        out_local += f"\tj end_switch_{self.parent.end_label}\n"
+        return out_local, out_global, out_list
 
 
 class DefaultAST(CaseAST):
@@ -3282,4 +3291,14 @@ class DefaultAST(CaseAST):
         super().__init__(root, children, parent, condition)
 
     def mips(self, registers: Registers):
-        pass
+        out_local = out_global = ""
+        out_list = []
+        # default
+        out_local += f"default_{self.index}:\n"
+        for child in self.children:
+            output = child.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+            out_list += output[2]
+        out_local += f"\tj end_switch_{self.parent.end_label}\n"
+        return out_local, out_global, out_list
