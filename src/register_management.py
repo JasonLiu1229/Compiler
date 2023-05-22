@@ -65,6 +65,9 @@ class Manager:  # Manager class for register management using LRU
     def clear(self):
         return
 
+    def shuffle(self):
+        return
+
 
 class returnManager(Manager):
 
