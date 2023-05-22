@@ -1055,6 +1055,8 @@ class ExprAST(AST):
         node = Node("", None, self.parent)
         if self.children[0].key == "var" or self.children[1].key == "var":
             return self
+        if self.children[0].value is None or self.children[1].value is None:
+            return self
         if self.root.value == '+':
             node = self.children[0] + self.children[1]
             node_type = checkType(str(node.value))
@@ -2929,11 +2931,19 @@ class ReturnInstr(InstrAST):
     def mips(self, registers: Registers):
         out = ""
         child = self.children[0]
-        if isinstance(child, Node):
+        if isinstance(child, VarNode):
+            if child.register is None:
+                registers.temporaryManager.LRU(child)
+            out += f"\tlw ${child.register.name}, {child.key if child.key != 'var' else child.value}\n"
+            out += f"\tmove $v0, ${child.register.name}\n"
+            out += "\tjr $ra\n"
+        else:
             out += f"\tli $v0, {child.value}\n"
-        elif isinstance(child, VarNode):
-            entry, length = self.getEntry(child)
-            out += f"\tlw $v0, {entry.offset}($sp)\n"
+            out += "\tjr $ra\n"
+                # out += "\tli $v0, 17\n\tsyscall\n"
+        # elif isinstance(child, VarNode):
+        #     entry, length = self.getEntry(child)
+        #     out += f"\tlw $v0, {entry.offset}($sp)\n"
         return out, "", ['v0']
 
 class ScanfAST(AST):
