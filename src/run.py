@@ -57,13 +57,13 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             if execute_with is not None:
                 generator.execute(execute_with, disclaimer, silent)
             # code in green if no errors
-            with open(f"../MIPS_output/logs/{filename}.log.txt", "a") as f:
-                f.write(f"Finished execution with exit code 0\n")
-            print("\033[92m>>> Finished execution with exit code 0\033[0m\n")
+            # with open(f"../MIPS_output/logs/{filename}.log.txt", f"{'w' if disclaimer else 'a'}") as f:
+            #     f.write(f"Finished execution with exit code 0\n")
+            print("\033[92m\n>>> Finished execution with exit code 0\033[0m\n")
         except Exception as e:
             # code in red if error
             # log the error
-            print(f'\033[91m>>> Error: {e}\033[0m\n')
+            print(f'\033[91m\n>>> Error: {e}\033[0m\n')
             with open(f"../MIPS_output/logs/{filename}.log.txt", "w") as f:
                 f.write(f"Error: {e}\n")
             continue

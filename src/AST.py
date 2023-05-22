@@ -542,17 +542,17 @@ class AST:
                 out_local += f"\tsw ${left_register}, {left_node.value}\n"
         # shuffle used registers
         if left_register is not None:
-            if left_register.startwith('t'):
+            if left_register.startswith('t'):
                 registers.temporaryManager.shuffle_name(left_register)
             else:
                 registers.floatManager.shuffle_name(left_register)
         if right_register is not None:
-            if right_register.startwith('t'):
+            if right_register.startswith('t'):
                 registers.temporaryManager.shuffle_name(right_register)
             else:
                 registers.floatManager.shuffle_name(right_register)
         if new_register is not None:
-            if new_register.startwith('t'):
+            if new_register.startswith('t'):
                 registers.temporaryManager.shuffle_name(new_register)
             else:
                 registers.floatManager.shuffle_name(new_register)
@@ -1863,6 +1863,10 @@ class FactorAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
+        if self.children[0].key == "var" or self.children[1].key == "var":
+            return self
+        if self.children[0].value is None or self.children[1].value is None:
+            return self
         if self.root.value == '-':
             self.children[0].value = -self.children[0].value
             return self.children[0]
@@ -2697,20 +2701,36 @@ class FuncCallAST(AST):
         out = ""
         # load the values of the arguments on the data block
         entry = None
-        current = self.symbolTable.parent
+        current = None
+        temp_parent = self.parent
+        # find nearest table
+        while temp_parent is not None:
+            current = temp_parent.symbolTable
+            if current is not None:
+                break
+            temp_parent = temp_parent.parent
+        if current is None:
+            raise Exception("No symbol table found")
+        # go up the table ladder
+        while current.parent is not None:
+            current = current.parent
         while True:
             for i in current.table:
-                if isinstance(i.object, FuncDefnAST) or isinstance(i.object, FuncDeclAST):
+                if i.object.key == self.root.key:
                     entry = i
                     break
             if current.parent is None:
                 break
             current = current.parent
         count = 0
-        parameters_org = entry.object.parameters
+        parameters_org = entry.parameters
         for arg in self.args:
             if arg.register is None:
-                registers.savedManager.LRU(arg)
+                if isinstance(arg, AST):
+                    registers.savedManager.LRU(arg.root)
+                    arg.register = arg.root.register
+                else:
+                    registers.savedManager.LRU(arg)
             par_type = parameters_org[count].type
             if par_type == "float":
                 par_type = "flt_"
@@ -2718,9 +2738,14 @@ class FuncCallAST(AST):
                 par_type = "int_"
             elif par_type == "char":
                 par_type = "chr_"
-            out += f"sw{'c1' if arg.type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].key}\n"
+            out += f"sw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             count += 1
         out += f"jal {self.root.key}\n"
+        if self.register is None:
+            self.register = registers.temporaryManager.LRU(self.root)
+        new_node = Node(self.root.key, None)
+        new_node.register = self.register
+        self.parent.children[self.parent.children.index(self)] = new_node
         return out, "", []
 
 
@@ -3241,7 +3266,7 @@ class SwitchAST(AST):
         for case in self.cases:
             cases_cond_list.append(case.condition.mips(registers))
             cases_cond_list[count][0] += f"\tbeq ${compare_register}, ${case.condition.root.register.name}, case_{case.index}\n"
-            if compare_register.startwith('t'):
+            if compare_register.startswith('t'):
                 registers.temporaryManager.shuffle_name(compare_register)
             else:
                 registers.floatManager.shuffle_name(compare_register)
