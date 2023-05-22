@@ -57,6 +57,14 @@ class MIPS:
                 variables += f"\t{value}: .word {key}\n"
             for key, value in self.registers.globalObjects.data[3].items():
                 variables += f"\t{value}: .byte {key}\n"
+            for key in self.registers.globalObjects.uninitialized[0]: # char
+                variables += f"\t.align 0\n\t{key}: .space 1\n"
+            for key in self.registers.globalObjects.uninitialized[1]: # float
+                variables += f"\t.align 2\n\t{key}: .space 4\n"
+            for key in self.registers.globalObjects.uninitialized[2]: # int
+                variables += f"\t.align 2\n\t{key}: .space 4\n"
+            for key in self.registers.globalObjects.uninitialized[3]: # array
+                variables += f"\t{key}: .space 4\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)

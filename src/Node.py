@@ -195,13 +195,15 @@ class Node:
         # check if the value is already in a register
         registers.search(self)
         if self.register is not None:
-            return "", "", [self.register.name]
+            out_local += f"\tlw ${self.register.name}, {self.value}\n"
+            return out_local, "", [self.register.name]
         else:
             # load the value in a register
             registers.temporaryManager.LRU(self)
             if self.key == "var":
                 # variable is declared in the data section
-                out_local += f"\tla ${self.register.name}, {self.value}\n"
+                out_local += f"\tlw ${self.register.name}, {self.value}\n"
+                # out_local += f"\tla ${self.register.name}, {self.value}\n"
             else:
                 out_local += f"\tli ${self.register.name}, {self.value}\n"
             out_list.append(self.register.name)
