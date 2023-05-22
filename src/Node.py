@@ -202,7 +202,7 @@ class Node:
             registers.temporaryManager.LRU(self)
             if self.key == "var":
                 # variable is declared in the data section
-                out_local += f"\tlw ${self.register.name}, {self.value}\n"
+                out_local += f"\tlw{'c1' if self.key == 'float' else ''} ${self.register.name}, {self.value}\n"
                 # out_local += f"\tla ${self.register.name}, {self.value}\n"
             else:
                 out_local += f"\tli ${self.register.name}, {self.value}\n"

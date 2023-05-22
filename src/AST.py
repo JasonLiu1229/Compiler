@@ -3296,8 +3296,6 @@ class SwitchScopeAST(Scope_AST):
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, condition)
 
-
-
 class CaseAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
