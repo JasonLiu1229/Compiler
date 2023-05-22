@@ -1429,14 +1429,22 @@ class PrintfAST(AST):
                             # search for the variable in the registers
                             registers.search(temp_arg)
                             arg = temp_arg
-                            # if temp_arg.register is not None:
-                            #     arg = temp_arg.register
+                            if temp_arg.register is not None:
+                                arg = temp_arg.register
+                            else:
+                                arg = temp_arg.value
                         else:
                             arg = temp_arg.value
                     elif isinstance(temp_arg, SymbolEntry):
                         # search for the variable in the registers
-                        reg = registers.search(temp_arg.object)
+                        registers.search(temp_arg.object)
                         arg = temp_arg.object
+                    elif isinstance(temp_arg, FuncCallAST):
+                        arg = temp_arg.root
+                        if arg.register is not None:
+                            arg = arg.register
+                        else:
+                            arg = arg.value
                         # if reg is not None:
                         #     arg = Register(in_name=f"{reg}")
                     # if the format specifier is an integer
@@ -1536,6 +1544,8 @@ class PrintfAST(AST):
         for i in list_format:
             if isinstance(i, VarNode):
                 continue
+            if isinstance(i, Register):
+                continue
             if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
                     or isinstance(i, int):
                 continue
@@ -1556,14 +1566,15 @@ class PrintfAST(AST):
             # change so it call the right print function
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
-            if isinstance(list_format[i], str) and list_format[i] == '\\0A':
+            elif isinstance(list_format[i], str) and list_format[i].startswith('\\'):
+                ascii_string = list_format[i].replace('\\', '')
                 out_local += "\tli $v0, 11\n"
-                out_local += "\tla $a0, 0x0A\n"
+                out_local += f"\tla $a0, 0x{ascii_string}\n"
                 out_local += "\tsyscall\n"
                 if 'a0' not in out_list:
                     out_list.append('a0')
                 continue
-            if isinstance(list_format[i], Register):
+            elif isinstance(list_format[i], Register):
                 # get register type
                 if list_format[i].name[0] == 'f':
                     out_local += f"\tmov.s $f12, ${list_format[i].name}\n"
@@ -1582,7 +1593,7 @@ class PrintfAST(AST):
                         out_local += "\tli $v0, 11\n"
 
                 out_local += "\tsyscall\n"
-            if self.getType(list_format[i]) == 0: # if the type is an integer
+            elif self.getType(list_format[i]) == 0: # if the type is an integer
                 out_local += f"\tli $a0, {list_format[i]}\n"
                 out_local += "\tli $v0, 1\n"
                 out_local += "\tsyscall\n"
