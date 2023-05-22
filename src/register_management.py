@@ -87,6 +87,14 @@ class Manager:  # Manager class for register management using LRU
             self.tail = in_reg
             in_reg.next = None
 
+    def shuffle_name(self, in_reg_name: str):
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == in_reg_name:
+                self.shuffle(tempHead)
+                break
+            tempHead = tempHead.next
+
 class returnManager(Manager):
 
     def __init__(self) -> None:

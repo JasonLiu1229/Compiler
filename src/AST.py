@@ -540,6 +540,22 @@ class AST:
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
             if isinstance(left_node, Node) and left_node.key == "var":
                 out_local += f"\tsw ${left_register}, {left_node.value}\n"
+        # shuffle used registers
+        if left_register is not None:
+            if left_register.startwith('t'):
+                registers.temporaryManager.shuffle_name(left_register)
+            else:
+                registers.floatManager.shuffle_name(left_register)
+        if right_register is not None:
+            if right_register.startwith('t'):
+                registers.temporaryManager.shuffle_name(right_register)
+            else:
+                registers.floatManager.shuffle_name(right_register)
+        if new_register is not None:
+            if new_register.startwith('t'):
+                registers.temporaryManager.shuffle_name(new_register)
+            else:
+                registers.floatManager.shuffle_name(new_register)
         current.parent.children[current.parent.children.index(current)] = new_node
         return out_local, out_global, [_ for _ in out_list if _ is not None]
 
@@ -3194,21 +3210,76 @@ class SwitchAST(AST):
         self.default = None
         self.condition = None
         self.symbolTable = SymbolTable()
+        self.index = 0
+        self.end_label = 0
 
+    def mips(self, registers: Registers):
+        out_local = out_global = ""
+        out_list = []
+        # condition
+        output = self.condition.mips(registers)
+        out_local += output[0]
+        out_global += output[1]
+        out_list += output[2]
+        # switch
+        compare_register = self.condition.root.register.name
+        cases_list = []
+        cases_cond_list = []
+        count = 0
+        self.end_label = registers.globalObjects.index
+        registers.globalObjects.index += 1
+        for case in self.cases:
+            cases_cond_list.append(case.condition.mips(registers))
+            cases_cond_list[count][0] += f"\tbeq ${compare_register}, ${case.condition.root.register.name}, case_{case.index}\n"
+            if compare_register.startwith('t'):
+                registers.temporaryManager.shuffle_name(compare_register)
+            else:
+                registers.floatManager.shuffle_name(compare_register)
+            cases_list.append(case.mips(registers))
+            count += 1
+        if self.has_default:
+            cases_list.append(self.default.mips(registers))
+        # make the switch
+        self.index = registers.globalObjects.index
+        registers.globalObjects.index += 1
+        out_local += f"switch_{self.index}:\n"
+        for case in cases_cond_list:
+            out_local += case[0]
+            out_global += case[1]
+            out_list += case[2]
+        for case in cases_list:
+            out_local += case[0]
+            out_global += case[1]
+            out_list += case[2]
+        out_local += f"end_switch_{self.end_label}\n:"
+        # filter duplicates from the list
+        out_list = list(dict.fromkeys(out_list))
+        return out_local, out_global, out_list
 
 class SwitchScopeAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, condition)
 
+    def mips(self, registers: Registers):
+        pass
+
+
 
 class CaseAST(Scope_AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, condition)
+        self.index = 0
+
+    def mips(self, registers: Registers):
+        pass
 
 
 class DefaultAST(CaseAST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, condition: AST | None = None):
         super().__init__(root, children, parent, condition)
+
+    def mips(self, registers: Registers):
+        pass

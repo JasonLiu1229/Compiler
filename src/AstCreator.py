@@ -258,6 +258,10 @@ class AstCreator(MathVisitor):
                     # child.cases.pop(0)
                     child.cases.reverse()
                     child.children = child.cases
+                    if isinstance(child.cases[-1], DefaultAST):
+                        child.default = child.cases[-1]
+                        child.has_default = True
+                        child.cases = child.cases[:-1]
                     base.children[last_token: index] = []
                     index = base.children.index(child)
 
