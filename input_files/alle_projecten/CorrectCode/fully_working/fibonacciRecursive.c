@@ -10,7 +10,7 @@ int f(int a) {
 	}
 }
 
-// Recursive fibonnaci
+// Recursive Fibonacci
 int main(){
 	int n;
     printf("Enter a number:");
