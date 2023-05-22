@@ -2677,53 +2677,31 @@ class FuncCallAST(AST):
 
     def mips(self, registers: Registers):
         out = ""
-        # arguments
-        # check if one of the arguments is a float, check if one of the arguments is a int
-        if len(self.args) > 0:
-            float_arg = False
-            temp_arg = False
-            for arg in self.args:
-                if isinstance(arg, Node):
-                    if arg.key == "float" and not isinstance(arg.register, Register):
-                        float_arg = True
-                    elif not isinstance(arg.register, Register):
-                        temp_arg = True
-                else:
-                    if arg.type == "float" and not isinstance(arg.register, Register):
-                        float_arg = True
-                    elif not isinstance(arg.register, Register):
-                        temp_arg = True
-            # make temporary registers
-            temp_ = Node("temp", None)
-            temp_float = Node("temp_float", None)
-            if temp_arg:
-                registers.temporaryManager.LRU(temp_)
-            if float_arg:
-                registers.floatManager.LRU(temp_float)
-
-
-            out += f"addi $sp, $sp, -{len(self.args) * 4}\n"
-            count = 0
-            for arg in self.args:
-                type_ = None
-                if isinstance(arg, Node):
-                    type_ = arg.key
-                elif isinstance(arg, VarNode):
-                    type_ = arg.type
-                # check if the argument has a register
-                if isinstance(arg.register, Register):
-                    out += f"sw{'c1' if type_ == 'float' else ''} {arg.register.name}, {count * 4}($sp)\n"
-                else:
-                    out += f"sw{'c1' if type_ == 'float' else ''} ${temp_.register.name if type_ != 'float' else temp_float.register.name}, {count * 4}($sp)\n"
-                count += 1
-            for i in range(0, len(self.args)):
-                self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
-            registers.globalObjects.stackSize += len(self.args) * 4
-            # end string
-            if float_arg:
-                registers.floatManager.LRU_delete(temp_float.register.name)
-            elif temp_arg:
-                registers.temporaryManager.LRU_delete(temp_.register.name)
+        # load the values of the arguments on the data block
+        entry = None
+        current = self.symbolTable.parent
+        while True:
+            for i in current.table:
+                if isinstance(i.object, FuncDefnAST) or isinstance(i.object, FuncDeclAST):
+                    entry = i
+                    break
+            if current.parent is None:
+                break
+            current = current.parent
+        count = 0
+        parameters_org = entry.object.parameters
+        for arg in self.args:
+            if arg.register is None:
+                registers.savedManager.LRU(arg)
+            par_type = parameters_org[count].type
+            if par_type == "float":
+                par_type = "flt_"
+            elif par_type == "int":
+                par_type = "int_"
+            elif par_type == "char":
+                par_type = "chr_"
+            out += f"sw{'c1' if arg.type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].key}\n"
+            count += 1
         out += f"jal {self.root.key}\n"
         return out, "", []
 
@@ -2940,7 +2918,7 @@ class ReturnInstr(InstrAST):
         elif isinstance(child, VarNode):
             entry, length = self.getEntry(child)
             out += f"\tlw $v0, {entry.offset}($sp)\n"
-        return out, "", []
+        return out, "", ['v0']
 
 class ScanfAST(AST):
 
