@@ -26,7 +26,7 @@ printf_arg      :   rvar
                 |   STRING;
 
 comment         :   com=COMMENT
-                |   lcom=LCOMMENT
+                |   com=LCOMMENT
                 ;
 
 scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? (vars+=scanf_arg) ',')* ADDR? vars+=scanf_arg ')'
