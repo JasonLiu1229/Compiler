@@ -1361,7 +1361,7 @@ class PrintfAST(AST):
         # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
         # we ignore the %s specifier because it is not used in the format string
         # keep everything in-between the format specifiers too
-        format_ = re.split(r'(%[0-9]*[discf])|(\\0A)|(\\09)', self.format_string)
+        format_ = re.split(r'(%[0-9]*[discf])|(\\[0-9A-Fa-f]{2})', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
@@ -1546,7 +1546,7 @@ class PrintfAST(AST):
                 continue
             if isinstance(i, Register):
                 continue
-            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A' or i == '\\09') \
+            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == r"\\[0-9A-Fa-f]{2}") \
                     or isinstance(i, int):
                 continue
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
@@ -1585,7 +1585,7 @@ class PrintfAST(AST):
                         out_list.append('a0')
                     # check a type of variable according to format
                     # keep everything in-between the format specifiers too
-                    format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
+                    format_ = re.split(r'(%[0-9]*[discf])|(\\[0-9A-Fa-f]{2})', self.format_string)
                     format_ = [x for x in format_ if x is not None and x != '']
                     if format_[i].endswith('d'): # format for integer
                         out_local += "\tli $v0, 1\n"
