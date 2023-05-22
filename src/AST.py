@@ -1361,7 +1361,7 @@ class PrintfAST(AST):
         # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
         # we ignore the %s specifier because it is not used in the format string
         # keep everything in-between the format specifiers too
-        format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
+        format_ = re.split(r'(%[0-9]*[discf])|(\\0A)|(\\09)', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
@@ -1546,7 +1546,7 @@ class PrintfAST(AST):
                 continue
             if isinstance(i, Register):
                 continue
-            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A') \
+            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == '\\0A' or i == '\\09') \
                     or isinstance(i, int):
                 continue
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
@@ -2665,6 +2665,16 @@ class FuncDefnAST(AST):
         # Begin
         # Parameters
         # TODO: Parameters
+        for param in self.params:
+            if param.type == "float":
+                if f"flt_{param.key}" not in registers.globalObjects.data[1].values():
+                    registers.globalObjects.data[1][0.0] = f"flt_{param.key}"
+            elif param.type == "int":
+                if f"int_{param.key}" not in registers.globalObjects.data[2].values():
+                    registers.globalObjects.data[2][0] = f"int_{param.key}"
+            elif param.type == "char":
+                if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
+                    registers.globalObjects.data[4][0] = f"chr_{param.key}"
         # if len(self.params) > 0:
         #     count = 0
         #     for param in self.params:
@@ -2974,7 +2984,19 @@ class ReturnInstr(InstrAST):
             out += f"\tmove $v0, ${child.register.name}\n"
             out += "\tjr $ra\n"
         else:
-            out += f"\tli $v0, {child.value}\n"
+            return_value = None
+            if child.key == 'var':
+                type_ = None
+                if child.type == "int":
+                    type_ = "int"
+                elif child.type == "char":
+                    type_ = "chr"
+                elif child.type == "float":
+                    type_ = "flt"
+                return_value = f"{type_}_{child.value}"
+            else:
+                return_value = child.value
+            out += f"\tli $v0, {return_value}\n"
             out += "\tjr $ra\n"
                 # out += "\tli $v0, 17\n\tsyscall\n"
         # elif isinstance(child, VarNode):
@@ -3346,3 +3368,11 @@ class DefaultAST(CaseAST):
             out_list += output[2]
         out_local += f"\tj end_switch_{self.parent.end_label}\n"
         return out_local, out_global, out_list
+
+class CommentAST(AST):
+
+    def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
+        super().__init__(root, children, parent, symbolTable)
+
+    def mips(self, registers: Registers):
+        return "", "", []

@@ -1,6 +1,6 @@
 grammar Math;
 
-math            :   incl_stat*  (instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
+math            :   comment* incl_stat*  (comment | instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
                 ;
 
 instr           :   declr ((';')+ | DELIM)
@@ -24,6 +24,10 @@ printf_arg      :   rvar
                 |   comp
                 |   expr
                 |   STRING;
+
+comment         :   com=COMMENT
+                |   lcom=LCOMMENT
+                ;
 
 scanf           :   SCANF '(' (format_string=SCANF_STRING | format_string=STRING) ',' (ADDR? (vars+=scanf_arg) ',')* ADDR? vars+=scanf_arg ')'
                 ;
@@ -260,5 +264,5 @@ LN              :   [ \t\n]+ -> skip ; // skip spaces, tabs, newlines
 DELIM           :   [;]+;
 // Comments
 // Ref : https://stackoverflow.com/a/23414078
-COMMENT         :   '/*' .*? '*/' -> channel(HIDDEN);
-LCOMMENT        :   '//' ~[\r\n]* -> channel(HIDDEN);
+COMMENT         :   '/*' .*? '*/';
+LCOMMENT        :   '//' ~[\r\n]*;
