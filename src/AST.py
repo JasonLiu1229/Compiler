@@ -403,10 +403,20 @@ class AST:
                 else:
                     right_register = right_node.register.name
 
+        if left_type is None and left_register is not None:
+            if left_register.startswith('f'):
+                left_type = 'float'
+            else:
+                left_type = 'int'
+        if right_type is None and right_register is not None:
+            if right_register.startswith('f'):
+                right_type = 'float'
+            else:
+                right_type = 'int'
         # create new node
         new_node = Node("", None)
         if new_node.register is None:
-            if right_type == 'float' or left_type == 'float':
+            if (right_type == 'float' or left_type == 'float') and token not in ['<', '>', '==', '!=', '>=', '<=']:
                 registers.floatManager.LRU(new_node)
             else:
                 registers.temporaryManager.LRU(new_node)
@@ -415,7 +425,7 @@ class AST:
             # assign new register
             new_node = Node("", None)
             if new_node.register is None:
-                if right_type == 'float' or left_type == 'float':
+                if (right_type == 'float' or left_type == 'float') and token not in ['<', '>', '==', '!=', '>=', '<=']:
                     registers.floatManager.LRU(new_node)
                 else:
                     registers.temporaryManager.LRU(new_node)
@@ -463,6 +473,11 @@ class AST:
         out_list.append(left_register)
         out_list.append(right_register)
         out_list.append(new_register)
+        if left_type == "float" or right_type == "float":
+            temp_node = Node("", 1)
+            registers.temporaryManager.LRU(temp_node)
+            temp_save = temp_node.register.name
+
         if right_node is not None:
             # add commentaries
             if left_node.value is not None and left_node.key != "":
@@ -477,8 +492,8 @@ class AST:
                     out_local += f"${right_register} --> ${new_register}\n"
             if token == '<':
                 if left_type == 'float' or right_type == 'float':
-                    out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
                     out_local += f"\tslt ${new_register}, ${left_register}, ${right_register}\n"
@@ -486,13 +501,13 @@ class AST:
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
                 else:
                     out_local += f"\tslt ${new_register}, ${right_register}, ${left_register}\n"
             elif token == '==':
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
                     out_local += f"\tseq ${new_register}, ${left_register}, ${right_register}\n"
@@ -500,13 +515,13 @@ class AST:
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
                 else:
                     out_local += f"\tsne ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '<=':
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $1\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
                     out_local += f"\tmovf ${new_register}, $zero\n"
                 else:
                     out_local += f"\tsle ${new_register}, ${left_register}, ${right_register}\n"
@@ -514,7 +529,7 @@ class AST:
                 if left_type == 'float' or right_type == 'float':
                     out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
                     out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, $1\n"
+                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
                 else:
                     out_local += f"\tsge ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '&&':
@@ -1361,7 +1376,7 @@ class PrintfAST(AST):
         # format string regex: ('%' ('-' | '+')? (INT)? [discf])*
         # we ignore the %s specifier because it is not used in the format string
         # keep everything in-between the format specifiers too
-        format_ = re.split(r'(%[0-9]*[discf])|(\\[0-9A-Fa-f]{2})', self.format_string)
+        format_ = re.split(r'(%[0-9]*[discf])|(\\0A)', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
         # loop through list and check for valid format specifiers
         counter = -1
@@ -1546,8 +1561,10 @@ class PrintfAST(AST):
                 continue
             if isinstance(i, Register):
                 continue
-            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or i == r"\\[0-9A-Fa-f]{2}") \
-                    or isinstance(i, int):
+            if i in registers.globalObjects.data[0].keys() or (isinstance(i, str) and (len(i) == 0) or isinstance(i, int)):
+                continue
+            # if match regex r"\\[0-9A-Fa-f]{2}", then skip
+            if isinstance(i, str) and re.match(r"\\[0-9A-Fa-f]{2}", i):
                 continue
             elif isinstance(i, float) and i not in registers.globalObjects.data[1].keys():
                 # cast the float to be representable in mips

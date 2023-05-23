@@ -235,6 +235,7 @@ class AstCreator(MathVisitor):
                         base.children[index-1:index] = []
                         index -= 1
                 elif isinstance(child, CommentAST):
+                    index += 1
                     continue
                 elif isinstance(child, ArrayDeclAST):
                     child.children = base.children[index - 1 - len(child.values): index - 1]
@@ -650,17 +651,6 @@ class AstCreator(MathVisitor):
             if symbol_table is None:
                 raise RuntimeError("No symbol table found")
             temp_symbol = symbol_table
-            if isinstance(ast, ReturnInstr):
-                temp_parent = ast.parent
-                while temp_parent is not None:
-                    if isinstance(temp_parent, FuncDefnAST):
-                        if temp_parent.type == "void" and ast.root.value != "void" :
-                            raise AttributeError(f"void function '{temp_parent.root.key}' should not return a value")
-                        if temp_parent.type != "void" and ast.root.value == "void":
-                            raise AttributeError(f"non-void function '{temp_parent.root.key}' should return a value")
-                        break
-                    temp_parent = temp_parent.parent
-                continue
             if isinstance(ast, FuncCallAST):
                 # check whether function is in symbol table
                 temp_parent = ast
@@ -871,7 +861,7 @@ class AstCreator(MathVisitor):
                 temp_parent = ast.parent
                 evaluate = True
                 while temp_parent is not None:
-                    if isinstance(temp_parent, While_loopAST):
+                    if isinstance(temp_parent, While_loopAST) or isinstance(temp_parent, ReturnInstr):
                         evaluate = False
                         break
                     temp_parent = temp_parent.parent
@@ -937,13 +927,27 @@ class AstCreator(MathVisitor):
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                            if isinstance(matches[0].object, FuncParameter) or matches[0].object.value is None:
+                                ast.children[index].type = matches[0].type
                             if evaluate and not in_loop:
                                 ast.children[index] = copy.copy(matches[0].object)
                                 if isinstance(ast.children[index], FuncParameter):
                                     ast.children[index].parent = ast
                                     evaluate = False
+
                 if not handle:
                     continue
+            if isinstance(ast, ReturnInstr):
+                temp_parent = ast.parent
+                while temp_parent is not None:
+                    if isinstance(temp_parent, FuncDefnAST):
+                        if temp_parent.type == "void" and ast.root.value != "void" :
+                            raise AttributeError(f"void function '{temp_parent.root.key}' should not return a value")
+                        if temp_parent.type != "void" and ast.root.value == "void":
+                            raise AttributeError(f"non-void function '{temp_parent.root.key}' should return a value")
+                        break
+                    temp_parent = temp_parent.parent
+                continue
             if isinstance(ast, ScanfAST):
                 for var in ast.variables:
                     match , total = AST.getEntry(var)
@@ -1932,8 +1936,12 @@ class AstCreator(MathVisitor):
         return out
 
     def visitComment(self, ctx: MathParser.CommentContext):
-        out = CommentAST(Node("comment", None))
-        out.comment = ctx.com
+        out = CommentAST(Node("comment", ctx.com.text))
+        if ctx.com.text.startswith("//"):
+            out.comment = ctx.com.text[2:]
+        elif ctx.com.text.startswith("/*"):
+            out.comment = ctx.com.text[2:-2]
+        # out.comment = ctx.com.text
         return out
 
     @staticmethod
