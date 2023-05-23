@@ -3011,6 +3011,8 @@ class ReturnInstr(InstrAST):
                 elif child.type == "float":
                     type_ = "flt"
                 return_value = f"{type_}_{child.value}"
+            elif isinstance(child.register, Register):
+                return_value = child.register.name
             else:
                 return_value = child.value
             out += f"\tli $v0, {return_value}\n"
