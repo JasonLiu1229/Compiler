@@ -53,6 +53,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#comment.
+    def enterComment(self, ctx:MathParser.CommentContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#comment.
+    def exitComment(self, ctx:MathParser.CommentContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#scanf.
     def enterScanf(self, ctx:MathParser.ScanfContext):
         pass

@@ -34,6 +34,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#comment.
+    def visitComment(self, ctx:MathParser.CommentContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#scanf.
     def visitScanf(self, ctx:MathParser.ScanfContext):
         return self.visitChildren(ctx)
