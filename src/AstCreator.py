@@ -640,6 +640,8 @@ class AstCreator(MathVisitor):
         temp_symbol = None
         nodes = []
         for ast in list_ast:
+            if isinstance(ast, CommentAST):
+                continue
             temp_parent = ast.parent
             symbol_table = ast.symbolTable
             while symbol_table is None and temp_parent is not None:
