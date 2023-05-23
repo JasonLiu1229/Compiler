@@ -137,7 +137,7 @@ class AstCreator(MathVisitor):
                 isinstance(in_list[i], Scope_AST) or (isinstance(in_list[i], Node) and in_list[i].key == token) or \
                 isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
                 isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST) or \
-                isinstance(in_list[i], SwitchAST):
+                isinstance(in_list[i], SwitchAST) or isinstance(in_list[i], CommentAST):
                 return i
         return -1
 
@@ -150,7 +150,7 @@ class AstCreator(MathVisitor):
                     isinstance(in_list[i], FuncDeclAST) or isinstance(in_list[i], FuncDefnAST) or \
                     isinstance(in_list[i], DeclrAST) or isinstance(in_list[i], Scope_AST)\
                     or isinstance(in_list[i], ScanfAST) or isinstance(in_list[i], PrintfAST)\
-                    or isinstance(in_list[i], SwitchAST):
+                    or isinstance(in_list[i], SwitchAST) or isinstance(in_list[i], CommentAST):
                 return i
         return -1
 
@@ -235,6 +235,7 @@ class AstCreator(MathVisitor):
                         base.children[index-1:index] = []
                         index -= 1
                 elif isinstance(child, CommentAST):
+                    child.parent = base
                     index += 1
                     continue
                 elif isinstance(child, ArrayDeclAST):

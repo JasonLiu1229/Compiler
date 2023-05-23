@@ -633,6 +633,8 @@ class AST:
         if self.root.value is None:
             out[name] = []
             for child in self.children:
+                if isinstance(child, CommentAST):
+                    continue
                 out[name].append(child.save())
         else:
             out["children"] = [child.save() for child in self.children]
@@ -3410,3 +3412,7 @@ class CommentAST(AST):
         out_list = []
         out_local += f"# {self.comment}\n"
         return out_local, out_global, out_list
+
+    def save(self):
+        return None
+
