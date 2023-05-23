@@ -1,6 +1,6 @@
 grammar Math;
 
-math            :   comment* incl_stat*  (comment | instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
+math            :   (comment* incl_stat)*  (comment | instr | func_defn ((';')* | DELIM) | func_decl ((';')+ | DELIM) )* EOF
                 ;
 
 instr           :   declr ((';')+ | DELIM)
