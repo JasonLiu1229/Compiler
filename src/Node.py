@@ -196,7 +196,7 @@ class Node:
         # check if the value is already in a register
         registers.search(self)
         if self.register is not None:
-            out_local += f"\tlw ${self.register.name}, {self.value}\n"
+            out_local += f"\tlw{'c1' if self.register.name[0] == 'f' else ''} ${self.register.name}, {self.value}\n"
             return out_local, "", [self.register.name]
         else:
             # load the value in a register
@@ -440,7 +440,7 @@ class VarNode(Node):
             # load the address of the variable
             out_local += f"\tla ${self.register.name}, {self.value.key if not self.value.ptr else f'(${self.value.register.name})'}\n"
             # store the address in the register
-            out_local += f"\tsw ${self.value.register.name}, (${self.register.name})\n"
+            out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${self.value.register.name}, (${self.register.name})\n"
         if self.register is not None:
             out_reg.append(self.register.name)
         return out_local, out_global, out_reg
