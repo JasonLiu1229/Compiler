@@ -25,7 +25,7 @@ class MIPS:
                 # if a scope, skip
                 # if include instruction, skip
                 if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or isinstance(temp, ArrayDeclAST) or \
-                        isinstance(temp, IncludeAST) or (isinstance(temp, CommentAST) and temp.parent is self.ast):
+                        isinstance(temp, IncludeAST) or isinstance(temp, CommentAST):
                     visited.append(temp)
                 if isinstance(temp, AST):
                     for child in temp.children:
