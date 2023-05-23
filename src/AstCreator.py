@@ -115,6 +115,8 @@ class AstCreator(MathVisitor):
             return self.visitDefault_instr(ctx)
         elif isinstance(ctx, MathParser.Switch_scopeContext):
             return self.visitSwitch_scope(ctx)
+        elif isinstance(ctx, MathParser.CommentContext):
+            return self.visitComment(ctx)
         elif isinstance(ctx, antlr4.tree.Tree.TerminalNodeImpl):
             if ctx.getText() in ["{", "}"]:
                 return Node(ctx.getText(), None)
@@ -232,7 +234,8 @@ class AstCreator(MathVisitor):
                         child.children.append(base.children[index-1])
                         base.children[index-1:index] = []
                         index -= 1
-
+                elif isinstance(child, CommentAST):
+                    continue
                 elif isinstance(child, ArrayDeclAST):
                     child.children = base.children[index - 1 - len(child.values): index - 1]
                     child.children.reverse()
@@ -1924,6 +1927,11 @@ class AstCreator(MathVisitor):
         out = SwitchScopeAST(Node("switch_scope", None))
         out.column = ctx.start.column
         out.line = ctx.start.line
+        return out
+
+    def visitComment(self, ctx: MathParser.CommentContext):
+        out = CommentAST(Node("comment", None))
+        out.comment = ctx.com
         return out
 
     @staticmethod

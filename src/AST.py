@@ -3373,6 +3373,12 @@ class CommentAST(AST):
 
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         super().__init__(root, children, parent, symbolTable)
+        self.comment = ""
 
+    def handle(self):
+        return self
     def mips(self, registers: Registers):
-        return "", "", []
+        out_local = out_global = ""
+        out_list = []
+        out_local += f"# {self.comment}\n"
+        return out_local, out_global, out_list
