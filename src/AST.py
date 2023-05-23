@@ -2699,7 +2699,7 @@ class FuncDefnAST(AST):
         #             out_local += f"lw{'c1' if param.type == 'float' else ''} {param.register}, {}($fp)\n"
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
-        out_local += out_l
+        out_local += out_l + "\n"
         out_global += out_g
         return out_local, out_global, out_list
 
@@ -2776,11 +2776,14 @@ class FuncCallAST(AST):
                 par_type = "int_"
             elif par_type == "char":
                 par_type = "chr_"
-            out += f"sw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
+            out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             count += 1
-        out += f"jal {self.root.key}\n"
+        out += f"\tjal {self.root.key}\n"
+        registers.search(self.root)
         if self.register is None:
-            self.register = registers.temporaryManager.LRU(self.root)
+            registers.temporaryManager.LRU(self.root)
+            self.register = self.root.register
+        out += f"\tmove ${self.register.name}, $v0\n"
         new_node = Node(self.root.key, None)
         new_node.register = self.register
         self.parent.children[self.parent.children.index(self)] = new_node
@@ -2997,7 +3000,11 @@ class ReturnInstr(InstrAST):
         if isinstance(child, VarNode):
             if child.register is None:
                 registers.temporaryManager.LRU(child)
-            out += f"\tlw ${child.register.name}, {child.key if child.key != 'var' else child.value}\n"
+            out += f"\tlw ${child.register.name},"
+            if (child.type is not None and child.key == "var") or isinstance(child, FuncParameter):
+                out += f"{child.type}_{child.key}\n"
+            else:
+                out += f"{child.value}\n"
             out += f"\tmove $v0, ${child.register.name}\n"
             out += "\tjr $ra\n"
         else:
@@ -3011,11 +3018,13 @@ class ReturnInstr(InstrAST):
                 elif child.type == "float":
                     type_ = "flt"
                 return_value = f"{type_}_{child.value}"
+
             elif isinstance(child.register, Register):
                 return_value = child.register.name
+                out += f"\tmove $v0, ${return_value}\n"
             else:
                 return_value = child.value
-            out += f"\tli $v0, {return_value}\n"
+                out += f"\tli $v0, {return_value}\n"
             out += "\tjr $ra\n"
                 # out += "\tli $v0, 17\n\tsyscall\n"
         # elif isinstance(child, VarNode):
