@@ -1935,10 +1935,6 @@ class DerefAST(AST):
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
         child = child.value
-        # if not isinstance(self.children[0], FuncParameter):
-        #     child.parent = self.children[0]
-        # if isinstance(child, VarNode) and child.ptr and not isinstance(self.children[0], FuncParameter):
-        #     child.deref_level += 1
         return child
 
 class ArrayElementAST(AST):
@@ -2034,19 +2030,6 @@ class Scope_AST(AST):
             out_global += output[1]
             out_list += output[2]
         # # begin
-        # out_local += f"\taddi $sp, $sp, -{size}\n"
-        # out_local += f"\tsw $ra, {4}($sp)\n"
-        # count = 1
-        # for i in output[2]:
-        #     count += 1
-        #     out_local += f"\tsw {i}, {count * 4}($sp)\n"
-        # # middle
-        # # end
-        # for i in reversed(output[2]):
-        #     out_local += f"\tlw {i}, {count * 4}($sp)\n"
-        #     count -= 1
-        # out_local += f"\tlw $ra, {4}($sp)\n"
-        # out_local += f"\tddi $sp, $sp, {size}\n"
         return out_local, out_global, out_list
 
 
@@ -2119,17 +2102,6 @@ class If_CondAST(Scope_AST):
         visited = []
         not_visited = [self.condition]
         # DFS
-        # while len(not_visited) != 0:
-        #     current = not_visited.pop()
-        #     if current not in visited:
-        #         visited.append(current)
-        #         if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
-        #                 or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
-        #                 or isinstance(current, FuncDeclAST)):
-        #             if isinstance(current, AST):
-        #                 for i in current.children:
-        #                     not_visited.append(i)
-        # visited.reverse()
         temp_list = out_list = []
         out_global = out_cond = ""
         # condition check and branch
@@ -2138,17 +2110,6 @@ class If_CondAST(Scope_AST):
         out_local = f"if_{registers.globalObjects.index}: \n"
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
-
-        # for current in visited:
-        #     output = tuple
-        #     if isinstance(current, Node):
-        #         continue
-        #     if current.root.value in tokens:
-        #         output = self.visitMIPSOp(current, registers)
-        #     else:
-        #         output = current.mips(registers)
-        #     # out_cond += output[0]
-        #     temp_list += output[2]
 
         # body of the if loop
         output = self.children[0].mips(registers)
@@ -2159,15 +2120,6 @@ class If_CondAST(Scope_AST):
         size = 4
         size += size * len(temp_list)
         count = 0
-        # begin
-        # allocate register on stack
-        # out_local += f"\taddi $sp, $sp, -{size}\n"
-        # out_local += f"\tsw $ra, {0}($sp)\n"
-        # count = 0
-        # for i in temp_list:
-        #     count += 1
-        #     out_local += f"\t{'sw' if not i.startswith('f') else 'swc1'} ${i}, {count * 4}($sp)\n"
-        # middle
         # condition
         out_local += out_cond
         if isinstance(self.children[-1], Else_CondAST):
@@ -2358,10 +2310,6 @@ class While_loopAST(Scope_AST):
         output_list += output[2]
         size = 4 * len(output_list)
         size += 4
-        # output_local += f"\taddi $sp, $sp, -{size}\n"
-        # for i in range(len(output_list)):
-        #     output_local += f"\tsw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
-        # output_local += f"\tsw $ra, {4 * len(output_list)}($sp)\n"
         out_condition = self.condition.mips(registers)
         output_local += out_condition[0]
         output_local += f"\tbeq $v1, $zero, end_while_{self.end_while}\n"
@@ -2369,10 +2317,6 @@ class While_loopAST(Scope_AST):
         # condition of the while loop
         output_local += output[0]
         output_global += output[1]
-        # output_local += f"\tlw $ra, {4 * len(output_list)}($sp)\n"
-        # for i in range(len(output_list)):
-        #     output_local += f"\tlw{'c1' if output_list[i][0] == 'f' else ''} ${output_list[i]}, {4 * i}($sp)\n"
-        # output_local += f"\taddi $sp, $sp, {size}\n"
         output_local += f"\tj while_{self.register}\n"
         # end of the while loop
         output_local += f"end_while_{self.end_while}: \n"
@@ -2649,11 +2593,6 @@ class FuncDefnAST(AST):
             elif param.type == "char":
                 if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
                     registers.globalObjects.data[4][0] = f"chr_{param.key}"
-        # if len(self.params) > 0:
-        #     count = 0
-        #     for param in self.params:
-        #         if isinstance(param.register, Register):
-        #             out_local += f"lw{'c1' if param.type == 'float' else ''} {param.register}, {}($fp)\n"
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
         out_local += out_l + "\n"
@@ -2723,26 +2662,6 @@ class FuncCallAST(AST):
         for arg in self.args:
             if arg.register is None:
                 if isinstance(arg, AST):
-                    # # registers.savedManager.LRU(arg.root)
-                    # # arg.register = arg.root.register
-                    # # DFS the argument
-                    # visited = []
-                    # not_visited = [arg]
-                    # while len(not_visited) > 0:
-                    #     current = not_visited.pop()
-                    #     if current not in visited:
-                    #         visited.append(current)
-                    #         if isinstance(current, AST):
-                    #             for i in current.children:
-                    #                 if isinstance(i, AST):
-                    #                     not_visited.append(i)
-                    # for i in visited:
-                    #     if i.root.value in tokens:
-                    #         output = self.visitMIPSOp(i, registers)
-                    #     else:
-                    #         output = i.mips(registers)
-                    #     out += output[0]
-                    #     temp_list += output[2]
                     output = arg.mips(registers)
                     out += output[0]
                     temp_list += output[2]
