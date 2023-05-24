@@ -268,6 +268,8 @@ class AstCreator(MathVisitor):
                         child.has_default = True
                         child.cases = child.cases[:-1]
                     base.children[last_token: index] = []
+                    for i in child.children:
+                        i.parent = child
                     index = base.children.index(child)
 
                 elif isinstance(child, DefaultAST):
@@ -295,6 +297,7 @@ class AstCreator(MathVisitor):
                     child.children.reverse()
                     base.children[max(last_case_default, last_token) + 1: index] = []
                     index = base.children.index(child)
+
                 elif isinstance(child, ScanfAST):
                     child.children = base.children[index - len(child.variables): index]
                     child.children.reverse()
@@ -993,39 +996,39 @@ class AstCreator(MathVisitor):
                         elif not in_loop:
                             ast.condition = match[0].object
                 # resolve the cases
-                for case in ast.cases:
-                    self.resolve(case, in_cond=True, in_loop=in_loop)
+                # for case in ast.cases:
+                #     self.resolve(case, in_cond=True, in_loop=in_loop)
                 # transform the switch into if-else
-                new_nodes = []
-                for i in range(len(ast.cases)):
-                    if not isinstance(ast.cases[i], DefaultAST):
-                        new_node = If_CondAST(Node(f"case_{i}", None), ast.cases[i].children)
-                    else:
-                        new_node = Else_CondAST(Node("default", None) ,ast.cases[i].children)
-                        new_nodes[-1].children.append(new_node)
-                    for child in new_node.children:
-                        child.parent = new_node
-                    new_node.parent = ast.parent if not isinstance(ast.cases[i], DefaultAST) else new_nodes[-1]
-                    new_node.in_loop = ast.in_loop
-                    new_node.in_func = ast.in_func
-                    new_node.column = ast.cases[i].column
-                    new_node.line = ast.cases[i].line
-                    new_node.symbolTable = ast.cases[i].symbolTable
-                    # create new condition: ast.condition == ast.cases[i].condition
-                    if not isinstance(ast.cases[i], DefaultAST):
-                        new_cond = TermAST(Node("cond", "=="))
-                        new_cond.parent = new_node
-                        new_cond.children.append(ast.condition)
-                        new_cond.children.append(ast.cases[i].condition[0])
-                        new_node.condition = new_cond
-                        for child in new_cond.children:
-                            child.parent = new_cond
-                    new_nodes.append(new_node)
-                index = ast.parent.children.index(ast)
-                ast.parent.children[index:index + 1] = new_nodes
-                for cond in new_nodes:
-                    if not in_loop and cond.condition is not None:
-                        cond.condition = cond.condition.handle()
+                # new_nodes = []
+                # for i in range(len(ast.cases)):
+                #     if not isinstance(ast.cases[i], DefaultAST):
+                #         new_node = If_CondAST(Node(f"case_{i}", None), ast.cases[i].children)
+                #     else:
+                #         new_node = Else_CondAST(Node("default", None) ,ast.cases[i].children)
+                #         new_nodes[-1].children.append(new_node)
+                #     for child in new_node.children:
+                #         child.parent = new_node
+                #     new_node.parent = ast.parent if not isinstance(ast.cases[i], DefaultAST) else new_nodes[-1]
+                #     new_node.in_loop = ast.in_loop
+                #     new_node.in_func = ast.in_func
+                #     new_node.column = ast.cases[i].column
+                #     new_node.line = ast.cases[i].line
+                #     new_node.symbolTable = ast.cases[i].symbolTable
+                #     # create new condition: ast.condition == ast.cases[i].condition
+                #     if not isinstance(ast.cases[i], DefaultAST):
+                #         new_cond = TermAST(Node("cond", "=="))
+                #         new_cond.parent = new_node
+                #         new_cond.children.append(ast.condition)
+                #         new_cond.children.append(ast.cases[i].condition[0])
+                #         new_node.condition = new_cond
+                #         for child in new_cond.children:
+                #             child.parent = new_cond
+                #     new_nodes.append(new_node)
+                # index = ast.parent.children.index(ast)
+                # ast.parent.children[index:index + 1] = new_nodes
+                # for cond in new_nodes:
+                #     if not in_loop and cond.condition is not None:
+                #         cond.condition = cond.condition.handle()
                 continue
             elif isinstance(ast, While_loopAST):
                 self.resolve(ast.condition)
