@@ -349,29 +349,25 @@ class AST:
         right_node = None
         if len(current.children) > 1:
             right_node = copy.copy(current.children[1])
+        # find the register for the variable
+        left_register = registers.search(left_node)
+        if right_node is not None:
+            right_register = registers.search(right_node)
         # register assignment
         if isinstance(left_node, VarNode):
             left_register = left_node.register.name
             left_type = left_node.type
         else:
             if left_node.key == "var" and left_node.register is None:
-                # find the register for the variable
-                left_register = registers.search(left_node)
                 if left_register is None:
-                    registers.temporaryManager.LRU(left_node)
+                    output = left_node.mips(registers)
+                    out_local += output[0]
+                    out_list += output[2]
                     left_register = left_node.register.name
             elif left_node.register is None:
-                # check if value is float, use float register
-                if isinstance(left_node.value, float):
-                    registers.floatManager.LRU(left_node)
-                    left_type = 'float'
-                    out_local += f"\tlwc1 ${left_node.register.name}, {left_node.value}\n"
-                else:
-                    registers.temporaryManager.LRU(left_node)
-                    if isinstance(left_node.value, int):
-                        left_type = 'int'
-                    else:
-                        left_type = 'char'
+                output = left_node.mips(registers)
+                out_local += output[0]
+                out_list += output[2]
                 left_register = left_node.register.name
             else:
                 left_register = left_node.register.name
@@ -381,24 +377,15 @@ class AST:
                 right_type = right_node.type
             elif isinstance(right_node, Node):
                 if right_node.key == "var" and right_node.register is None:
-                    # find the register for the variable
-                    right_register = registers.search(right_node)
                     if right_register is None:
-                        registers.temporaryManager.LRU(right_node)
+                        output = right_node.mips(registers)
+                        out_local += output[0]
+                        out_list += output[2]
                         right_register = right_node.register.name
                 elif right_node.register is None:
-                    # check if value is float, use float register
-                    if isinstance(right_node.value, float):
-                        registers.floatManager.LRU(right_node)
-                        right_type = 'float'
-                        out_local += f"\tlwc1 ${right_node.register.name}, {right_node.value}\n"
-                    else:
-                        registers.temporaryManager.LRU(right_node)
-                        if isinstance(right_node.value, int):
-                            right_type = 'int'
-                        else:
-                            right_type = 'char'
-                        out_local += f"\tli ${right_node.register.name}, {right_node.value}\n"
+                    output = right_node.mips(registers)
+                    out_local += output[0]
+                    out_list += output[2]
                     right_register = right_node.register.name
                 else:
                     right_register = right_node.register.name
