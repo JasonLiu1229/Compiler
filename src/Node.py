@@ -388,8 +388,11 @@ class VarNode(Node):
                 else:
                     registers.temporaryManager.LRU(self.value)
         # assign itself to a register
+        # search for a register first
         if self.register is None:
-            if self.const:
+            if registers.search(self) is not None:
+                pass
+            elif self.const:
                 registers.savedManager.LRU(self)
                 # registers.globalObjects.data[0][self.value] = self.key
             elif self.type == "float":

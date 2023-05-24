@@ -477,7 +477,7 @@ class AST:
             temp_node = Node("", 1)
             registers.temporaryManager.LRU(temp_node)
             temp_save = temp_node.register.name
-
+        uni = False
         if right_node is not None:
             # add commentaries
             if left_node.value is not None and left_node.key != "":
@@ -550,11 +550,14 @@ class AST:
             if token == '++':
                 out_local += f"\taddi ${left_register}, ${left_register}, 1\n"
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
+                uni = True
             elif token == '--':
                 out_local += f"\taddi ${left_register}, ${left_register}, -1\n"
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
+                uni = True
             if isinstance(left_node, Node) and left_node.key == "var":
                 out_local += f"\tsw ${left_register}, {left_node.value}\n"
+
         # shuffle used registers
         if left_register is not None:
             if left_register.startswith('t'):
@@ -571,7 +574,10 @@ class AST:
                 registers.temporaryManager.shuffle_name(new_register)
             else:
                 registers.floatManager.shuffle_name(new_register)
-        current.parent.children[current.parent.children.index(current)] = new_node
+        if uni:
+            current.parent.children[current.parent.children.index(current)] = left_node
+        else:
+            current.parent.children[current.parent.children.index(current)] = new_node
         return out_local, out_global, [_ for _ in out_list if _ is not None]
 
     @staticmethod
@@ -1859,29 +1865,6 @@ class TermAST(AST):
         out = ""
         out_global = ""
         out_list = []
-        # # load the first value into a register
-        # first = self.children[0]
-        # second = self.children[1]
-        # if isinstance(first, VarNode):
-        #     # if the first value is a variable, load it into a register
-        #     registers.temporaryManager.LRU(first)
-        #     out += f"lw{'c1' if first.type == 'float' else ''} ${first.register.name}, {first.value}\n"
-        # else:
-        #     # if the first value is a constant, load it into a register
-        #     registers.temporaryManager.LRU(first)
-        #     out += f"li{'c1' if first.key == 'float' else ''} ${first.register.name}, {first.value}\n"
-        # # load the second value into a register
-        # if isinstance(second, VarNode):
-        #     # if the second value is a variable, load it into a register
-        #     registers.temporaryManager.LRU(second)
-        #     out += f"lw{'c2' if second.type == 'float' else ''} ${second.register.name}, {second.value}\n"
-        # else:
-        #     # if the second value is a constant, load it into a register
-        #     registers.temporaryManager.LRU(second)
-        #     out += f"li{'c2' if second.key == 'float' else ''} ${second.register.name}, {second.value}\n"
-        # # add the registers to the list of registers in use
-        # out_list = [first.register.name, second.register.name]
-        # check what operation is being done
         out , out_global, out_list = self.visitMIPSOp(self, registers)
 
         return out, out_global, out_list
@@ -2257,23 +2240,7 @@ class Else_CondAST(Scope_AST):
         return out, index
 
     def mips(self, registers: Registers):
-        out = ""
         output = self.children[0].mips(registers)
-        temp_list = output[2]
-        # size = 4
-        # size += size * len(temp_list)
-        # out += f"\taddi $sp, $sp, -{size}\n"
-        # out += f"\tsw $ra, {4}($sp)\n"
-        # count = 1
-        # for i in temp_list:
-        #     count += 1
-        #     out += f"\tsw {i}, {count * 4}($sp)\n"
-        # out += output[0]
-        # for i in reversed(temp_list):
-        #     out += f"\tlw {i}, {count * 4}($sp)\n"
-        #     count -= 1
-        # out += f"\tlw $ra, {4}($sp)\n"
-        # out += f"\tjr $ra\n"
         return output
 
 
@@ -2681,9 +2648,9 @@ class FuncDefnAST(AST):
     def mips(self, registers: Registers):
         out_local = f"{self.root.key}:\n"
         out_global = f".globl {self.root.key}\n" if self.root.key == "main" else ""
+        out_global += f"{'jal main' if self.root.key == 'main' else ''}\n"
         # Begin
         # Parameters
-        # TODO: Parameters
         for param in self.params:
             if param.type == "float":
                 if f"flt_{param.key}" not in registers.globalObjects.data[1].values():
@@ -2767,10 +2734,29 @@ class FuncCallAST(AST):
         for arg in self.args:
             if arg.register is None:
                 if isinstance(arg, AST):
-                    registers.savedManager.LRU(arg.root)
-                    arg.register = arg.root.register
+                    # registers.savedManager.LRU(arg.root)
+                    # arg.register = arg.root.register
+                    # DFS the argument
+                    visited = []
+                    not_visited = [arg]
+                    while len(not_visited) > 0:
+                        current = not_visited.pop()
+                        if current not in visited:
+                            visited.append(current)
+                            if isinstance(current, AST):
+                                for i in current.children:
+                                    if isinstance(i, AST):
+                                        not_visited.append(i)
+                    for i in visited:
+                        if i.root.value in tokens:
+                            i.visitMIPSOp(registers)
+                        else:
+                            i.mips(registers)
                 else:
-                    registers.savedManager.LRU(arg)
+                    if registers.search(arg) is not None:
+                        pass
+                    else:
+                        registers.savedManager.LRU(arg)
             par_type = parameters_org[count].type
             if par_type == "float":
                 par_type = "flt_"
@@ -2780,7 +2766,11 @@ class FuncCallAST(AST):
                 par_type = "chr_"
             out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             count += 1
+        out += f"\taddi $sp, $sp, -4\n"
+        out += f"\tsw $ra, 0($sp)\n"
         out += f"\tjal {self.root.key}\n"
+        out += f"\tlw $ra, 0($sp)\n"
+        out += f"\taddi $sp, $sp, 4\n"
         registers.search(self.root)
         if self.register is None:
             registers.temporaryManager.LRU(self.root)
@@ -2918,9 +2908,23 @@ class FuncScopeAST(AST):
                         continue
                     # declare the variable in the global scope .data
                     registers.globalObjects.data[0][entry.object.value] = entry.object.key
-
-
-
+        param_str = ""
+        # initialize the registers for the parameters
+        for param in self.parent.params:
+            if registers.search(param) is not None:
+                pass
+            elif param.type == "float":
+                registers.floatManager.LRU(param)
+            else:
+                registers.savedManager.LRU(param)
+            type_str = ""
+            if param.type == "int":
+                type_str = "int"
+            elif param.type == "float":
+                type_str = "flt"
+            elif param.type == "char":
+                type_str = "chr"
+            param_str += f"\tlw ${param.register.name}, {type_str}_{param.key}\n"
         # mips code for each instruction
         for current in visited:
             output = tuple
@@ -2946,6 +2950,7 @@ class FuncScopeAST(AST):
                 out_local += f"\tsw ${i}, {count * 4}($sp)\n"
             count += 1
 
+        out_local += param_str
         out_local += out_temp_local
         out_global += out_temp_global
 
