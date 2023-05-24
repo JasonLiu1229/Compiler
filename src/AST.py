@@ -2415,11 +2415,13 @@ class BreakAST(InstrAST):
         parent = self.parent
         found_last = False
         while parent is not None:
-            if isinstance(parent, While_loopAST):
+            if isinstance(parent, While_loopAST) or isinstance(parent, CaseAST):
                 break
             parent = parent.parent
         if isinstance(parent, While_loopAST):
             end_while_register = parent.end_while
+        elif isinstance(parent, CaseAST):
+            end_switch_register = parent.index
         else:
             # search for the last if/else in the switch
             for child in parent.parent.children:
@@ -2430,7 +2432,7 @@ class BreakAST(InstrAST):
             if not found_last:
                 raise Exception("Break outside of a loop or switch")
 
-        out = f"\tj end_while_{end_while_register}\n"
+        out = f"\tj end_{'switch' if isinstance(parent, CaseAST) else 'while'}_{end_while_register if isinstance(parent, While_loopAST) else end_switch_register}\n"
         return out, "", []
 
 
@@ -2800,7 +2802,7 @@ class FuncScopeAST(AST):
                     visited.append(current)
                 if not (isinstance(current, While_loopAST) or isinstance(current, FuncDeclAST)
                         or isinstance(current, If_CondAST)
-                        or isinstance(current, FuncDefnAST)):
+                        or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)):
                     for i in current.children:
                         if not isinstance(i, Node):
                             not_visited.append(i)
@@ -3259,7 +3261,10 @@ class SwitchAST(AST):
         out_global += output[1]
         out_list += output[2]
         # switch
-        compare_register = self.condition.root.register.name
+        if isinstance(self.condition, AST):
+            compare_register = self.condition.root.register.name
+        else:
+            compare_register = self.condition.register.name
         cases_list = []
         cases_cond_list = []
         count = 0
