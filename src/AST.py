@@ -351,8 +351,14 @@ class AST:
             right_node = copy.copy(current.children[1])
         # find the register for the variable
         left_register = registers.search(left_node)
+        # output = left_node.mips(registers)
+        # out_local += output[0]
+        # out_list += output[2]
         if right_node is not None:
             right_register = registers.search(right_node)
+            # output = right_node.mips(registers)
+            # out_local += output[0]
+            # out_list += output[2]
         # register assignment
         if isinstance(left_node, VarNode):
             left_register = left_node.register.name
@@ -402,6 +408,8 @@ class AST:
                 right_type = 'int'
         # create new node
         new_node = Node("", None)
+        if current.root.register is not None:
+            new_node = current.root
         if new_node.register is None:
             if (right_type == 'float' or left_type == 'float') and token not in ['<', '>', '==', '!=', '>=', '<=']:
                 registers.floatManager.LRU(new_node)
@@ -1119,8 +1127,19 @@ class ExprAST(AST):
                 registers.temporaryManager.LRU(self.children[1])
             else:
                 registers.floatManager.LRU(self.children[1])
+        temp_output = self.children[0].mips(registers)
+        out_local += temp_output[0]
+        out_global += temp_output[1]
+        out_list += temp_output[2]
+        temp_output = self.children[1].mips(registers)
+        out_local += temp_output[0]
+        out_global += temp_output[1]
+        out_list += temp_output[2]
         output = self.visitMIPSOp(self, registers)
-        return output
+        out_local += output[0]
+        out_global += output[1]
+        out_list += output[2]
+        return out_local, out_global, out_list
 
 
 class InstrAST(AST):
@@ -2665,6 +2684,7 @@ class FuncCallAST(AST):
                     output = arg.mips(registers)
                     out += output[0]
                     temp_list += output[2]
+                    # parameters_org[count].update(arg.register, registers)
                 else:
                     if registers.search(arg) is not None:
                         pass
@@ -2678,6 +2698,7 @@ class FuncCallAST(AST):
             elif par_type == "char":
                 par_type = "chr_"
             out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
+            # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
         out += f"\taddi $sp, $sp, -4\n"
         out += f"\tsw $ra, 0($sp)\n"

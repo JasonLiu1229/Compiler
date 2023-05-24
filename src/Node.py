@@ -195,22 +195,25 @@ class Node:
             return "", "", []
         # check if the value is already in a register
         registers.search(self)
-        if self.register is not None:
-            out_local += f"\tlw{'c1' if self.register.name[0] == 'f' else ''} ${self.register.name}, {self.value}\n"
-            return out_local, "", [self.register.name]
-        else:
+        if self.register is None:
             # load the value in a register
             registers.temporaryManager.LRU(self)
-            if self.key == "var":
-                # variable is declared in the data section
-                out_local += f"\tlw{'c1' if self.key == 'float' else ''} ${self.register.name}, {self.value}\n"
-                # out_local += f"\tla ${self.register.name}, {self.value}\n"
-            else:
-                out_local += f"\tli ${self.register.name}, {self.value}\n"
-            out_list.append(self.register.name)
+
+        if self.key == "var":
+            # variable is declared in the data section
+            out_local += f"\tlw{'c1' if self.key == 'float' else ''} ${self.register.name}, {self.type + '_' if self.type is not None else ''}{self.value}\n"
+            # out_local += f"\tla ${self.register.name}, {self.value}\n"
+        else:
+            out_local += f"\tli ${self.register.name}, {self.value}\n"
+        out_list.append(self.register.name)
         # place holder
         return out_local, out_global, out_list
 
+    def update(self, register, registers):
+        if registers.search(self) is not None:
+            self.register.clear()
+            self.register = None
+        register.update(self)
 
 class VarNode(Node):
 
