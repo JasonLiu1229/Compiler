@@ -1113,11 +1113,12 @@ class ExprAST(AST):
         out_global = ""
         out_local = ""
         out_list = []
+        if registers.search(self.root) is None:
+            registers.temporaryManager.LRU(self.root)
+        self.register = self.root.register
         # check if the expression is a constant
         if len(self.children) == 1 and isinstance(self.children[0], Node):
-            if self.register is None:
-                registers.temporaryManager.LRU(self.root)
-            self.register = self.root.register
+
             out_local += f"li {self.register.name}, {self.children[0].value}\n"
             return out_local, out_global, out_list
         # check if the operands have been assigned to registers
@@ -2706,6 +2707,7 @@ class FuncCallAST(AST):
 
     def mips(self, registers: Registers):
         out = ""
+        temp_list = []
         # load the values of the arguments on the data block
         entry = None
         current = None
@@ -2734,24 +2736,29 @@ class FuncCallAST(AST):
         for arg in self.args:
             if arg.register is None:
                 if isinstance(arg, AST):
-                    # registers.savedManager.LRU(arg.root)
-                    # arg.register = arg.root.register
-                    # DFS the argument
-                    visited = []
-                    not_visited = [arg]
-                    while len(not_visited) > 0:
-                        current = not_visited.pop()
-                        if current not in visited:
-                            visited.append(current)
-                            if isinstance(current, AST):
-                                for i in current.children:
-                                    if isinstance(i, AST):
-                                        not_visited.append(i)
-                    for i in visited:
-                        if i.root.value in tokens:
-                            i.visitMIPSOp(registers)
-                        else:
-                            i.mips(registers)
+                    # # registers.savedManager.LRU(arg.root)
+                    # # arg.register = arg.root.register
+                    # # DFS the argument
+                    # visited = []
+                    # not_visited = [arg]
+                    # while len(not_visited) > 0:
+                    #     current = not_visited.pop()
+                    #     if current not in visited:
+                    #         visited.append(current)
+                    #         if isinstance(current, AST):
+                    #             for i in current.children:
+                    #                 if isinstance(i, AST):
+                    #                     not_visited.append(i)
+                    # for i in visited:
+                    #     if i.root.value in tokens:
+                    #         output = self.visitMIPSOp(i, registers)
+                    #     else:
+                    #         output = i.mips(registers)
+                    #     out += output[0]
+                    #     temp_list += output[2]
+                    output = arg.mips(registers)
+                    out += output[0]
+                    temp_list += output[2]
                 else:
                     if registers.search(arg) is not None:
                         pass
@@ -2779,7 +2786,7 @@ class FuncCallAST(AST):
         new_node = Node(self.root.key, None)
         new_node.register = self.register
         self.parent.children[self.parent.children.index(self)] = new_node
-        return out, "", []
+        return out, "", temp_list
 
 
 
