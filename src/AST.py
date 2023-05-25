@@ -2129,7 +2129,10 @@ class If_CondAST(Scope_AST):
         out_local = f"if_{registers.globalObjects.index}: \n"
         self.register = registers.globalObjects.index
         registers.globalObjects.index += 1
-
+        return_bool = False
+        if len(self.children[0].children) > 0:
+            if isinstance(self.children[0].children[0], ReturnInstr):
+                return_bool = True
         # body of the if loop
         output = self.children[0].mips(registers)
         temp_out = output[0]
@@ -2161,9 +2164,11 @@ class If_CondAST(Scope_AST):
         out_local += temp_out
         if self.exit == -1:
             self.exit = registers.globalObjects.index
-        out_local += f"\tj exit_{self.exit}\n"
+        if not return_bool:
+            out_local += f"\tj exit_{self.exit}\n"
         out_local += out_else
-        out_local += f"exit_{self.exit}: \n"
+        if not return_bool:
+            out_local += f"exit_{self.exit}: \n"
         registers.globalObjects.index += 1
         return out_local, out_global, []
 
@@ -2546,6 +2551,7 @@ class FuncDefnAST(AST):
             params = []
         self.params = params
         self.has_defaults = []
+        self.index = 0
 
     def handle(self):
         return self
@@ -2702,11 +2708,11 @@ class FuncCallAST(AST):
             out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
-        out += f"\taddi $sp, $sp, -4\n"
-        out += f"\tsw $ra, 0($sp)\n"
+        # out += f"\taddi $sp, $sp, -4\n"
+        # out += f"\tsw $ra, 0($sp)\n"
         out += f"\tjal {self.root.key}\n"
-        out += f"\tlw $ra, 0($sp)\n"
-        out += f"\taddi $sp, $sp, 4\n"
+        # out += f"\tlw $ra, 0($sp)\n"
+        # out += f"\taddi $sp, $sp, 4\n"
         registers.search(self.root)
         if self.register is None:
             registers.temporaryManager.LRU(self.root)
@@ -2792,6 +2798,7 @@ class FuncScopeAST(AST):
         # out_local += "\tsw $ra, 4($sp)\n"
         # out_local = "\tjal allocate_stack\n"
         out_local = ""
+        self.index = registers.globalObjects.index
         # DFS
         visited = []
         not_visited = [self]
@@ -2891,6 +2898,7 @@ class FuncScopeAST(AST):
         out_global += out_temp_global
 
         # restore registers
+        out_local += f"exit_{self.index}:\n"
         count = 0
         for i in temp_list:
             if i.startswith("f"):
@@ -2949,7 +2957,7 @@ class ReturnInstr(InstrAST):
             else:
                 out += f"{child.value}\n"
             out += f"\tmove $v0, ${child.register.name}\n"
-            out += "\tjr $ra\n"
+            # out += "\tjr $ra\n"
         else:
             return_value = None
             if child.key == 'var':
@@ -2968,7 +2976,12 @@ class ReturnInstr(InstrAST):
             else:
                 return_value = child.value
                 out += f"\tli $v0, {return_value}\n"
-            out += "\tjr $ra\n"
+            # out += "\tjr $ra\n"
+        current = self.parent
+        while isinstance(current, FuncDefnAST) is False:
+            current = current.parent
+        out += f"\tj exit_{current.index}\n"
+            # out += f"\tj exit_{self.parent.index}\n"
                 # out += "\tli $v0, 17\n\tsyscall\n"
         # elif isinstance(child, VarNode):
         #     entry, length = self.getEntry(child)
