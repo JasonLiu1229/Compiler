@@ -2872,7 +2872,8 @@ class FuncScopeAST(AST):
         # out_local += "\tsw $ra, 4($sp)\n"
         # out_local = "\tjal allocate_stack\n"
         out_local = ""
-        self.index = registers.globalObjects.index
+        self.parent.index = registers.globalObjects.index
+        registers.globalObjects.index += 1
         # DFS
         visited = []
         not_visited = [self]
@@ -2985,7 +2986,7 @@ class FuncScopeAST(AST):
         out_global += out_temp_global
 
         # restore registers
-        out_local += f"exit_{self.index}:\n"
+        out_local += f"exit_{self.parent.index}:\n"
         count = 0
         for i in temp_list:
             if i.startswith("f"):
