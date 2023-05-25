@@ -114,6 +114,7 @@ class returnManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
@@ -175,6 +176,7 @@ class argumentManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
@@ -244,6 +246,7 @@ class temporaryManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
@@ -258,6 +261,7 @@ class temporaryManager(Manager):
         while tempHead is not None:
             if tempHead.name == register_name:
                 tempHead.clear()
+                self.shuffle(tempHead)
                 break
             tempHead = tempHead.next
         # move the tempHead to tail of the list
@@ -314,6 +318,7 @@ class savedManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
@@ -374,6 +379,7 @@ class reservedManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
@@ -434,6 +440,7 @@ class floatManager(Manager):
         while tempHead is not None:
             if tempHead.used is False:
                 tempHead.update(in_object)
+                self.shuffle(tempHead)
                 free = True
                 break
             tempHead = tempHead.next
