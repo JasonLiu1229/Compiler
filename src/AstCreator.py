@@ -612,6 +612,8 @@ class AstCreator(MathVisitor):
                 # if a scope, skip
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)):
                     visited.append(temp)
+                if isinstance(temp, Node):
+                    continue
                 if not (isinstance(temp, Scope_AST) or isinstance(temp, FuncScopeAST)) or \
                         temp is ast_in or isinstance(temp.parent, Scope_AST) or isinstance(temp.parent, FuncScopeAST):
                     # if isinstance(temp, For_loopAST):
@@ -1040,10 +1042,10 @@ class AstCreator(MathVisitor):
                 node = ast
 
             elif isinstance(ast, For_loopAST):
-                self.resolve(ast.initialization, in_loop=True)
-                self.resolve(ast.condition, in_loop=True)
-                self.resolve(ast.incr, in_loop=True)
-                self.resolve(ast.children[0], in_loop=True)
+                self.resolve(ast.initialization, in_loop=ast.in_loop, in_func=in_func)
+                self.resolve(ast.condition, in_loop=True, in_func=in_func)
+                self.resolve(ast.incr, in_loop=True, in_func=in_func)
+                self.resolve(ast.children[0], in_loop=True, in_func=in_func)
                 # check if increaser is declared
                 while not temp_symbol.exists(ast.incr.children[0].value) and temp_symbol.parent is not None:
                     temp_symbol = temp_symbol.parent
@@ -1191,7 +1193,9 @@ class AstCreator(MathVisitor):
                 if not evaluate:
                     node = ast
                     continue
-                if not isinstance(assignee, VarNode) and not isinstance(assignee.parent, ArrayNode):
+                if (not isinstance(assignee, VarNode) and not isinstance(assignee.parent, ArrayNode)) and evaluate:
+                    raise AttributeError(f"Attempting to assign to a non-variable type")
+                elif not evaluate and not isinstance(assignee, Node) and assignee.key != "var":
                     raise AttributeError(f"Attempting to assign to a non-variable type")
                 if isinstance(assignee.parent, ArrayNode):
                     if assignee.parent.const:
@@ -1427,7 +1431,7 @@ class AstCreator(MathVisitor):
             else:
                 continue
             # Replace node
-            if not isinstance(ast, CondAST) and not isinstance(ast, InitAST):
+            if not isinstance(ast, CondAST) and not isinstance(ast, InitAST) and not isinstance(ast, ArrayElementAST):
                 if isinstance(ast.parent, For_loopAST):
                     if ast.parent.incr == ast:
                         ast.parent.incr = node
@@ -1440,6 +1444,9 @@ class AstCreator(MathVisitor):
                         ast.parent.children = nodes
                         nodes = []
             else:
+                if isinstance(ast, ArrayElementAST):
+                    index = ast.parent.children.index(ast)
+                    ast.parent.children[index] = node
                 if isinstance(ast.parent, Else_CondAST):
                     ast.last_eval = not ast.last_eval
         if temp_symbol is not None:
@@ -1701,7 +1708,7 @@ class AstCreator(MathVisitor):
 
     def visitInit(self, ctx: MathParser.InitContext):
         if len(ctx.children) == 1:
-            return Node(keywords[8], ctx.children[0].getText())
+            return
         else:
             out = InitAST(Node("init", None))
             out.column = ctx.start.column

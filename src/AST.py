@@ -228,7 +228,15 @@ class AST:
         * no: return False
         :return: bool
         """
-        return self.symbolTable.parent is None
+        if self.symbolTable is None:
+            temp_parent = self.parent
+            while temp_parent is not None:
+                if isinstance(temp_parent, FuncScopeAST):
+                    return False
+                temp_parent = temp_parent.parent
+            return True
+        else:
+            return self.symbolTable.parent is None
 
     def mips(self, registers: Registers):
         out_global = ""
@@ -1834,7 +1842,10 @@ class AssignAST(AST):
             temp_type = "flt"
         else:
             temp_type = "chr"
-        out_local += f"\tsw ${right_node.register.name}, {temp_type}_{left_node.value if left_node.key == 'var' else left_node.key}\n"
+        if isinstance(left_node, Node):
+            out_local += f"\tsw ${right_node.register.name}, {temp_type}_{left_node.value if left_node.key == 'var' else left_node.key}\n"
+        elif isinstance(left_node, ArrayElementAST):
+            out_local += f"\tsw ${right_node.register.name}, 0(${left_node.register.name})\n"
         return out_local, "", [right_node.register.name, left_node.register.name]
 
 class TermAST(AST):
@@ -2018,6 +2029,7 @@ class ArrayElementAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
         self.array: ArrayNode | None = None
+        self.type: str | None = None
 
     def handle(self):
         # update root value
@@ -2027,19 +2039,36 @@ class ArrayElementAST(AST):
         # get nearest symbol table
         temp_symbol = self.symbolTable
         temp_parent = self.parent
+        var_index = None
+        if isinstance(self.root.value, str) and var_index is None:
+            var_index = self.root.value
         while temp_symbol is None and temp_parent is not None:
             temp_symbol = temp_parent.symbolTable
             temp_parent = temp_parent.parent
         if temp_symbol is None:
             raise AttributeError(f"Array {self.root.key} not found in symbol table")
         while not temp_symbol.exists(self.root.key):
+            if temp_symbol.exists(var_index):
+                self.root.value = temp_symbol.lookup(var_index)[0].object
             temp_symbol = temp_symbol.parent
             if temp_symbol is None:
                 raise AttributeError(f"Array {self.root.key} not found in symbol table")
         matches = temp_symbol.lookup(self.root.key)
+        temp_symbol = temp_parent.symbolTable
+        if var_index == self.root.value:
+            # search for variable in symbol table too
+            while not temp_symbol.exists(var_index):
+                temp_symbol = temp_symbol.parent
+                if temp_symbol is None:
+                    raise AttributeError(f"Variable {var_index} not found in symbol table")
+        if var_index is not None:
+            self.root.value = temp_symbol.lookup(var_index)[0].object
         if len(matches) != 1:
             raise AttributeError(f"Multiple definitions of array {self.root.key}")
         temp_symbol = matches[0]
+        self.type = temp_symbol.type
+        if isinstance(self.root.value, str) or isinstance(self.root.value, Node):
+            return self
         if self.root.value < 0 or self.root.value >= temp_symbol.size:
             raise AttributeError(f"Array index {self.root.value} out of bounds for array {self.root.key}")
         return temp_symbol.object.values[self.root.value]
@@ -2049,6 +2078,26 @@ class ArrayElementAST(AST):
         out = f"{self.root.key}[{self.root.value}]"
         return out
 
+    def mips(self, registers: Registers):
+        out_local = out_global = ""
+        out_list = []
+        # steps to load array element with register in a variable
+        # 1. load array address in a register - done before calling this function
+        # 2. multiply the index with the size of the array element
+        temp_node = Node("*", None)
+        registers.temporaryManager.LRU(temp_node)
+        if self.children[1].register is None:
+            registers.temporaryManager.LRU(self.children[1])
+        if self.register is None:
+            registers.temporaryManager.LRU(self.root)
+            self.register = self.root.register
+        # sll register_of_offset, index, 2
+        out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
+        # 3. add the offset to the array address
+        out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
+        # 4. load the value at the address in a register
+        out_local += f"\tlw ${self.register.name}, 0(${self.children[0].register.name})\n"
+        return out_local, out_global, out_list
 
 class Scope_AST(AST):
 
@@ -3365,7 +3414,7 @@ class ArrayDeclAST(AST):
             # allocate memory for the array
             out_local += f"\taddiu $sp, $sp, {self.size * 4}\n"
             # store the values of the array in the stack
-            temp_node = Node("temp", None, None, None)
+            temp_node = Node("temp", None, None)
             if self.type == "float":
                 registers.floatManager.LRU(temp_node)
             else:
