@@ -99,8 +99,8 @@ class returnManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(2)
-        self.head = Register(in_name="v0")
-        self.tail = Register(in_prev=self.head, in_name="v1")
+        self.head = Register(in_name="v0", in_manager=self)
+        self.tail = Register(in_prev=self.head, in_name="v1", in_manager=self)
         self.head.next = self.tail
 
     def LRU(self, in_object):
@@ -147,8 +147,8 @@ class returnManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        self.head = Register(in_name="v0")
-        self.tail = Register(in_prev=self.head, in_name="v1")
+        self.head = Register(in_name="v0", in_manager=self)
+        self.tail = Register(in_prev=self.head, in_name="v1", in_manager=self)
         self.head.next = self.tail
 
 
@@ -156,7 +156,7 @@ class argumentManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(4)
-        list_objects = [Register(in_name="a" + str(i)) for i in range(0, 4)]
+        list_objects = [Register(in_name="a" + str(i), in_manager=self) for i in range(0, 4)]
         self.head = list_objects[0]
         self.tail = list_objects[-1]
         for i in range(3):
@@ -209,7 +209,7 @@ class argumentManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        list_objects = [Register(in_name="a" + str(i)) for i in range(0, 4)]
+        list_objects = [Register(in_name="a" + str(i), in_manager=self) for i in range(0, 4)]
         self.head = list_objects[0]
         self.tail = list_objects[-1]
         for i in range(3):
@@ -221,7 +221,7 @@ class temporaryManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(8)
-        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 8)]
+        list_objects = [Register(in_name="t" + str(i), in_manager=self) for i in range(0, 8)]
         self.head = list_objects[0]
         self.tail = list_objects[7]
         for i in range(0, 7):
@@ -280,7 +280,7 @@ class temporaryManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        list_objects = [Register(in_name="t" + str(i)) for i in range(0, 8)]
+        list_objects = [Register(in_name="t" + str(i), in_manager=self) for i in range(0, 8)]
         self.head = list_objects[0]
         self.tail = list_objects[7]
         for i in range(0, 7):
@@ -293,7 +293,7 @@ class savedManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(8)
-        list_objects = [Register(in_name="s" + str(i)) for i in range(0, 8)]
+        list_objects = [Register(in_name="s" + str(i), in_manager=self) for i in range(0, 8)]
         self.head = list_objects[0]
         self.tail = list_objects[7]
         for i in range(0, 7):
@@ -351,7 +351,7 @@ class savedManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        list_objects = [Register(in_name="s" + str(i)) for i in range(0, 8)]
+        list_objects = [Register(in_name="s" + str(i), in_manager=self) for i in range(0, 8)]
         self.head = list_objects[0]
         self.tail = list_objects[7]
         for i in range(0, 7):
@@ -364,8 +364,8 @@ class reservedManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(4)
-        self.head = Register(in_name="k0")
-        self.tail = Register(in_prev=self.head, in_name="k1")
+        self.head = Register(in_name="k0", in_manager=self)
+        self.tail = Register(in_prev=self.head, in_name="k1", in_manager=self)
         self.head.next = self.tail
 
     def LRU(self, in_object):
@@ -421,7 +421,7 @@ class floatManager(Manager):
 
     def __init__(self) -> None:
         super().__init__(32)
-        list_objects = [Register(in_name="f" + str(i)) for i in range(0, 32)]
+        list_objects = [Register(in_name="f" + str(i), in_manager=self) for i in range(0, 32)]
         self.head = list_objects[0]
         self.tail = list_objects[31]
         for i in range(0, 31):
@@ -473,7 +473,7 @@ class floatManager(Manager):
             self.tail = tempHead
 
     def clear(self):
-        list_objects = [Register(in_name="f" + str(i)) for i in range(0, 32)]
+        list_objects = [Register(in_name="f" + str(i), in_manager=self) for i in range(0, 32)]
         self.head = list_objects[0]
         self.tail = list_objects[31]
         for i in range(0, 31):
@@ -558,12 +558,13 @@ class Registers:
 
 class Register:
 
-    def __init__(self, in_prev=None, in_next=None, in_object=None, in_register=None, in_name=None) -> None:
+    def __init__(self, in_prev=None, in_next=None, in_object=None, in_register=None, in_name=None, in_manager=None) -> None:
         self.name = in_name
         self.prev = in_prev
         self.next = in_next
         self.object = in_object
         self.register = in_register
+        self.manager = in_manager
         self.used = False if self.object is None else True
 
     def update(self, in_object):
@@ -575,3 +576,7 @@ class Register:
         self.object.register = None
         self.object = None
         self.used = False
+
+    def shuffle(self):
+        self.manager.shuffle(self)
+

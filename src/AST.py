@@ -196,6 +196,31 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def variable_check(self):
+        # DFS
+        not_visited = [self]
+        visited = []
+        while len(not_visited) > 0:
+            current = not_visited.pop()
+            if current not in visited:
+                visited.append(current)
+                if isinstance(current, Node):
+                    continue
+                else:
+                    for i in current.children:
+                        not_visited.append(i)
+
+        visited.reverse()
+
+        variables = []
+        for i in visited:
+            if isinstance(i, Node):
+                if isinstance(i , VarNode):
+                    variables.append(i)
+                elif i.key == "var":
+                    variables.append(i)
+        return variables
+
     def globalCheck(self) -> bool:
         """
         Check if the current node is in the global scope
@@ -2647,12 +2672,18 @@ class FuncDefnAST(AST):
             if param.type == "float":
                 if f"flt_{param.key}" not in registers.globalObjects.data[1].values():
                     registers.globalObjects.data[1][0.0] = f"flt_{param.key}"
+                if registers.search(param) is None:
+                    registers.floatManager.LRU(param)
             elif param.type == "int":
                 if f"int_{param.key}" not in registers.globalObjects.data[2].values():
                     registers.globalObjects.data[2][0] = f"int_{param.key}"
+                if registers.search(param) is None:
+                    registers.savedManager.LRU(param)
             elif param.type == "char":
                 if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
                     registers.globalObjects.data[4][0] = f"chr_{param.key}"
+                if registers.search(param) is None:
+                    registers.savedManager.LRU(param)
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
         registers.globalObjects.index += 1
@@ -2720,10 +2751,12 @@ class FuncCallAST(AST):
             current = current.parent
         count = 0
         parameters_org = entry.parameters
+        variables = []
         for arg in self.args:
             if arg.register is None:
                 if isinstance(arg, AST):
                     output = arg.mips(registers)
+                    variables += arg.variable_check()
                     out += output[0]
                     temp_list += output[2]
                     # parameters_org[count].update(arg.register, registers)
@@ -2746,45 +2779,62 @@ class FuncCallAST(AST):
         if size != 0:
             out += f"\taddi $sp, $sp, -{size}\n"
         count = 0
-        temp_node = Node("temp", None)
-        for param in parameters_org:
-            if param.type == "float":
-                registers.floatManager.LRU(temp_node)
-            else:
-                registers.temporaryManager.LRU(temp_node)
-            par_type = parameters_org[count].type
-            if par_type == "float":
-                par_type = "flt_"
-            elif par_type == "int":
-                par_type = "int_"
-            elif par_type == "char":
-                par_type = "chr_"
-            out += f"\tlw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {par_type}{param.name}\n"
-            out += f"\tsw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {count*4}($sp)\n"
-            if param.type == "float":
-                registers.floatManager.LRU_delete(temp_node.register.name)
-            else:
-                registers.temporaryManager.LRU_delete(temp_node.register.name)
-
+        # temp_node = Node("temp", None)
+        # for param in parameters_org:
+        #     if registers.search(param.object) is not None:
+        #         pass
+        #     else:
+        #         if param.type == "float":
+        #             registers.floatManager.LRU(param.object)
+        #         else:
+        #             registers.savedManager.LRU(param.object)
+        #     arg_register = self.args[count].register.name
+        #     out += f"\tmov{'.s' if param.type == 'float' else 'e'} ${param.object.register.name}, ${arg_register}\n"
+        #     self.args[count].register.shuffle()
+        #     out += f"\tsw{'c1' if param.type == 'float' else ''} ${param.object.register.name}, {count * 4}($sp)\n"
+        #     param.object.register.shuffle()
+        for vars in variables:
+            # retrieve value globaly and store it locally
+            if registers.search(vars) is None:
+                if vars.type == "float":
+                    registers.floatManager.LRU(vars)
+                else:
+                    registers.savedManager.LRU(vars)
+            type_string = ""
+            if vars.type == "float":
+                type_string = "flt"
+            elif vars.type == "int":
+                type_string = "int"
+            elif vars.type == "char":
+                type_string = "chr"
+            out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if isinstance(vars, Node) else vars.key}\n"
+            out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
+            vars.register.shuffle()
+            count += 1
         out += f"\tjal {self.root.key}\n"
-        for param in parameters_org:
-            if param.type == "float":
-                registers.floatManager.LRU(temp_node)
-            else:
-                registers.temporaryManager.LRU(temp_node)
-            par_type = parameters_org[count].type
-            if par_type == "float":
-                par_type = "flt_"
-            elif par_type == "int":
-                par_type = "int_"
-            elif par_type == "char":
-                par_type = "chr_"
-            out += f"\tlw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {count*4}($sp)\n"
-            out += f"\tsw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {par_type}{param.name}\n"
-            if param.type == "float":
-                registers.floatManager.LRU_delete(temp_node.register.name)
-            else:
-                registers.temporaryManager.LRU_delete(temp_node.register.name)
+        for vars in variables:
+            out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
+            vars.register.shuffle()
+            type_string = ""
+            if vars.type == "float":
+                type_string = "flt"
+            elif vars.type == "int":
+                type_string = "int"
+            elif vars.type == "char":
+                type_string = "chr"
+            out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if isinstance(vars, Node) else vars.key}\n"
+            count += 1
+        # for arg in self.args:
+        #     if arg.register is not None:
+        #         if arg.register.name.startswitch('f'):
+        #             registers.floatManager.LRU_delete(arg.register.name)
+        #         elif arg.register.name.startswitch('t'):
+        #             registers.temporaryManager.LRU_delete(arg.register.name)
+        #         elif arg.register.name.startswitch('s'):
+        #             registers.savedManager.LRU_delete(arg.register.name)
+        # for param in parameters_org:
+        #     out += f"\tlw{'c1' if param.type == 'float' else ''} ${param.object.register.name}, {count * 4}($sp)\n"
+        #     param.object.register.shuffle()
         if size != 0:
             out += f"\taddi $sp, $sp, {size}\n"
         registers.search(self.root)
@@ -2934,22 +2984,22 @@ class FuncScopeAST(AST):
                         registers.globalObjects.uninitialized[0].append(f"chr_{entry.object.key}")
         param_str = ""
         # initialize the registers for the parameters
-        registers.temporaryManager.clear()
-        for param in self.parent.params:
-            if registers.search(param) is not None:
-                pass
-            elif param.type == "float":
-                registers.floatManager.LRU(param)
-            else:
-                registers.savedManager.LRU(param)
-            type_str = ""
-            if param.type == "int":
-                type_str = "int"
-            elif param.type == "float":
-                type_str = "flt"
-            elif param.type == "char":
-                type_str = "chr"
-            param_str += f"\tlw{'c1' if type_str == 'float' else ''} ${param.register.name}, {type_str}_{param.key}\n"
+        # registers.temporaryManager.clear()
+        # for param in self.parent.params:
+            # if registers.search(param) is not None:
+            #     pass
+            # elif param.type == "float":
+            #     registers.floatManager.LRU(param)
+            # else:
+            #     registers.savedManager.LRU(param)
+            # type_str = ""
+            # if param.type == "int":
+            #     type_str = "int"
+            # elif param.type == "float":
+            #     type_str = "flt"
+            # elif param.type == "char":
+            #     type_str = "chr"
+            # param_str += f"\tlw{'c1' if type_str == 'float' else ''} ${param.register.name}, {type_str}_{param.key}\n"
         # mips code for each instruction
         for current in visited:
             output = tuple
@@ -2971,6 +3021,10 @@ class FuncScopeAST(AST):
             temp_list.remove("v0")
         if "v1" in temp_list:
             temp_list.remove("v1")
+        for param in self.parent.params:
+            registers.search(param)
+            if param.register.name in temp_list:
+                temp_list.remove(param.register.name)
         # save the registers
         out_local += f"\taddi $sp, $sp, -{size}\n"
         count = 0
