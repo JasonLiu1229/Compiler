@@ -201,7 +201,13 @@ class Node:
 
         if self.key == "var":
             # variable is declared in the data section
-            out_local += f"\tlw{'c1' if self.key == 'float' else ''} ${self.register.name}, {self.type + '_' if self.type is not None else ''}{self.value}\n"
+            if self.type == "int":
+                temp_type = "int"
+            elif self.type == "float":
+                temp_type = "flt"
+            else:
+                temp_type = "chr"
+            out_local += f"\tlw{'c1' if (self.key == 'float' or self.register.name[0] == 'f') else ''} ${self.register.name}, {temp_type}_{self.value}\n"
             # out_local += f"\tla ${self.register.name}, {self.value}\n"
         else:
             out_local += f"\tli ${self.register.name}, {self.value}\n"
@@ -433,7 +439,7 @@ class VarNode(Node):
         # local variable declaration
         if not (self.ptr and isinstance(self.value, VarNode)):
             if self.type == "float":
-                out_local = f"\tlwc1 ${self.register.name}, {self.type}_{self.key}\n"
+                out_local = f"\tlwc1 ${self.register.name}, flt_{self.key}\n"
             else:
                 out_local = f"\tli ${self.register.name}, {out_val}\n"
         else:

@@ -470,8 +470,14 @@ class AST:
         out_list.append(new_register)
         if left_type == "float" or right_type == "float":
             temp_node = Node("", 1)
-            registers.temporaryManager.LRU(temp_node)
+            temp2_node = Node("", None)
+            if right_type is None:
+                registers.floatManager.LRU(temp_node)
+            else:
+                registers.temporaryManager.LRU(temp_node)
+            registers.temporaryManager.LRU(temp2_node)
             temp_save = temp_node.register.name
+            temp2_save = temp2_node.register.name if temp2_node.register is not None else None
         uni = False
         if right_node is not None:
             # add commentaries
@@ -487,44 +493,50 @@ class AST:
                     out_local += f"${right_register} --> ${new_register}\n"
             if token == '<':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp_save}, 1\n"
                     out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
-                    out_local += f"\tmovf ${new_register}, $zero\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}, 0\n"
+                    out_local += f"\tmovf ${new_register}, $zero, 0\n"
                 else:
                     out_local += f"\tslt ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '>':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp2_save}, 0\n"
                     out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
+                    out_local += f"\tmovt ${new_register}, $zero, 0\n"
+                    out_local += f"\tmovf ${new_register}, ${temp2_save}, 0\n"
                 else:
                     out_local += f"\tslt ${new_register}, ${right_register}, ${left_register}\n"
             elif token == '==':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp_save}, 1\n"
                     out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
-                    out_local += f"\tmovf ${new_register}, $zero\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}, 0\n"
+                    out_local += f"\tmovf ${new_register}, $zero, 0\n"
                 else:
                     out_local += f"\tseq ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '!=':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp2_save}, 0\n"
                     out_local += f"\tc.eq.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
+                    out_local += f"\tmovt ${new_register}, $zero, 0\n"
+                    out_local += f"\tmovf ${new_register}, ${temp2_save}, 0\n"
                 else:
                     out_local += f"\tsne ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '<=':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp_save}, 1\n"
                     out_local += f"\tc.le.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, ${temp_save}\n"
-                    out_local += f"\tmovf ${new_register}, $zero\n"
+                    out_local += f"\tmovt ${new_register}, ${temp_save}, 0\n"
+                    out_local += f"\tmovf ${new_register}, $zero, 0\n"
                 else:
                     out_local += f"\tsle ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '>=':
                 if left_type == 'float' or right_type == 'float':
+                    out_local += f"\tli ${temp2_save}, 0\n"
                     out_local += f"\tc.lt.s ${left_register}, ${right_register}\n"
-                    out_local += f"\tmovt ${new_register}, $zero\n"
-                    out_local += f"\tmovf ${new_register}, ${temp_save}\n"
+                    out_local += f"\tmovt ${new_register}, $zero, 0\n"
+                    out_local += f"\tmovf ${new_register}, ${temp2_save}, 0\n"
                 else:
                     out_local += f"\tsge ${new_register}, ${left_register}, ${right_register}\n"
             elif token == '&&':
@@ -543,7 +555,13 @@ class AST:
                 out_local += f"\trem ${new_register}, ${left_register}, ${right_register}\n"
         else:
             if token == '++':
-                out_local += f"\taddi ${left_register}, ${left_register}, 1\n"
+                if left_type == 'float':
+                    out_local += f"\tli ${temp2_save}, 1\n"
+                    out_local += f"\tmtc1 ${temp2_save}, ${temp_save}\n"
+                    out_local += f"\tcvt.s.w ${temp_save}, ${temp_save}\n"
+                    out_local += f"\tadd.s ${left_register}, ${left_register}, ${temp_save}\n"
+                else:
+                    out_local += f"\taddi ${left_register}, ${left_register}, 1\n"
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
                 uni = True
             elif token == '--':
@@ -551,7 +569,13 @@ class AST:
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
                 uni = True
             if isinstance(left_node, Node) and left_node.key == "var":
-                out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {left_node.type}_{left_node.value}\n"
+                if left_node.type == "int":
+                    temp_type = "int"
+                elif left_node.type == "float":
+                    temp_type = "flt"
+                else:
+                    temp_type = "chr"
+                out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {temp_type}_{left_node.value}\n"
 
         # shuffle used registers
         if left_register is not None:
@@ -1586,7 +1610,7 @@ class PrintfAST(AST):
                 # i = array('f', [i])[0]
                 if i in registers.globalObjects.data[1].keys():
                     continue
-                registers.globalObjects.data[1][i] = f"float_{len(registers.globalObjects.data[1].items())}"
+                registers.globalObjects.data[1][i] = f"flt_{len(registers.globalObjects.data[1].items())}"
             elif isinstance(i, str):
                 registers.globalObjects.data[0][i] = f"str_{len(registers.globalObjects.data[0].items())}"
         # now syscall the list format in the right order with the right names
@@ -2542,7 +2566,7 @@ class FuncDeclAST(AST):
         return out, index
 
     def mips(self, registers: Registers):
-        return f"{self.root.key}:\n", f".globl {self.root.key}\n" if self.root.key == "main" else "" , []
+        return "", f".globl {self.root.key}\n" if self.root.key == "main" else "" , []
 
 
 class FuncDefnAST(AST):
@@ -2631,6 +2655,7 @@ class FuncDefnAST(AST):
                     registers.globalObjects.data[4][0] = f"chr_{param.key}"
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
+        registers.globalObjects.index += 1
         out_local += out_l + "\n"
         out_global += out_g
         return out_local, out_global, out_list
@@ -2855,17 +2880,17 @@ class FuncScopeAST(AST):
                         continue
                     # declare the variable in the global scope .data
                     if entry.object.value is not None:
-                        registers.globalObjects.data[1][entry.object.value] = f"{entry.type}_{entry.object.key}"
+                        registers.globalObjects.data[1][entry.object.value] = f"flt_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[1].append(f"{entry.type}_{entry.object.key}")
+                        registers.globalObjects.uninitialized[1].append(f"flt_{entry.object.key}")
                 elif entry.type == "char":
                     if entry.object.key in registers.globalObjects.data[0].values():
                         continue
                     # declare the variable in the global scope .data
                     if entry.object.value is not None:
-                        registers.globalObjects.data[0][entry.object.value] = f"{entry.type}_{entry.object.key}"
+                        registers.globalObjects.data[0][entry.object.value] = f"chr_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[0].append(f"{entry.type}_{entry.object.key}")
+                        registers.globalObjects.uninitialized[0].append(f"chr_{entry.object.key}")
         param_str = ""
         # initialize the registers for the parameters
         registers.temporaryManager.clear()
@@ -2883,7 +2908,7 @@ class FuncScopeAST(AST):
                 type_str = "flt"
             elif param.type == "char":
                 type_str = "chr"
-            param_str += f"\tlw ${param.register.name}, {type_str}_{param.key}\n"
+            param_str += f"\tlw{'c1' if type_str == 'float' else ''} ${param.register.name}, {type_str}_{param.key}\n"
         # mips code for each instruction
         for current in visited:
             output = tuple
@@ -2963,11 +2988,17 @@ class ReturnInstr(InstrAST):
 
     def mips(self, registers: Registers):
         out = ""
+        if len(self.children) == 0:
+            current = self.parent
+            while isinstance(current, FuncDefnAST) is False:
+                current = current.parent
+            out += f"\tj exit_{current.index}\n"
+            return out, "", []
         child = self.children[0]
         if isinstance(child, VarNode):
             if child.register is None:
                 registers.temporaryManager.LRU(child)
-            out += f"\tlw ${child.register.name},"
+            out += f"\tlw{'c1' if child.type == 'float' else ''} ${child.register.name},"
             if (child.type is not None and child.key == "var") or isinstance(child, FuncParameter):
                 out += f"{child.type}_{child.key}\n"
             else:
