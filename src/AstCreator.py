@@ -284,6 +284,7 @@ class AstCreator(MathVisitor):
                     if len(child.condition) == 1 and isinstance(child.condition[0], Node):
                         if child.condition[0].key != "var":
                             child.root.value = child.condition[0].value
+                        child.condition = child.condition[0]
                     base.children[last_switch_scope + 1: index] = []
                     index = base.children.index(child)
                     child.children = base.children[index - 1: index]
@@ -996,8 +997,10 @@ class AstCreator(MathVisitor):
                         elif not in_loop:
                             ast.condition = match[0].object
                 # resolve the cases
-                # for case in ast.cases:
-                #     self.resolve(case, in_cond=True, in_loop=in_loop)
+                for case in ast.cases:
+                    if isinstance(case.condition, AST):
+                        case.condition.handle()
+                    self.resolve(case, in_cond=True, in_loop=in_loop)
                 # transform the switch into if-else
                 # new_nodes = []
                 # for i in range(len(ast.cases)):

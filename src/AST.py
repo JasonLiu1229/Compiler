@@ -2421,7 +2421,7 @@ class BreakAST(InstrAST):
         if isinstance(parent, While_loopAST):
             end_while_register = parent.end_while
         elif isinstance(parent, CaseAST):
-            end_switch_register = parent.index
+            end_switch_register = parent.parent.end_label
         else:
             # search for the last if/else in the switch
             for child in parent.parent.children:
@@ -2846,6 +2846,7 @@ class FuncScopeAST(AST):
                     registers.globalObjects.data[0][entry.object.value] = entry.object.key
         param_str = ""
         # initialize the registers for the parameters
+        registers.temporaryManager.clear()
         for param in self.parent.params:
             if registers.search(param) is not None:
                 pass
@@ -3271,15 +3272,20 @@ class SwitchAST(AST):
         self.end_label = registers.globalObjects.index
         registers.globalObjects.index += 1
         for case in self.cases:
-            cases_cond_list.append(case.condition.mips(registers))
-            cases_cond_list[count][0] += f"\tbeq ${compare_register}, ${case.condition.root.register.name}, case_{case.index}\n"
+            temp_local, temp_global, temp_list = case.condition.mips(registers)
+            case.index = registers.globalObjects.index
+            registers.globalObjects.index += 1
+            temp_local += f"\tbeq ${compare_register}, ${case.condition.root.register.name if isinstance(case.condition, AST) else case.condition.register.name}, case_{case.index}\n"
             if compare_register.startswith('t'):
                 registers.temporaryManager.shuffle_name(compare_register)
             else:
                 registers.floatManager.shuffle_name(compare_register)
+            cases_cond_list.append((temp_local, temp_global, temp_list))
             cases_list.append(case.mips(registers))
             count += 1
         if self.has_default:
+            self.default.index = registers.globalObjects.index
+            registers.globalObjects.index += 1
             cases_list.append(self.default.mips(registers))
         # make the switch
         self.index = registers.globalObjects.index
@@ -3289,11 +3295,13 @@ class SwitchAST(AST):
             out_local += case[0]
             out_global += case[1]
             out_list += case[2]
+        if self.has_default:
+            out_local += f"\tj default_{self.default.index}\n"
         for case in cases_list:
             out_local += case[0]
             out_global += case[1]
             out_list += case[2]
-        out_local += f"end_switch_{self.end_label}\n:"
+        out_local += f"end_switch_{self.end_label}:\n"
         # filter duplicates from the list
         out_list = list(dict.fromkeys(out_list))
         return out_local, out_global, out_list
@@ -3313,15 +3321,15 @@ class CaseAST(Scope_AST):
         out_local = out_global = ""
         out_list = []
         # case
-        self.index = registers.globalObjects.index
-        registers.globalObjects.index += 1
+        # self.index = registers.globalObjects.index
+        # registers.globalObjects.index += 1
         out_local += f"case_{self.index}:\n"
         for child in self.children:
             output = child.mips(registers)
             out_local += output[0]
             out_global += output[1]
             out_list += output[2]
-        out_local += f"\tj end_switch_{self.parent.end_label}\n"
+        # out_local += f"\tj end_switch_{self.parent.end_label}\n"
         return out_local, out_global, out_list
 
 
