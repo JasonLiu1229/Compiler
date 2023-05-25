@@ -2171,9 +2171,6 @@ class If_CondAST(Scope_AST):
         temp_out = output[0]
         temp_list += output[2]
         temp_list.append("v1")
-        # stack size
-        size = 4
-        size += size * len(temp_list)
         count = 0
         # condition
         out_local += out_cond
@@ -2190,6 +2187,8 @@ class If_CondAST(Scope_AST):
             self.children[1].register = registers.globalObjects.index
             output = self.children[1].mips(registers)
             out_else += output[0]
+            out_list += output[2]
+            out_global += output[1]
         else:
             pass
             # out_else += f"\tjr $ra\n\n"
@@ -2203,7 +2202,8 @@ class If_CondAST(Scope_AST):
         if not return_bool:
             out_local += f"exit_{self.exit}: \n"
         registers.globalObjects.index += 1
-        return out_local, out_global, []
+        out_list += temp_list
+        return out_local, out_global, out_list
 
 
 class Else_CondAST(Scope_AST):
@@ -2426,7 +2426,7 @@ class CondAST(TermAST):
             last_register = out_list[-1]
             out_local += f"\tmove $v1, ${last_register}\n"
 
-        return out_local, out_global, []
+        return out_local, out_global, out_list
 
 
 class InitAST(DeclrAST):
@@ -2742,11 +2742,51 @@ class FuncCallAST(AST):
             out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
-        # out += f"\taddi $sp, $sp, -4\n"
-        # out += f"\tsw $ra, 0($sp)\n"
+        size = len(self.args) * 4
+        if size != 0:
+            out += f"\taddi $sp, $sp, -{size}\n"
+        count = 0
+        temp_node = Node("temp", None)
+        for param in parameters_org:
+            if param.type == "float":
+                registers.floatManager.LRU(temp_node)
+            else:
+                registers.temporaryManager.LRU(temp_node)
+            par_type = parameters_org[count].type
+            if par_type == "float":
+                par_type = "flt_"
+            elif par_type == "int":
+                par_type = "int_"
+            elif par_type == "char":
+                par_type = "chr_"
+            out += f"\tlw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {par_type}{param.name}\n"
+            out += f"\tsw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {count*4}($sp)\n"
+            if param.type == "float":
+                registers.floatManager.LRU_delete(temp_node.register.name)
+            else:
+                registers.temporaryManager.LRU_delete(temp_node.register.name)
+
         out += f"\tjal {self.root.key}\n"
-        # out += f"\tlw $ra, 0($sp)\n"
-        # out += f"\taddi $sp, $sp, 4\n"
+        for param in parameters_org:
+            if param.type == "float":
+                registers.floatManager.LRU(temp_node)
+            else:
+                registers.temporaryManager.LRU(temp_node)
+            par_type = parameters_org[count].type
+            if par_type == "float":
+                par_type = "flt_"
+            elif par_type == "int":
+                par_type = "int_"
+            elif par_type == "char":
+                par_type = "chr_"
+            out += f"\tlw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {count*4}($sp)\n"
+            out += f"\tsw{'c1' if param.type == 'float' else ''} ${temp_node.register.name}, {par_type}{param.name}\n"
+            if param.type == "float":
+                registers.floatManager.LRU_delete(temp_node.register.name)
+            else:
+                registers.temporaryManager.LRU_delete(temp_node.register.name)
+        if size != 0:
+            out += f"\taddi $sp, $sp, {size}\n"
         registers.search(self.root)
         if self.register is None:
             registers.temporaryManager.LRU(self.root)
@@ -2924,6 +2964,12 @@ class FuncScopeAST(AST):
         temp_list.append("ra")
 
         size = len(temp_list) * 4
+        # check if temp_list has v0 if so delete it
+        if "v0" in temp_list:
+            # delete v0 from the list
+            temp_list.remove("v0")
+        if "v1" in temp_list:
+            temp_list.remove("v1")
         # save the registers
         out_local += f"\taddi $sp, $sp, -{size}\n"
         count = 0
