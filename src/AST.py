@@ -1820,7 +1820,7 @@ class AssignAST(AST):
         if isinstance(left_node, Node):
             out_local += f"\tsw ${right_node.register.name}, {temp_type}_{left_node.value if left_node.key == 'var' else left_node.key}\n"
         elif isinstance(left_node, ArrayElementAST):
-            out_local += f"\tsw ${right_node.register.name}, ({left_node.register.name})\n"
+            out_local += f"\tsw ${right_node.register.name}, 0(${left_node.register.name})\n"
         return out_local, "", [right_node.register.name, left_node.register.name]
 
 class TermAST(AST):
@@ -2053,6 +2053,26 @@ class ArrayElementAST(AST):
         out = f"{self.root.key}[{self.root.value}]"
         return out
 
+    def mips(self, registers: Registers):
+        out_local = out_global = ""
+        out_list = []
+        # steps to load array element with register in a variable
+        # 1. load array address in a register - done before calling this function
+        # 2. multiply the index with the size of the array element
+        temp_node = Node("*", None)
+        registers.temporaryManager.LRU(temp_node)
+        if self.children[1].register is None:
+            registers.temporaryManager.LRU(self.children[1])
+        if self.register is None:
+            registers.temporaryManager.LRU(self.root)
+            self.register = self.root.register
+        # sll register_of_offset, index, 2
+        out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
+        # 3. add the offset to the array address
+        out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
+        # 4. load the value at the address in a register
+        out_local += f"\tlw ${self.register.name}, 0(${self.children[0].register.name})\n"
+        return out_local, out_global, out_list
 
 class Scope_AST(AST):
 
