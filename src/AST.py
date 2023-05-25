@@ -551,7 +551,7 @@ class AST:
                 # out_local += f"\tmove ${left_register}, ${new_register}\n"
                 uni = True
             if isinstance(left_node, Node) and left_node.key == "var":
-                out_local += f"\tsw ${left_register}, {left_node.value}\n"
+                out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {left_node.type}_{left_node.value}\n"
 
         # shuffle used registers
         if left_register is not None:
@@ -1649,12 +1649,15 @@ class PrintfAST(AST):
                     out_list.append('a0')
             elif self.getType(list_format[i]) == 3: # if the type is a variable
                 var = list_format[i]
-                out_local += f"\tlw $a0, {var.key if isinstance(var, VarNode) else var.value}\n"
+                out_local += f"\tlw $a0, "
                 if var.type == "int":
+                    out_local += f"int_{var.key if isinstance(var, VarNode) else var.value}\n"
                     out_local += f"\tli $v0, 1\n"
                 elif var.type == "float":
+                    out_local += f"flt_{var.key if isinstance(var, VarNode) else var.value}\n"
                     out_local += f"\tli $v0, 2\n"
                 elif var.type == "char":
+                    out_local += f"chr_{var.key if isinstance(var, VarNode) else var.value}\n"
                     out_local += f"\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
                 # ඞ
@@ -1776,7 +1779,13 @@ class AssignAST(AST):
                 registers.temporaryManager.LRU(right_node)
         # assign value of right to left
         out_local += f"\tmove ${left_node.register.name}, ${right_node.register.name}\n"
-        out_local += f"\tsw ${right_node.register.name}, {left_node.value if left_node.key == 'var' else left_node.key}\n"
+        if left_node.type == "int":
+            temp_type = "int"
+        elif left_node.type == "float":
+            temp_type = "flt"
+        else:
+            temp_type = "chr"
+        out_local += f"\tsw ${right_node.register.name}, {temp_type}_{left_node.value if left_node.key == 'var' else left_node.key}\n"
         return out_local, "", [right_node.register.name, left_node.register.name]
 
 class TermAST(AST):
@@ -2838,19 +2847,25 @@ class FuncScopeAST(AST):
                         continue
                     # declare the variable in the global scope .data
                     if entry.object.value is not None:
-                        registers.globalObjects.data[2][entry.object.value] = entry.object.key
+                        registers.globalObjects.data[2][entry.object.value] = f"{entry.type}_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[2].append(entry.object.key)
+                        registers.globalObjects.uninitialized[2].append(f"{entry.type}_{entry.object.key}")
                 elif entry.type == "float":
                     if entry.object.key in registers.globalObjects.data[1].values():
                         continue
                     # declare the variable in the global scope .data
-                    registers.globalObjects.data[1][entry.object.value] = entry.object.key
+                    if entry.object.value is not None:
+                        registers.globalObjects.data[1][entry.object.value] = f"{entry.type}_{entry.object.key}"
+                    else:
+                        registers.globalObjects.uninitialized[1].append(f"{entry.type}_{entry.object.key}")
                 elif entry.type == "char":
                     if entry.object.key in registers.globalObjects.data[0].values():
                         continue
                     # declare the variable in the global scope .data
-                    registers.globalObjects.data[0][entry.object.value] = entry.object.key
+                    if entry.object.value is not None:
+                        registers.globalObjects.data[0][entry.object.value] = f"{entry.type}_{entry.object.key}"
+                    else:
+                        registers.globalObjects.uninitialized[0].append(f"{entry.type}_{entry.object.key}")
         param_str = ""
         # initialize the registers for the parameters
         registers.temporaryManager.clear()
@@ -3095,8 +3110,8 @@ class ScanfAST(AST):
                 out_local += f"\tsyscall\n"
                 out_list.append("v0")
                 variable_register = self.variables[counter].register.name
-                out_local += f"\tmove ${variable_register}, $v0\n"
-                out_local += f"\tsw $v0, {self.variables[counter].key}\n"
+                out_local += f"\tmov{'.s' if variable_register[0] == 'f' else 'e'} ${variable_register}, $v0\n"
+                out_local += f"\tsw{'c1' if self.variables[counter].type == 'float' else ''} $v0, {self.variables[counter].type}_{self.variables[counter].key}\n"
                 out_list.append(variable_register)
                 counter += 1
         out_list = list(dict.fromkeys(out_list))

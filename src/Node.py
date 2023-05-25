@@ -433,7 +433,7 @@ class VarNode(Node):
         # local variable declaration
         if not (self.ptr and isinstance(self.value, VarNode)):
             if self.type == "float":
-                out_local = f"\tlwc1 ${self.register.name}, {self.key}\n"
+                out_local = f"\tlwc1 ${self.register.name}, {self.type}_{self.key}\n"
             else:
                 out_local = f"\tli ${self.register.name}, {out_val}\n"
         else:

@@ -932,7 +932,7 @@ class AstCreator(MathVisitor):
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
-                            if isinstance(matches[0].object, FuncParameter) or matches[0].object.value is None:
+                            if isinstance(matches[0].object, FuncParameter) or child.type is None:
                                 ast.children[index].type = matches[0].type
                             if evaluate and not in_loop:
                                 ast.children[index] = copy.copy(matches[0].object)
@@ -1034,9 +1034,9 @@ class AstCreator(MathVisitor):
                 #         cond.condition = cond.condition.handle()
                 continue
             elif isinstance(ast, While_loopAST):
-                self.resolve(ast.condition)
+                self.resolve(ast.condition, in_loop=True, in_func=in_func)
                 ast.symbolTable = temp_symbol
-                self.resolve(ast.children[0], in_loop=True)
+                self.resolve(ast.children[0], in_loop=True, in_func=in_func)
                 node = ast
 
             elif isinstance(ast, For_loopAST):
