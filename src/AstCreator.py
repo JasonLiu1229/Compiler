@@ -884,7 +884,7 @@ class AstCreator(MathVisitor):
                         break
                     if isinstance(child, AST) and not isinstance(ast, Scope_AST) and not isinstance(ast, SwitchAST):
                         handle = False
-                        break
+                        continue
                     if isinstance(ast, ArrayElementAST):
                         # check if the array was previously declared
                         while not temp_symbol.exists(ast.root.key):
