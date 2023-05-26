@@ -1,3 +1,0 @@
-float z = (float)'c';
-int x = (int)z;
-x++;

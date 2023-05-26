@@ -1,7 +1,8 @@
 #include <stdio.h>
 
 int main(){
-    int day = 6;
+    int day;
+    scanf("%d", &day);
     switch (day) {
         case 6:
             printf("Today is Saturday");
