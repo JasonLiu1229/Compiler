@@ -3037,21 +3037,21 @@ class FuncScopeAST(AST):
         param_str = ""
         # initialize the registers for the parameters
         # registers.temporaryManager.clear()
-        # for param in self.parent.params:
-            # if registers.search(param) is not None:
-            #     pass
-            # elif param.type == "float":
-            #     registers.floatManager.LRU(param)
-            # else:
-            #     registers.savedManager.LRU(param)
-            # type_str = ""
-            # if param.type == "int":
-            #     type_str = "int"
-            # elif param.type == "float":
-            #     type_str = "flt"
-            # elif param.type == "char":
-            #     type_str = "chr"
-            # param_str += f"\tlw{'c1' if type_str == 'float' else ''} ${param.register.name}, {type_str}_{param.key}\n"
+        for param in self.parent.params:
+            if registers.search(param) is not None:
+                pass
+            elif param.type == "float":
+                registers.floatManager.LRU(param)
+            else:
+                registers.savedManager.LRU(param)
+            type_str = ""
+            if param.type == "int":
+                type_str = "int"
+            elif param.type == "float":
+                type_str = "flt"
+            elif param.type == "char":
+                type_str = "chr"
+            param_str += f"\tlw{'c1' if type_str == 'float' else ''} ${param.register.name}, {type_str}_{param.key}\n"
         # mips code for each instruction
         for current in visited:
             output = tuple
