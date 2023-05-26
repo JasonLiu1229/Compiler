@@ -36,6 +36,8 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # check if the main function exists
             if not ast.symbolTable.exists("main"):
                 raise Exception("No main function found")
+            # delete unused variables and generate warning if there are any
+            visitor.warnings += ast.delete_unused_variables(visitor.file_name)
             # print the ast if verbose is true
             if verbose and not silent:
                 ast.print(4, True, filename)
