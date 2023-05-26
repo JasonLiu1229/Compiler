@@ -2153,7 +2153,7 @@ class Scope_AST(AST):
         size = 4
 
         output = None
-        original_stacksize = registers.globalObjects.stacksize
+        original_stacksize = registers.globalObjects.stackSize
         for current in visited:
             if isinstance(current, Node):
                 output = current.mips(registers)
@@ -2164,7 +2164,7 @@ class Scope_AST(AST):
             out_local += output[0]
             out_global += output[1]
             out_list += output[2]
-        if original_stacksize != registers.globalObjects.stacksize:
+        if original_stacksize != registers.globalObjects.stackSize:
             pass
         # # begin
         return out_local, out_global, out_list
