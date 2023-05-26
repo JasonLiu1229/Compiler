@@ -196,6 +196,40 @@ class AST:
     # def __ne__(self, o: object) -> bool:
     #     return not self.__eq__(o)
 
+    def delete_unused_variables(self, filename= None):
+        variables = []
+        warnings = []
+        for entry in self.symbolTable.table:
+            if isinstance(entry, FuncSymbolEntry) and entry.symbol_table is not None:
+                for entry2 in entry.symbol_table.table:
+                    if not entry2.used:
+                        variables.append(entry2)
+                        # entry.symbol_table.remove(entry2)
+            else:
+                if not entry.used and entry.name not in ["printf", "scanf", "main"]:
+                    variables.append(entry)
+                    # self.symbolTable.remove(entry)
+        variables.sort(key=lambda x: x.object.parent.line if x.object.parent is not None else 0, reverse=True)
+        for entry in variables:
+            entry.owner.remove(entry)
+            temp_parent = entry.object.parent
+            temp_obj = entry.object
+            # delete variable from its parent when:
+            # it is only a declaration instruction
+            if temp_parent is not None and isinstance(temp_parent, InstrAST) and len(temp_parent.children) == 1:
+                temp_parent.children.remove(temp_obj)
+            # fix the parents by deleting the instruction in which the variable is declared
+            while temp_parent is not None:
+                if isinstance(temp_parent, InstrAST) and len(temp_parent.children) == 1:
+                    temp_parent.parent.children.remove(temp_parent)
+                    break
+                temp_parent = temp_parent.parent
+            line = open(filename, 'r').readlines()[entry.object.parent.line - 1]
+            line = line[:entry.object.parent.column] + '\u0332' + line[entry.object.parent.column:]
+            warnings.append(f"\033[95mwarning: \033[0m Unused variable {entry.name}\n"
+                            f"{entry.object.parent.line}:{entry.object.parent.column}:\t{line}")
+        return warnings
+
     def variable_check(self):
         # DFS
         not_visited = [self]

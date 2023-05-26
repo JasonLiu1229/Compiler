@@ -44,7 +44,9 @@ class SymbolTable:
         :param index: indicates where to insert the object
         :type in_object: SymbolEntry
         """
-        self.table.insert(index, copy.deepcopy(in_object))
+        new_entry = copy.deepcopy(in_object)
+        new_entry.owner = self
+        self.table.insert(index, new_entry)
         for entry in self.table:
             if entry.object == in_object.object.value:
                 entry.object.parent = in_object.object
