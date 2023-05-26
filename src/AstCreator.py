@@ -1001,11 +1001,13 @@ class AstCreator(MathVisitor):
                             raise ReferenceError(f"Variable {ast.condition.value} undeclared")
                         elif not in_loop:
                             ast.condition = match[0].object
+                        ast.condition.type = match[0].type
                 # resolve the cases
                 for case in ast.cases:
                     if isinstance(case.condition, AST):
                         case.condition.handle()
                     self.resolve(case, in_cond=True, in_loop=in_loop)
+                self.resolve(ast.default, in_cond=True, in_loop=in_loop)
                 # transform the switch into if-else
                 # new_nodes = []
                 # for i in range(len(ast.cases)):
