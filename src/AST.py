@@ -166,6 +166,23 @@ def visited_list_DFS(ast) -> list:
                             not_visited.append(i)
     return visited
 
+def visited_list_DFS2(ast) -> list:
+    not_visited = [ast]
+    visited = []
+    while len(not_visited) > 0:
+        v = not_visited.pop()
+        if v not in visited:
+            visited.append(v)
+            if isinstance(v, Node):
+                continue
+            if not isinstance(v, While_loopAST) or not isinstance(v, FuncDeclAST) \
+                    or not isinstance(v, If_CondAST) \
+                    or not isinstance(v, FuncDefnAST) or not isinstance(v, For_loopAST):
+                if isinstance(v, AST):
+                    for i in v.children:
+                        if i is not ast:
+                            not_visited.append(i)
+    return visited
 
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
@@ -210,20 +227,24 @@ class AST:
                     variables.append(entry)
                     # self.symbolTable.remove(entry)
         variables.sort(key=lambda x: x.object.parent.line if x.object.parent is not None else 0, reverse=True)
+        visited = visited_list_DFS2(self)
+        visited = [i for i in visited if isinstance(i, Node)]
         for entry in variables:
             entry.owner.remove(entry)
-            temp_parent = entry.object.parent
             temp_obj = entry.object
             # delete variable from its parent when:
             # it is only a declaration instruction
-            if temp_parent is not None and isinstance(temp_parent, InstrAST) and len(temp_parent.children) == 1:
-                temp_parent.children.remove(temp_obj)
+            # if temp_parent is not None and isinstance(temp_parent, InstrAST)
+            # and len(temp_parent.children) == 1:
+            #     temp_parent.children.remove(temp_obj)
             # fix the parents by deleting the instruction in which the variable is declared
-            while temp_parent is not None:
-                if isinstance(temp_parent, InstrAST) and len(temp_parent.children) == 1:
-                    temp_parent.parent.children.remove(temp_parent)
-                    break
-                temp_parent = temp_parent.parent
+            if temp_obj in visited:
+                temp_obj = visited[visited.index(temp_obj)]
+                temp_parent = temp_obj.parent
+                while temp_parent is not None:
+                    if isinstance(temp_parent, InstrAST) and len(temp_parent.children) == 1:
+                        temp_parent.parent.children.remove(temp_parent)
+                    temp_parent = temp_parent.parent
             line = open(filename, 'r').readlines()[entry.object.parent.line - 1]
             line = line[:entry.object.parent.column] + '\u0332' + line[entry.object.parent.column:]
             warnings.append(f"\033[95mwarning: \033[0m Unused variable {entry.name}\n"
@@ -2109,6 +2130,7 @@ class ArrayElementAST(AST):
             raise AttributeError(f"Multiple definitions of array {self.root.key}")
         temp_symbol = matches[0]
         self.type = temp_symbol.type
+        matches[0].used = True
         if isinstance(self.root.value, str) or isinstance(self.root.value, Node):
             return self
         if self.root.value < 0 or self.root.value >= temp_symbol.size:
