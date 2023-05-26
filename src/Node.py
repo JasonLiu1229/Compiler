@@ -111,10 +111,12 @@ class Node:
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
-        if isinstance(self.value, str) and self.key != "var":
-            self.value = ord(self.value)
-        if isinstance(other.value, str) and other.key != "var":
-            other.value = ord(other.value)
+        # if isinstance(self.value, str) and self.key != "var" and len(self.value) == 1:
+        #     self.value = ord(self.value)
+        # if isinstance(self.value, str) and self.key != "var":
+        #     self.value = ord(self.value)
+        # if isinstance(other.value, str) and other.key != "var":
+        #     other.value = ord(other.value)
         if not isinstance(self, VarNode) and not isinstance(other, VarNode):
             return self.value == other.value and self.key == other.key
         else:
