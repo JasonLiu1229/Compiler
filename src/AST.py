@@ -2801,12 +2801,14 @@ class FuncCallAST(AST):
         count = 0
         parameters_org = entry.parameters
         variables = []
+        calc = ""
         for arg in self.args:
             if arg.register is None:
                 if isinstance(arg, AST):
                     output = arg.mips(registers)
                     variables += arg.variable_check()
-                    out += output[0]
+                    calc += output[0]
+                    # out += output[0]
                     temp_list += output[2]
                     # parameters_org[count].update(arg.register, registers)
                 else:
@@ -2821,7 +2823,7 @@ class FuncCallAST(AST):
                 par_type = "int_"
             elif par_type == "char":
                 par_type = "chr_"
-            out += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
+            calc += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
         size = len(self.args) * 4
@@ -2860,6 +2862,7 @@ class FuncCallAST(AST):
             out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
             vars.register.shuffle()
             count += 1
+        out += calc
         out += f"\tjal {self.root.key}\n"
         for vars in variables:
             out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
