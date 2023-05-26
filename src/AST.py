@@ -3554,7 +3554,7 @@ class DefaultAST(CaseAST):
             out_local += output[0]
             out_global += output[1]
             out_list += output[2]
-        out_local += f"\tj end_switch_{self.parent.end_label}\n"
+        # out_local += f"\tj end_switch_{self.parent.end_label}\n"
         return out_local, out_global, out_list
 
 class CommentAST(AST):
