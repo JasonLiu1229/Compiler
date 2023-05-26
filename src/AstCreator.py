@@ -180,6 +180,8 @@ class AstCreator(MathVisitor):
         for i in reversed(range(index)):
             if isinstance(in_list[i], CaseAST) or isinstance(in_list[i], DefaultAST):
                 return i
+            # elif isinstance(in_list[i], BreakAST):
+            #     return i - 1
         return -1
 
     @staticmethod

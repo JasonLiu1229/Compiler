@@ -2143,7 +2143,7 @@ class Scope_AST(AST):
                 visited.append(current)
                 if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
                         or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
-                        or isinstance(current, FuncDeclAST)):
+                        or isinstance(current, FuncDeclAST) or isinstance(current, SwitchAST)):
                     if isinstance(current, AST):
                         for i in current.children:
                             not_visited.append(i)
