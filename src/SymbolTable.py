@@ -135,7 +135,7 @@ class SymbolTable:
                 # |--------------- | ----------------
                 # | int a          | 1
 
-                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
+                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}{'Used' if item.used else 'Unused':<5}{'|':<2}")
         print(under)
 
         # if print_each, print for each entry it's symbol table
