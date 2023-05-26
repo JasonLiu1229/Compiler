@@ -2730,20 +2730,26 @@ class FuncDefnAST(AST):
         # Parameters
         for param in self.params:
             if param.type == "float":
-                if f"flt_{param.key}" not in registers.globalObjects.data[1].values():
-                    registers.globalObjects.data[1][0.0] = f"flt_{param.key}"
+                # if f"flt_{param.key}" not in registers.globalObjects.data[1].values():
+                #     registers.globalObjects.data[1][0.0] = f"flt_{param.key}"
                 if registers.search(param) is None:
                     registers.floatManager.LRU(param)
+                if f"flt_{param.key}" not in registers.globalObjects.uninitialized[1]:
+                    registers.globalObjects.uninitialized[1].append(f"flt_{param.key}")
             elif param.type == "int":
-                if f"int_{param.key}" not in registers.globalObjects.data[2].values():
-                    registers.globalObjects.data[2][0] = f"int_{param.key}"
+                # if f"int_{param.key}" not in registers.globalObjects.data[2].values():
+                #     registers.globalObjects.data[2][0] = f"int_{param.key}"
                 if registers.search(param) is None:
                     registers.savedManager.LRU(param)
+                if f"int_{param.key}" not in registers.globalObjects.uninitialized[2]:
+                    registers.globalObjects.uninitialized[2].append(f"int_{param.key}")
             elif param.type == "char":
-                if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
-                    registers.globalObjects.data[4][0] = f"chr_{param.key}"
+                # if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
+                #     registers.globalObjects.data[4][0] = f"chr_{param.key}"
                 if registers.search(param) is None:
                     registers.savedManager.LRU(param)
+                if f"chr_{param.key}" not in registers.globalObjects.uninitialized[4]:
+                    registers.globalObjects.uninitialized[4].append(f"chr_{param.key}")
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
         registers.globalObjects.index += 1
