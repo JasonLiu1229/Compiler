@@ -2153,6 +2153,7 @@ class Scope_AST(AST):
         size = 4
 
         output = None
+        original_stacksize = registers.globalObjects.stacksize
         for current in visited:
             if isinstance(current, Node):
                 output = current.mips(registers)
@@ -2163,6 +2164,8 @@ class Scope_AST(AST):
             out_local += output[0]
             out_global += output[1]
             out_list += output[2]
+        if original_stacksize != registers.globalObjects.stacksize:
+            pass
         # # begin
         return out_local, out_global, out_list
 
@@ -2837,21 +2840,8 @@ class FuncCallAST(AST):
         size = len(self.args) * 4
         if size != 0:
             out += f"\taddi $sp, $sp, -{size}\n"
+            registers.globalObjects.stackSize += size
         count = 0
-        # temp_node = Node("temp", None)
-        # for param in parameters_org:
-        #     if registers.search(param.object) is not None:
-        #         pass
-        #     else:
-        #         if param.type == "float":
-        #             registers.floatManager.LRU(param.object)
-        #         else:
-        #             registers.savedManager.LRU(param.object)
-        #     arg_register = self.args[count].register.name
-        #     out += f"\tmov{'.s' if param.type == 'float' else 'e'} ${param.object.register.name}, ${arg_register}\n"
-        #     self.args[count].register.shuffle()
-        #     out += f"\tsw{'c1' if param.type == 'float' else ''} ${param.object.register.name}, {count * 4}($sp)\n"
-        #     param.object.register.shuffle()
         for vars in variables:
             # retrieve value globaly and store it locally
             if registers.search(vars) is None:
@@ -2885,19 +2875,9 @@ class FuncCallAST(AST):
                 type_string = "chr"
             out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if isinstance(vars, Node) else vars.key}\n"
             count += 1
-        # for arg in self.args:
-        #     if arg.register is not None:
-        #         if arg.register.name.startswitch('f'):
-        #             registers.floatManager.LRU_delete(arg.register.name)
-        #         elif arg.register.name.startswitch('t'):
-        #             registers.temporaryManager.LRU_delete(arg.register.name)
-        #         elif arg.register.name.startswitch('s'):
-        #             registers.savedManager.LRU_delete(arg.register.name)
-        # for param in parameters_org:
-        #     out += f"\tlw{'c1' if param.type == 'float' else ''} ${param.object.register.name}, {count * 4}($sp)\n"
-        #     param.object.register.shuffle()
         if size != 0:
             out += f"\taddi $sp, $sp, {size}\n"
+            registers.globalObjects.stackSize -= size
         registers.search(self.root)
         if self.register is None:
             registers.temporaryManager.LRU(self.root)
@@ -3004,7 +2984,6 @@ class FuncScopeAST(AST):
         keys_list = []
         out_temp_global = ""
         out_temp_local = ""
-
         # registers for each entry in the symbol table
         for entry in self.symbolTable.table:
             if isinstance(entry.object, VarNode):
@@ -3088,6 +3067,8 @@ class FuncScopeAST(AST):
                 temp_list.remove(param.register.name)
         # save the registers
         out_local += f"\taddi $sp, $sp, -{size}\n"
+        registers.globalObjects.stackSize += size
+        original_stack_size = registers.globalObjects.stackSize
         count = 0
         for i in temp_list:
             reg_object = registers.searchRegister(i).object
@@ -3117,18 +3098,9 @@ class FuncScopeAST(AST):
                 out_local += f"\tlw ${i}, {count * 4}($sp)\n"
             count += 1
         out_local += f"\taddi $sp, $sp, {size}\n"
+        registers.globalObjects.stackSize -= size
 
         # End
-        # out_local += "\tlw $ra, -4($sp)\n"
-        # out_local += f"\taddi $sp, $sp, {size}\n"
-        # out_local += "\tjal deallocate_stack\n"
-        # count = 0
-        # for i in range(2, 32):
-        #     if i in [26, 27, 28, 29, 30]:
-        #         count += 1
-        #         continue
-        #     out_local += f"\tlw ${i}, {(i - count) * 4}($sp)\n"
-        # out_local += f"\taddi $sp, $sp, 100\n"
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global, []
 
@@ -3431,7 +3403,7 @@ class ArrayDeclAST(AST):
         else:
             # make use of stack to make local variables
             # allocate memory for the array
-            out_local += f"\taddiu $sp, $sp, {self.size * 4}\n"
+            out_local += f"\taddi $sp, $sp, -{self.size * 4}\n"
             # store the values of the array in the stack
             temp_node = Node("temp", None, None)
             if self.type == "float":
