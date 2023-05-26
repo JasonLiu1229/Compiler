@@ -95,6 +95,14 @@ class Manager:  # Manager class for register management using LRU
                 break
             tempHead = tempHead.next
 
+    def findRegister(self, name):
+        tempHead = self.head
+        while tempHead is not None:
+            if tempHead.name == name:
+                return tempHead
+            tempHead = tempHead.next
+        return None
+
 class returnManager(Manager):
 
     def __init__(self) -> None:
@@ -502,6 +510,26 @@ class singleManager:
         self.lo = Register(in_name="lo")
         self.hi = Register(in_name="hi")
 
+    def findRegister(self, name):
+        if name == "gp":
+            return self.gp
+        elif name == "sp":
+            return self.sp
+        elif name == "fp":
+            return self.fp
+        elif name == "ra":
+            return self.ra
+        elif name == "zero":
+            return self.zero
+        elif name == "at":
+            return self.at
+        elif name == "lo":
+            return self.lo
+        elif name == "hi":
+            return self.hi
+        else:
+            return None
+
 class dataManager:
     def __init__(self) -> None:
         self.data: [] = [{}, {}, {}, {}, {}, {}] # ASCII, float, word, half-word, byte, space
@@ -555,6 +583,22 @@ class Registers:
             self.floatManager.shuffle(temp)
             return temp.name
         return None
+
+    def searchRegister(self, name):
+        if name.startswith("f"):
+            return self.floatManager.findRegister(name)
+        elif name.startswith("t"):
+            return self.temporaryManager.findRegister(name)
+        elif name.startswith("a"):
+            return self.argumentManager.findRegister(name)
+        elif name.startswith("s"):
+            return self.savedManager.findRegister(name)
+        elif name.startswith("k"):
+            return self.reservedManager.findRegister(name)
+        elif name.startswith("v"):
+            return self.returnManager.findRegister(name)
+        else:
+            return self.singleManager.findRegister(name)
 
 class Register:
 

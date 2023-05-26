@@ -609,6 +609,14 @@ class AST:
                 else:
                     temp_type = "chr"
                 out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {temp_type}_{left_node.value}\n"
+            elif isinstance(left_node, VarNode):
+                if left_node.type == "int":
+                    temp_type = "int"
+                elif left_node.type == "float":
+                    temp_type = "flt"
+                else:
+                    temp_type = "chr"
+                out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {temp_type}_{left_node.key}\n"
 
         # shuffle used registers
         if left_register is not None:
@@ -2992,6 +3000,7 @@ class FuncScopeAST(AST):
                             not_visited.append(i)
         visited.reverse()
         temp_list = []
+        keys_list = []
         out_temp_global = ""
         out_temp_local = ""
 
@@ -3065,7 +3074,6 @@ class FuncScopeAST(AST):
         # remove duplicates from the list
         temp_list = list(dict.fromkeys(temp_list))
         temp_list.append("ra")
-
         size = len(temp_list) * 4
         # check if temp_list has v0 if so delete it
         if "v0" in temp_list:
@@ -3081,10 +3089,17 @@ class FuncScopeAST(AST):
         out_local += f"\taddi $sp, $sp, -{size}\n"
         count = 0
         for i in temp_list:
+            reg_object = registers.searchRegister(i).object
+            if reg_object is not None:
+                if isinstance(reg_object, AST):
+                    reg_object = f" {reg_object.root.get_str()}"
+                elif reg_object != Node("", None):
+                    reg_object = f" {reg_object.get_str()}"
+                else: reg_object = None
             if i.startswith("f"):
                 out_local += f"\tswc1 ${i}, {count * 4}($sp)\n"
             else:
-                out_local += f"\tsw ${i}, {count * 4}($sp)\n"
+                out_local += f"\tsw ${i}, {count * 4}($sp)\t{'#' + reg_object if reg_object is not None else ''}\n"
             count += 1
 
         out_local += param_str
