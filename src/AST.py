@@ -515,9 +515,9 @@ class AST:
         if right_node is not None:
             # add commentaries
             if left_node.value is not None and left_node.key != "":
-                out_local += f"\t# {left_node.key if isinstance(left_node, VarNode) else left_node.value}"
+                out_local += f"\t\t\t# {left_node.key if isinstance(left_node, VarNode) else left_node.value}"
             else:
-                out_local += f"\t# ${left_register}"
+                out_local += f"\t\t\t# ${left_register}"
             out_local += f" {token} "
             if isinstance(right_node, Node):
                 if right_node.value is not None and right_node.key != "":
@@ -2872,6 +2872,7 @@ class FuncCallAST(AST):
             count += 1
         out += calc
         out += f"\tjal {self.root.key}\n"
+        count = 0
         for vars in variables:
             out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
             vars.register.shuffle()

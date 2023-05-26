@@ -210,7 +210,7 @@ class Node:
             out_local += f"\tlw{'c1' if (self.key == 'float' or self.register.name[0] == 'f') else ''} ${self.register.name}, {temp_type}_{self.value}\t# {self.get_str()}\n"
             # out_local += f"\tla ${self.register.name}, {self.value}\n"
         else:
-            out_local += f"\tli ${self.register.name}, {self.value}\t\t# {self.get_str()}\n"
+            out_local += f"\tli ${self.register.name}, {self.value}\t# {self.get_str()}\n"
         out_list.append(self.register.name)
         # place holder
         return out_local, out_global, out_list
