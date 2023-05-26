@@ -936,10 +936,11 @@ class AstCreator(MathVisitor):
                                 raise ReferenceError(f"Variable {ast.children[0].key} undeclared")
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
+                            matches[0].used = True
                             if isinstance(matches[0].object, FuncParameter) or child.type is None:
                                 ast.children[index].type = matches[0].type
                             if evaluate and not in_loop:
-                                ast.children[index] = copy.copy(matches[0].object)
+                                ast.children[index] = copy.deepcopy(matches[0].object)
                                 if isinstance(ast.children[index], FuncParameter):
                                     ast.children[index].parent = ast
                                     evaluate = False
@@ -1441,7 +1442,8 @@ class AstCreator(MathVisitor):
                     index = ast.parent.children.index(ast)
                     if len(nodes) == 0:
                         ast.parent.children[index] = node
-                        node.parent = ast.parent
+                        if not isinstance(ast, DerefAST) or (isinstance(ast.parent, VarNode) and ast.parent.ptr):
+                            node.parent = ast.parent
                     else:
                         ast.parent.children = nodes
                         nodes = []
