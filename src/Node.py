@@ -211,10 +211,12 @@ class Node:
                 temp_type = "chr"
             else:
                 temp_type = "int"
-            out_local += f"\tlw{'c1' if (self.key == 'float' or self.register.name[0] == 'f') else ''} ${self.register.name}, {temp_type}_{self.value}\t# {self.get_str()}\n"
+            out_local += f"\tlw{'c1' if (self.key == 'float' or self.register.name[0] == 'f') else ''} ${self.register.name}, {temp_type}_{self.value}\t# {self.get_str()}"
+            out_local += f"\t# {self.get_str()}\n"
             # out_local += f"\tla ${self.register.name}, {self.value}\n"
         else:
-            out_local += f"\tli ${self.register.name}, {self.value}\t# {self.get_str()}\n"
+            out_local += f"\tli ${self.register.name}, {self.value}\t# {self.get_str()}"
+            out_local += f"\t\t# {self.get_str()}\n"
         out_list.append(self.register.name)
         # place holder
         return out_local, out_global, out_list
@@ -443,9 +445,10 @@ class VarNode(Node):
         # local variable declaration
         if not (self.ptr and isinstance(self.value, VarNode)):
             if self.type == "float":
-                out_local = f"\tlwc1 ${self.register.name}, flt_{self.key}\n"
+                out_local = f"\tlwc1 ${self.register.name}, flt_{self.key}"
             else:
-                out_local = f"\tli ${self.register.name}, {out_val}\n"
+                out_local = f"\tli ${self.register.name}, {out_val}"
+            out_local += f"\t\t# {self.get_str()}\n"
         else:
             # Load the pointed value into the register
             # if self.register is None:
@@ -454,9 +457,10 @@ class VarNode(Node):
             out_global += output[1]
             out_reg += output[2]
             # load the address of the variable
-            out_local += f"\tla ${self.register.name}, {self.value.key if not self.value.ptr else f'(${self.value.register.name})'}\n"
+            out_local += f"\tla ${self.register.name}, {self.value.key if not self.ptr else f'0(${self.value.register.name})'}"
+            out_local += f"\t# {self.get_str()}\n"
             # store the address in the register
-            out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${self.value.register.name}, (${self.register.name})\n"
+            # out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${self.value.register.name}, 0(${self.register.name})\n"
         if self.register is not None:
             out_reg.append(self.register.name)
         return out_local, out_global, out_reg
