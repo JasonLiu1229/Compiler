@@ -3426,7 +3426,6 @@ class ScanfAST(AST):
         # for i in range(len(format_)):
         #     if format_[i][0] == '%':
         #         if format_[i][-1] == "d":
-        # TODO: temporary solution
         out_list = []
         counter = 0
         for i in format_:
@@ -3438,10 +3437,17 @@ class ScanfAST(AST):
                 elif i.endswith('c'):
                     out_local += f"\tli $v0, 12\n"
                 elif i.endswith('s'):
-                    out_local += f"\tla $a0, buffer\n"
+                    type_ = ""
+                    if self.variables[counter].type == "int":
+                        type_ = "int"
+                    elif self.variables[counter].type == "float":
+                        type_ = "flt"
+                    elif self.variables[counter].type == "char":
+                        type_ = "chr"
+                    out_local += f"\tla $a0, {type_}_{self.variables[counter].key}\n"
                     format_string = ""
                     if i[1:-1].isdigit():
-                        out_local += f"\tli $a1, {i[1:-1]}\n"
+                        out_local += f"\tli $a1, {int(i[1:-1]) + 1}\n"
                     if i not in registers.globalObjects.data[0].keys():
                         registers.globalObjects.data[0][i] = f"format_{i[1:]}"
                         format_string = f"format_{i[1:]}"
@@ -3457,35 +3463,36 @@ class ScanfAST(AST):
                 out_list.append("v0")
                 variable_register = self.variables[counter].register.name
                 if i.endswith('s'):
-                    type_ = ""
-                    if self.variables[counter].type == "int":
-                        type_ = "int"
-                    elif self.variables[counter].type == "float":
-                        type_ = "flt"
-                    elif self.variables[counter].type == "char":
-                        type_ = "chr"
-                    out_local += f"\tla ${variable_register}, {type_}_{self.variables[counter].key}\n"
-                    # get pointer register
-                    # use saved register as pointer register
-                    # set pointer register to 0
-                    pointer_register = Node("pointer_register", None)
-                    registers.savedManager.LRU(pointer_register)
-                    out_local += f"\tli ${pointer_register.register.name}, 0\n"
-                    char_register = Node("char_register", None)
-                    registers.savedManager.LRU(char_register)
-                    out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
-
-                    # start loop
-                    self.index = registers.globalObjects.index
-                    registers.globalObjects.index += 1
-                    out_local += f"\nloop_{self.index}:\n"
-                    out_local += f"\tbeqz ${char_register.register.name}, end_loop_{self.index}\n"
-                    out_local += f"\tsb ${char_register.register.name}, (${variable_register})\n"
-                    out_local += f"\taddi ${pointer_register.register.name}, ${pointer_register.register.name}, 1\n"
-                    out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
-                    out_local += f"\taddi ${variable_register}, ${variable_register}, 4\n"
-                    out_local += f"\tj loop_{self.index}\n"
-                    out_local += f"\nend_loop_{self.index}:\n"
+                    pass
+                    # type_ = ""
+                    # if self.variables[counter].type == "int":
+                    #     type_ = "int"
+                    # elif self.variables[counter].type == "float":
+                    #     type_ = "flt"
+                    # elif self.variables[counter].type == "char":
+                    #     type_ = "chr"
+                    # out_local += f"\tla ${variable_register}, {type_}_{self.variables[counter].key}\n"
+                    # # get pointer register
+                    # # use saved register as pointer register
+                    # # set pointer register to 0
+                    # pointer_register = Node("pointer_register", None)
+                    # registers.savedManager.LRU(pointer_register)
+                    # out_local += f"\tli ${pointer_register.register.name}, 0\n"
+                    # char_register = Node("char_register", None)
+                    # registers.savedManager.LRU(char_register)
+                    # out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
+                    #
+                    # # start loop
+                    # self.index = registers.globalObjects.index
+                    # registers.globalObjects.index += 1
+                    # out_local += f"\nloop_{self.index}:\n"
+                    # out_local += f"\tbeqz ${char_register.register.name}, end_loop_{self.index}\n"
+                    # out_local += f"\tsb ${char_register.register.name}, (${variable_register})\n"
+                    # out_local += f"\taddi ${pointer_register.register.name}, ${pointer_register.register.name}, 1\n"
+                    # out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
+                    # out_local += f"\taddi ${variable_register}, ${variable_register}, 4\n"
+                    # out_local += f"\tj loop_{self.index}\n"
+                    # out_local += f"\nend_loop_{self.index}:\n"
                 else:
                     out_local += f"\tmov{'.s' if variable_register[0] == 'f' else 'e'} ${variable_register}, $v0\n"
                     out_local += f"\tsw{'c1' if self.variables[counter].type == 'float' else ''} $v0, {self.variables[counter].type}_{self.variables[counter].key}\n"
