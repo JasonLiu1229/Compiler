@@ -3246,7 +3246,7 @@ class ScanfAST(AST):
         self.format_string = None
         self.format_specifiers = []
         self.width: int = 0
-        self.buffer: str = ""
+        self.index: int = 0
 
     def save(self):
         out, name = self.getDict()
@@ -3336,6 +3336,16 @@ class ScanfAST(AST):
                 elif i.endswith('c'):
                     out_local += f"\tli $v0, 12\n"
                 elif i.endswith('s'):
+                    out_local += f"\tla $a0; buffer\n"
+                    format_string = ""
+                    if i[1:-1].isdigit():
+                        out_local += f"\tli $a1, {i[1:-1]}\n"
+                    if i not in registers.globalObjects.data[0].keys():
+                        registers.globalObjects.data[0][i] = f"format_{i}"
+                        format_string = f"format_{i}"
+                    else:
+                        format_string = registers.globalObjects.data[0][i]
+                    out_local += f"\tla $a2, {format_string}\n"
                     out_local += f"\tli $v0, 8\n"
                 elif i.endswith('i'):
                     out_local += f"\tli $v0, 5\n"
@@ -3344,9 +3354,33 @@ class ScanfAST(AST):
                 out_local += f"\tsyscall\n"
                 out_list.append("v0")
                 variable_register = self.variables[counter].register.name
-                out_local += f"\tmov{'.s' if variable_register[0] == 'f' else 'e'} ${variable_register}, $v0\n"
-                out_local += f"\tsw{'c1' if self.variables[counter].type == 'float' else ''} $v0, {self.variables[counter].type}_{self.variables[counter].key}\n"
-                out_list.append(variable_register)
+                if i.endswith('s'):
+                    out_local += f"\tla ${variable_register}, {self.variables[counter].type}_{self.variables[counter].key}\n"
+                    # get pointer register
+                    # use saved register as pointer register
+                    # set pointer register to 0
+                    pointer_register = Node("pointer_register", None)
+                    registers.savedManager.LRU(pointer_register)
+                    out_local += f"\tli ${pointer_register.register.name}, 0\n"
+                    char_register = Node("char_register", None)
+                    registers.savedManager.LRU(char_register)
+                    out_local += f"\tlbu ${char_register.register.name}, buffer({pointer_register.register.name})\n"
+
+                    # start loop
+                    self.index = registers.globalObjects.index
+                    registers.globalObjects.index += 1
+                    out_local += f"\nloop_{self.index}:\n"
+                    out_local += f"\tbeqz ${char_register.register.name}, end_loop_{self.index}\n"
+                    out_local += f"\tsb ${char_register.register.name}, (${variable_register})\n"
+                    out_local += f"\taddi ${pointer_register.register.name}, ${pointer_register.register.name}, 1\n"
+                    out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
+                    out_local += f"\taddi ${variable_register}, ${variable_register}, 4\n"
+                    out_local += f"\tj loop_{self.index}\n"
+                    out_local += f"\nend_loop_{self.index}:\n"
+                else:
+                    out_local += f"\tmov{'.s' if variable_register[0] == 'f' else 'e'} ${variable_register}, $v0\n"
+                    out_local += f"\tsw{'c1' if self.variables[counter].type == 'float' else ''} $v0, {self.variables[counter].type}_{self.variables[counter].key}\n"
+                    out_list.append(variable_register)
                 counter += 1
         out_list = list(dict.fromkeys(out_list))
         return out_local, "", out_list
@@ -3502,6 +3536,7 @@ class IncludeAST(AST):
 
     def mips(self, registers: Registers):
         # hardcode the printf and scanf functions
+        registers.globalObjects.data[5][254] = "buffer"
         return "", "", []
 
 class SwitchAST(AST):

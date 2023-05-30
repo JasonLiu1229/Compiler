@@ -239,14 +239,6 @@ class temporaryManager(Manager):
 
     def LRU(self, in_object):
         # check if the registers are in use
-        # if t0 not in use, replace object of register t0 with in_object
-        # if t1 not in use, replace object of register t1 with in_object
-        # if t2 not in use, replace object of register t2 with in_object
-        # if t3 not in use, replace object of register t3 with in_object
-        # if t4 not in use, replace object of register t4 with in_object
-        # if t5 not in use, replace object of register t5 with in_object
-        # if t6 not in use, replace object of register t6 with in_object
-        # if t7 not in use, replace object of register t7 with in_object
         if self.search(in_object) is not None:
             return
         tempHead = self.head
@@ -311,14 +303,6 @@ class savedManager(Manager):
 
     def LRU(self, in_object):
         # check if the registers are in use
-        # if s0 not in use, replace object of register s0 with in_object
-        # if s1 not in use, replace object of register s1 with in_object
-        # if s2 not in use, replace object of register s2 with in_object
-        # if s3 not in use, replace object of register s3 with in_object
-        # if s4 not in use, replace object of register s4 with in_object
-        # if s5 not in use, replace object of register s5 with in_object
-        # if s6 not in use, replace object of register s6 with in_object
-        # if s7 not in use, replace object of register s7 with in_object
         if self.search(in_object) is not None:
             return
         tempHead = self.head
@@ -439,8 +423,6 @@ class floatManager(Manager):
 
     def LRU(self, in_object):
         # check if the registers are in use
-        # if f0 not in use, replace object of register f0 with in_object
-        # if f1 not in use, replace object of register f1 with in_object
         if self.search(in_object) is not None:
             return
         tempHead = self.head
