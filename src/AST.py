@@ -451,7 +451,12 @@ class AST:
             # out_list += output[2]
         # register assignment
         if isinstance(left_node, VarNode):
-            left_register = left_node.register.name
+            if isinstance(left_node.parent, VarNode):
+                registers.search(left_node.parent)
+                left_register = left_node.parent.register.name
+            elif left_register is None:
+                registers.temporaryManager.LRU(left_node)
+                left_register = left_node.register.name
             left_type = left_node.type
         else:
             if left_node.key == "var" and left_node.register is None:
@@ -673,7 +678,14 @@ class AST:
                     temp_type = "flt"
                 else:
                     temp_type = "chr"
-                out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {temp_type}_{left_node.key}\n"
+                if left_node.ptr:
+                    pass
+                    # if left_node.parent.register is None:
+                    #     registers.temporaryManager.LRU(left_node.parent)
+                    # store pointer value to address
+                    # out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {left_node.parent.type}_{left_node.parent.key}\n"
+                else:
+                    out_local += f"\tsw{'c1' if left_node.type == 'float' else ''} ${left_register}, {temp_type}_{left_node.key}\n"
 
         # shuffle used registers
         if left_register is not None:
@@ -2813,6 +2825,15 @@ class FuncDefnAST(AST):
                     registers.floatManager.LRU(param)
                 if f"flt_{param.key}" not in registers.globalObjects.uninitialized[1]:
                     registers.globalObjects.uninitialized[1].append(f"flt_{param.key}")
+                if param.ptr:
+                    temp_param = param.value
+                    while temp_param.ptr:
+                        # declare it in the global scope
+                        if f"int_{temp_param.key}" not in registers.globalObjects.uninitialized[1]:
+                            registers.globalObjects.uninitialized[2].append(f"int_{temp_param.key}")
+                        if temp_param.value is None:
+                            break
+                        temp_param = temp_param.value
             elif param.type == "int":
                 # if f"int_{param.key}" not in registers.globalObjects.data[2].values():
                 #     registers.globalObjects.data[2][0] = f"int_{param.key}"
@@ -2820,6 +2841,15 @@ class FuncDefnAST(AST):
                     registers.savedManager.LRU(param)
                 if f"int_{param.key}" not in registers.globalObjects.uninitialized[2]:
                     registers.globalObjects.uninitialized[2].append(f"int_{param.key}")
+                if param.ptr:
+                    temp_param = param.value
+                    while temp_param.ptr:
+                        # declare it in the global scope
+                        if f"int_{temp_param.key}" not in registers.globalObjects.uninitialized[2]:
+                            registers.globalObjects.uninitialized[2].append(f"int_{temp_param.key}")
+                        if temp_param.value is None:
+                            break
+                        temp_param = temp_param.value
             elif param.type == "char":
                 # if f"chr_{param.key}" not in registers.globalObjects.data[4].values():
                 #     registers.globalObjects.data[4][0] = f"chr_{param.key}"
@@ -2827,6 +2857,15 @@ class FuncDefnAST(AST):
                     registers.savedManager.LRU(param)
                 if f"chr_{param.key}" not in registers.globalObjects.uninitialized[4]:
                     registers.globalObjects.uninitialized[4].append(f"chr_{param.key}")
+                if param.ptr:
+                    temp_param = param.value
+                    while temp_param.ptr:
+                        # declare it in the global scope
+                        if f"int_{temp_param.key}" not in registers.globalObjects.uninitialized[4]:
+                            registers.globalObjects.uninitialized[2].append(f"int_{temp_param.key}")
+                        if temp_param.value is None:
+                            break
+                        temp_param = temp_param.value
         # Body
         out_l, out_g, out_list = self.children[0].mips(registers)
         registers.globalObjects.index += 1
@@ -2910,6 +2949,9 @@ class FuncCallAST(AST):
                         pass
                     else:
                         registers.savedManager.LRU(arg)
+                    if isinstance(arg, VarNode):
+                        variables.append(arg)
+
             par_type = parameters_org[count].type
             if par_type == "float":
                 par_type = "flt_"
@@ -2917,7 +2959,10 @@ class FuncCallAST(AST):
                 par_type = "int_"
             elif par_type == "char":
                 par_type = "chr_"
-            calc += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
+            if parameters_org[count].ptr:
+                calc += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
+            else:
+                calc += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
         size = len(self.args) * 4
@@ -2926,6 +2971,8 @@ class FuncCallAST(AST):
             registers.globalObjects.stackSize += size
         count = 0
         for vars in variables:
+            if parameters_org[count].ptr or parameters_org[count].reference:
+                continue
             # retrieve value globaly and store it locally
             if registers.search(vars) is None:
                 if vars.type == "float":
@@ -2939,7 +2986,7 @@ class FuncCallAST(AST):
                 type_string = "int"
             elif vars.type == "char":
                 type_string = "chr"
-            out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if isinstance(vars, Node) else vars.key}\n"
+            out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if not isinstance(vars, VarNode) else vars.key}\n"
             out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
             vars.register.shuffle()
             count += 1
@@ -2947,6 +2994,8 @@ class FuncCallAST(AST):
         out += f"\tjal {self.root.key}\n"
         count = 0
         for vars in variables:
+            if parameters_org[count].ptr or parameters_org[count].reference:
+                continue
             out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
             vars.register.shuffle()
             type_string = ""
@@ -2956,7 +3005,7 @@ class FuncCallAST(AST):
                 type_string = "int"
             elif vars.type == "char":
                 type_string = "chr"
-            out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if isinstance(vars, Node) else vars.key}\n"
+            out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {type_string}_{vars.value if not isinstance(vars, VarNode) else vars.key}\n"
             count += 1
         if size != 0:
             out += f"\taddi $sp, $sp, {size}\n"
@@ -3089,7 +3138,10 @@ class FuncScopeAST(AST):
                     if entry.object.value is not None:
                         registers.globalObjects.data[2][entry.object.value] = f"{entry.type}_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[2].append(f"{entry.type}_{entry.object.key}")
+                        if entry.array:
+                            registers.globalObjects.uninitialized[3].append(entry.object)
+                        else:
+                            registers.globalObjects.uninitialized[2].append(f"int_{entry.object.key}")
                 elif entry.type == "float":
                     if entry.object.key in registers.globalObjects.data[1].values():
                         continue
@@ -3097,7 +3149,10 @@ class FuncScopeAST(AST):
                     if entry.object.value is not None:
                         registers.globalObjects.data[1][entry.object.value] = f"flt_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[1].append(f"flt_{entry.object.key}")
+                        if entry.array:
+                            registers.globalObjects.uninitialized[3].append(entry.object)
+                        else:
+                            registers.globalObjects.uninitialized[1].append(f"flt_{entry.object.key}")
                 elif entry.type == "char":
                     if entry.object.key in registers.globalObjects.data[0].values():
                         continue
@@ -3105,7 +3160,10 @@ class FuncScopeAST(AST):
                     if entry.object.value is not None:
                         registers.globalObjects.data[0][entry.object.value] = f"chr_{entry.object.key}"
                     else:
-                        registers.globalObjects.uninitialized[0].append(f"chr_{entry.object.key}")
+                        if entry.array:
+                            registers.globalObjects.uninitialized[3].append(entry.object)
+                        else:
+                            registers.globalObjects.uninitialized[0].append(f"chr_{entry.object.key}")
         param_str = ""
         # initialize the registers for the parameters
         # registers.temporaryManager.clear()

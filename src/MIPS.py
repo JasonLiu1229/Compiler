@@ -66,7 +66,12 @@ class MIPS:
             for key in self.registers.globalObjects.uninitialized[2]: # int
                 variables += f"\t.align 2\n\t{key}: .space 4\n"
             for key in self.registers.globalObjects.uninitialized[3]: # array
-                variables += f"\t{key}: .space 4\n"
+                if key.type == "int":
+                    variables += f"\t.align 2\n\tint_{key.key}: .space {str(key.size * 4)}\n"
+                elif key.type == "float":
+                    variables += f"\t.align 2\n\tflt_{key.key}: .space {str(key.size * 4)}\n"
+                elif key.type == "char":
+                    variables += f"\t.align 0\n\tchr_{key.key}: .space {str(key.size)}\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)
