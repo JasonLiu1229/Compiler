@@ -1342,9 +1342,12 @@ class AstCreator(MathVisitor):
                 node = ast
                 if evaluate:
                     node = ast.children[0]
-                    if ast.root.value == "++":
+                    if isinstance(node.parent, ArrayNode):
+                        node.value = node.value - 1 if ast.root.value == "--" else node.value + 1
+                        updates_queue.append(node.parent)
+                    elif ast.root.value == "++":
                         incr_queue.append(node)
-                    if ast.root.value == "--":
+                    elif ast.root.value == "--":
                         decr_queue.append(node)
             elif isinstance(ast, CondAST):
                 if evaluate and not ast.in_loop:
