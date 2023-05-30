@@ -1685,15 +1685,16 @@ class PrintfAST(AST):
                             format_[i] = arg
                             continue
                         # if the string is shorter than the size
-                        if len(str(arg)) < self.width:
-                            # if the string is left-aligned
-                            if left_align:
-                                # add spaces to the right of the string
-                                arg = str(arg) + " " * (self.width - len(str(arg)))
-                            # if the string is right-aligned
-                            else:
-                                # add spaces to the left of the string
-                                arg = " " * (self.width - len(str(arg))) + str(arg)
+                        if isinstance(arg, str):
+                            if len(str(arg)) < self.width:
+                                # if the string is left-aligned
+                                if left_align:
+                                    # add spaces to the right of the string
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
+                                # if the string is right-aligned
+                                else:
+                                    # add spaces to the left of the string
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                         format_[i] = arg
                         # ඞ
         return format_
@@ -1747,9 +1748,31 @@ class PrintfAST(AST):
             elif isinstance(list_format[i], ArrayNode):
                 temp_node = Node("temp_node", None)
                 registers.savedManager.LRU(temp_node)
-                for val, count in enumerate(list_format[i].values):
+                if registers.search(list_format[i]) is None:
+                    if list_format[i].type == "float":
+                        registers.floatManager.LRU(list_format[i])
+                    else:
+                        registers.temporaryManager.LRU(list_format[i])
+                type_ = ""
+                if list_format[i].type == "float":
+                    type_ = "flt"
+                elif list_format[i].type == "int":
+                    type_ = "int"
+                elif list_format[i].type == "char":
+                    type_ = "chr"
+                out_local += f"\tla ${list_format[i].register.name}, {type_}_{list_format[i].key}\n"
+                out_local += f"\tli ${temp_node.register.name}, 0\n"
+                out_local += f"\tadd ${list_format[i].register.name}, ${list_format[i].register.name}, ${temp_node.register.name}\n"
+                for count in range(len(list_format[i].values)):
                     out_local += f"\tli $v0, 11\n"
-                    pass
+                    out_local += f"\tmov{'e' if list_format[i].type != 'float' else '.s'} $a0, ${list_format[i].register.name}\n"
+                    out_local += "\tsyscall\n"
+                    if 'a0' not in out_list:
+                        out_list.append('a0')
+                    if list_format[i].type == "char":
+                        out_local += f"\taddi ${list_format[i].register.name}, ${list_format[i].register.name}, 1\n"
+                    else:
+                        out_local += f"\taddi ${list_format[i].register.name}, ${list_format[i].register.name}, 4\n"
 
             elif isinstance(list_format[i], str) and list_format[i].startswith('\\'):
                 ascii_string = list_format[i].replace('\\', '')
@@ -3434,7 +3457,14 @@ class ScanfAST(AST):
                 out_list.append("v0")
                 variable_register = self.variables[counter].register.name
                 if i.endswith('s'):
-                    out_local += f"\tla ${variable_register}, {self.variables[counter].type}_{self.variables[counter].key}\n"
+                    type_ = ""
+                    if self.variables[counter].type == "int":
+                        type_ = "int"
+                    elif self.variables[counter].type == "float":
+                        type_ = "flt"
+                    elif self.variables[counter].type == "char":
+                        type_ = "chr"
+                    out_local += f"\tla ${variable_register}, {type_}_{self.variables[counter].key}\n"
                     # get pointer register
                     # use saved register as pointer register
                     # set pointer register to 0
