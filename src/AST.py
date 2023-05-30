@@ -1571,7 +1571,9 @@ class PrintfAST(AST):
                     temp_arg = self.args[counter]
                     arg = None
                     if isinstance(temp_arg, VarNode):
-                        if temp_arg.value is not None:
+                        if isinstance(temp_arg, ArrayNode):
+                            arg = temp_arg
+                        elif temp_arg.value is not None:
                             arg = temp_arg.value
                         else:
                             registers.search(temp_arg)
@@ -1730,6 +1732,13 @@ class PrintfAST(AST):
             # change so it call the right print function
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
+            elif isinstance(list_format[i], ArrayNode):
+                temp_node = Node("temp_node", None)
+                registers.savedManager.LRU(temp_node)
+                for val, count in enumerate(list_format[i].values):
+                    out_local += f"\tli $v0, 11\n"
+                    pass
+
             elif isinstance(list_format[i], str) and list_format[i].startswith('\\'):
                 ascii_string = list_format[i].replace('\\', '')
                 out_local += "\tli $v0, 11\n"
@@ -3348,7 +3357,7 @@ class ScanfAST(AST):
                 elif i.endswith('c'):
                     out_local += f"\tli $v0, 12\n"
                 elif i.endswith('s'):
-                    out_local += f"\tla $a0; buffer\n"
+                    out_local += f"\tla $a0, buffer\n"
                     format_string = ""
                     if i[1:-1].isdigit():
                         out_local += f"\tli $a1, {i[1:-1]}\n"
@@ -3376,7 +3385,7 @@ class ScanfAST(AST):
                     out_local += f"\tli ${pointer_register.register.name}, 0\n"
                     char_register = Node("char_register", None)
                     registers.savedManager.LRU(char_register)
-                    out_local += f"\tlbu ${char_register.register.name}, buffer({pointer_register.register.name})\n"
+                    out_local += f"\tlbu ${char_register.register.name}, buffer(${pointer_register.register.name})\n"
 
                     # start loop
                     self.index = registers.globalObjects.index
