@@ -24,7 +24,7 @@ class MIPS:
             if temp not in visited:
                 # if a scope, skip
                 # if include instruction, skip
-                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or isinstance(temp, ArrayDeclAST) or \
+                if isinstance(temp, FuncDeclAST) or isinstance(temp, FuncDefnAST) or \
                         isinstance(temp, IncludeAST) or (isinstance(temp, CommentAST) and temp.parent is self.ast):
                     visited.append(temp)
                 if isinstance(temp, AST):
@@ -57,6 +57,8 @@ class MIPS:
                 variables += f"\t{value}: .word {key}\n"
             for key, value in self.registers.globalObjects.data[3].items():
                 variables += f"\t{value}: .byte {key}\n"
+            for key, value in self.registers.globalObjects.data[5].items():
+                variables += f"\t{value}: .space {key}\n"
             for key in self.registers.globalObjects.uninitialized[0]: # char
                 variables += f"\t.align 0\n\t{key}: .space 1\n"
             for key in self.registers.globalObjects.uninitialized[1]: # float

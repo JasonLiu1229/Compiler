@@ -3353,8 +3353,8 @@ class ScanfAST(AST):
                     if i[1:-1].isdigit():
                         out_local += f"\tli $a1, {i[1:-1]}\n"
                     if i not in registers.globalObjects.data[0].keys():
-                        registers.globalObjects.data[0][i] = f"format_{i}"
-                        format_string = f"format_{i}"
+                        registers.globalObjects.data[0][i] = f"format_{i[1:]}"
+                        format_string = f"format_{i[1:]}"
                     else:
                         format_string = registers.globalObjects.data[0][i]
                     out_local += f"\tla $a2, {format_string}\n"
