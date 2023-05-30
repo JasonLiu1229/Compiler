@@ -301,6 +301,8 @@ class AST:
             for entry in self.symbolTable.table:
                 if isinstance(entry, FuncSymbolEntry):
                     continue
+                if isinstance(entry.object, ArrayNode):
+                    continue
                 if entry.type == "int":
                     if entry.object.value in registers.globalObjects.data[2]:
                         continue
@@ -1598,6 +1600,16 @@ class PrintfAST(AST):
                         # if reg is not None:
                         #     arg = Register(in_name=f"{reg}")
                     # if the format specifier is an integer
+
+                    elif isinstance(temp_arg, ArrayElementAST):
+                        if temp_arg.register is None:
+                            registers.search(temp_arg.root)
+                            temp_arg.register = temp_arg.root.register
+                        if isinstance(temp_arg.root, Node):
+                            arg = temp_arg.root.register
+                        elif isinstance(temp_arg.root, AST):
+                            arg = temp_arg.root.value
+
                     if format_[i][0] in ['d', 'i', 'u', 'o', 'x', 'X']:
                         # if the precision is valid
                         if precision_valid:
@@ -2015,9 +2027,9 @@ class FactorAST(AST):
         super().__init__(root, children, parent)
 
     def handle(self):
-        if self.children[0].key == "var" or self.children[1].key == "var":
+        if self.children[0].key == "var":
             return self
-        if self.children[0].value is None or self.children[1].value is None:
+        if self.children[0].value is None:
             return self
         if self.root.value == '-':
             self.children[0].value = -self.children[0].value
@@ -3428,6 +3440,7 @@ class ArrayDeclAST(AST):
         glb = self.globalCheck()
         out_local = out_global = ""
         out_list = []
+        val_index = 0
         if glb:
             # make use of data segment to make global variables
             # if values are defined in the array
@@ -3435,13 +3448,13 @@ class ArrayDeclAST(AST):
             if self.type == "int":
                 if self.root.key not in registers.globalObjects.data[2].values():
                     temp_string = ""
-                    for i in self.values:
-                        temp_string += f"{i.value}"
-                        if i != self.values[-1]:
+                    for i in range(len(self.values)):
+                        temp_string += f"{self.values[i].value}"
+                        if i != len(self.values) - 1:
                             temp_string += ", "
                     if len(self.values) < self.size:
                         temp_string += ", 0" * (self.size - len(self.values))
-                    registers.globalObjects.data[2][temp_string] = self.root.key
+                    registers.globalObjects.data[2][temp_string] = self.root.key[:-2] # remove the [] from the key
             elif self.type == "float":
                 if self.root.key not in registers.globalObjects.data[1].values():
                     temp_string = ""
