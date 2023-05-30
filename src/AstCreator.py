@@ -1995,6 +1995,9 @@ class AstCreator(MathVisitor):
             elif d_type == "char":
                 if isinstance(value, str):
                     return value
+                elif value == 0:
+                    # return utf-8 null character
+                    return value
                 return chr(value)
         except Exception:
             raise RuntimeError("Bad Cast")
