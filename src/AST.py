@@ -1611,6 +1611,8 @@ class PrintfAST(AST):
                             arg = arg.register
                         else:
                             arg = arg.value
+                    elif isinstance(temp_arg, ArrayElementAST):
+                        arg = temp_arg
                         # if reg is not None:
                         #     arg = Register(in_name=f"{reg}")
                     # if the format specifier is an integer
@@ -1630,53 +1632,56 @@ class PrintfAST(AST):
                             format_[i] = arg
                             continue
                         # if the integer is shorter than the size
-                        if len(str(arg)) < self.width:
-                            # if the integer is left-aligned
-                            if left_align:
-                                # add spaces to the right of the integer
-                                arg = str(arg) + " " * (self.width - len(str(arg)))
-                            # if the integer is right-aligned
-                            else:
-                                # add spaces to the left of the integer
-                                arg = " " * (self.width - len(str(arg))) + str(arg)
+                        if isinstance(arg, str):
+                            if len(str(arg)) < self.width:
+                                # if the integer is left-aligned
+                                if left_align:
+                                    # add spaces to the right of the integer
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
+                                # if the integer is right-aligned
+                                else:
+                                    # add spaces to the left of the integer
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                         format_[i] = arg
                     # if the format specifier is a floating-point number
                     elif format_[i][0] in ['f', 'F', 'e', 'E', 'g', 'G', 'a', 'A']:
                         # if the precision is valid
-                        if precision_valid:
-                            # if the number after the dot is longer than the precision
-                            if len(str(arg).split('.')[1]) > precision:
-                                # truncate the number
-                                arg = str(arg)[:precision]
-                            format_[i] = arg
-                            continue
-                        # if the number is shorter than the size
-                        if len(str(arg)) < self.width:
-                            # if the number is left-aligned
-                            if left_align:
-                                # add spaces to the right of the number
-                                arg = str(arg) + " " * (self.width - len(str(arg)))
-                            # if the number is right-aligned
-                            else:
-                                # add spaces to the left of the number
-                                arg = " " * (self.width - len(str(arg))) + str(arg)
+                        if isinstance(arg, str):
+                            if precision_valid:
+                                # if the number after the dot is longer than the precision
+                                if len(str(arg).split('.')[1]) > precision:
+                                    # truncate the number
+                                    arg = str(arg)[:precision]
+                                format_[i] = arg
+                                continue
+                            # if the number is shorter than the size
+                            if len(str(arg)) < self.width:
+                                # if the number is left-aligned
+                                if left_align:
+                                    # add spaces to the right of the number
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
+                                # if the number is right-aligned
+                                else:
+                                    # add spaces to the left of the number
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                         format_[i] = arg
                     # if the format specifier is a character
                     elif format_[i][0] == 'c':
                         # if the precision is valid but is not float than continue
-                        if precision_valid:
-                            format_[i] = arg
-                            continue
-                        # if the character is shorter than the size
-                        if len(str(arg)) < self.width:
-                            # if the character is left-aligned
-                            if left_align:
-                                # add spaces to the right of the character
-                                arg = str(arg) + " " * (self.width - len(str(arg)))
-                            # if the character is right-aligned
-                            else:
-                                # add spaces to the left of the character
-                                arg = " " * (self.width - len(str(arg))) + str(arg)
+                        if isinstance(arg, str):
+                            if precision_valid:
+                                format_[i] = arg
+                                continue
+                            # if the character is shorter than the size
+                            if len(str(arg)) < self.width:
+                                # if the character is left-aligned
+                                if left_align:
+                                    # add spaces to the right of the character
+                                    arg = str(arg) + " " * (self.width - len(str(arg)))
+                                # if the character is right-aligned
+                                else:
+                                    # add spaces to the left of the character
+                                    arg = " " * (self.width - len(str(arg))) + str(arg)
                         format_[i] = arg
                     # if the format specifier is a string
                     elif format_[i][0] == 's':
@@ -1719,6 +1724,8 @@ class PrintfAST(AST):
         self.register = self.root.register
         # check all strings in list_format and if they are not in the global objects add them
         for i in list_format:
+            if isinstance(i, ArrayElementAST):
+                continue
             if isinstance(i, VarNode):
                 continue
             if isinstance(i, Register):
@@ -1745,6 +1752,71 @@ class PrintfAST(AST):
             # change so it call the right print function
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
+            elif isinstance(list_format[i], ArrayElementAST):
+                # resolve the array element ast
+                node = list_format[i].root
+                index_register = None
+                if registers.search(node) is None:
+                    if node.type == "float":
+                        registers.floatManager.LRU(node)
+                    else:
+                        registers.temporaryManager.LRU(node)
+                type_ = ""
+                if node.type == "float":
+                    type_ = "flt"
+                elif node.type == "int":
+                    type_ = "int"
+                elif node.type == "char":
+                    type_ = "chr"
+                out_local += f"la ${node.register.name}, {type_}_{node.key}\n"
+                if isinstance(node.value, ExprAST):
+                    output = node.value.mips(registers)
+                    out_local += output[0]
+                    out_global += output[1]
+                    out_list += output[2]
+                    index_register = node.value.register
+                else:
+                    index_node = node.value
+                    type_ = ""
+                    if index_node.type == "float":
+                        type_ = "flt"
+                    elif index_node.type == "int":
+                        type_ = "int"
+                    elif index_node.type == "char":
+                        type_ = "chr"
+                    if isinstance(index_node, VarNode):
+                        if registers.search(index_node) is None:
+                            if index_node.type == "float":
+                                registers.floatManager.LRU(index_node)
+                            else:
+                                registers.temporaryManager.LRU(index_node)
+                            out_local += f"\tlw ${index_node.register.name}, {type_}_{index_node.key}\n"
+                        index_register = index_node.register
+                    else:
+                        if index_node.key == "var":
+                            if registers.search(index_node) is None:
+                                if index_node.type == "float":
+                                    registers.floatManager.LRU(index_node)
+                                else:
+                                    registers.temporaryManager.LRU(index_node)
+                                out_local += f"\tlw ${index_node.register.name}, {type_}_{index_node.value}\n"
+                            index_register = index_node.register
+                        else:
+                            temp_node = Node("temp_node", None)
+                            registers.savedManager.LRU(temp_node)
+                            out_local += f"\tli ${temp_node.register.name}, {index_node.value}\n"
+                            index_register = temp_node.register
+                if node.type == "float" or node.type == "int":
+                    out_local += f"\tsll ${index_register.name}, ${index_register.name}, 2\n"
+                out_local += f"\tadd ${node.register.name}, ${node.register.name}, ${index_register.name}\n"
+                out_local += f"\tlw $a0, 0(${node.register.name})\n"
+                if node.type == "float":
+                    out_local += "li $v0, 2\n"
+                elif node.type == "int":
+                    out_local += "li $v0, 1\n"
+                elif node.type == "char":
+                    out_local += "li $v0, 4\n"
+                out_local += "syscall\n"
             elif isinstance(list_format[i], ArrayNode):
                 temp_node = Node("temp_node", None)
                 registers.savedManager.LRU(temp_node)
@@ -1766,6 +1838,9 @@ class PrintfAST(AST):
                 out_local += f"\tli $v0, 4\n"
                 out_local += f"\tmov{'e' if list_format[i].type != 'float' else '.s'} $a0, ${list_format[i].register.name}\n"
                 out_local += "\tsyscall\n"
+                out_list.append('a0')
+                out_list.append(temp_node.register.name)
+                out_list.append(list_format[i].register.name)
 
             elif isinstance(list_format[i], str) and list_format[i].startswith('\\'):
                 ascii_string = list_format[i].replace('\\', '')
