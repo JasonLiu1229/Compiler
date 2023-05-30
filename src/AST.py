@@ -1763,16 +1763,9 @@ class PrintfAST(AST):
                 out_local += f"\tla ${list_format[i].register.name}, {type_}_{list_format[i].key}\n"
                 out_local += f"\tli ${temp_node.register.name}, 0\n"
                 out_local += f"\tadd ${list_format[i].register.name}, ${list_format[i].register.name}, ${temp_node.register.name}\n"
-                for count in range(len(list_format[i].values)):
-                    out_local += f"\tli $v0, 11\n"
-                    out_local += f"\tmov{'e' if list_format[i].type != 'float' else '.s'} $a0, ${list_format[i].register.name}\n"
-                    out_local += "\tsyscall\n"
-                    if 'a0' not in out_list:
-                        out_list.append('a0')
-                    if list_format[i].type == "char":
-                        out_local += f"\taddi ${list_format[i].register.name}, ${list_format[i].register.name}, 1\n"
-                    else:
-                        out_local += f"\taddi ${list_format[i].register.name}, ${list_format[i].register.name}, 4\n"
+                out_local += f"\tli $v0, 4\n"
+                out_local += f"\tmov{'e' if list_format[i].type != 'float' else '.s'} $a0, ${list_format[i].register.name}\n"
+                out_local += "\tsyscall\n"
 
             elif isinstance(list_format[i], str) and list_format[i].startswith('\\'):
                 ascii_string = list_format[i].replace('\\', '')
