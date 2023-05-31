@@ -703,6 +703,12 @@ class AST:
                 registers.temporaryManager.shuffle_name(new_register)
             else:
                 registers.floatManager.shuffle_name(new_register)
+        # if isinstance(current.parent, ArrayElementAST):
+        #     if uni:
+        #         current.parent.root = left_node
+        #     else:
+        #         current.parent.root = new_node
+        # else:
         if uni:
             current.parent.children[current.parent.children.index(current)] = left_node
         else:
@@ -1755,68 +1761,15 @@ class PrintfAST(AST):
             elif isinstance(list_format[i], ArrayElementAST):
                 # resolve the array element ast
                 node = list_format[i].root
-                index_register = None
-                if registers.search(node) is None:
-                    if node.type == "float":
-                        registers.floatManager.LRU(node)
-                    else:
-                        registers.temporaryManager.LRU(node)
-                type_ = ""
+                out_local += f"\tmov{'.s' if node.type == 'float' else 'e'} ${'f12' if node.type == 'float' else 'a0'}, ${node.register.name}\n"
                 if node.type == "float":
-                    type_ = "flt"
+                    out_local += "\tli $v0, 2\n"
                 elif node.type == "int":
-                    type_ = "int"
+                    out_local += "\tli $v0, 1\n"
                 elif node.type == "char":
-                    type_ = "chr"
-                out_local += f"la ${node.register.name}, {type_}_{node.key}\n"
-                if isinstance(node.value, ExprAST):
-                    output = node.value.mips(registers)
-                    out_local += output[0]
-                    out_global += output[1]
-                    out_list += output[2]
-                    index_register = node.value.register
-                else:
-                    index_node = node.value
-                    type_ = ""
-                    if index_node.type == "float":
-                        type_ = "flt"
-                    elif index_node.type == "int":
-                        type_ = "int"
-                    elif index_node.type == "char":
-                        type_ = "chr"
-                    if isinstance(index_node, VarNode):
-                        if registers.search(index_node) is None:
-                            if index_node.type == "float":
-                                registers.floatManager.LRU(index_node)
-                            else:
-                                registers.temporaryManager.LRU(index_node)
-                            out_local += f"\tlw ${index_node.register.name}, {type_}_{index_node.key}\n"
-                        index_register = index_node.register
-                    else:
-                        if index_node.key == "var":
-                            if registers.search(index_node) is None:
-                                if index_node.type == "float":
-                                    registers.floatManager.LRU(index_node)
-                                else:
-                                    registers.temporaryManager.LRU(index_node)
-                                out_local += f"\tlw ${index_node.register.name}, {type_}_{index_node.value}\n"
-                            index_register = index_node.register
-                        else:
-                            temp_node = Node("temp_node", None)
-                            registers.savedManager.LRU(temp_node)
-                            out_local += f"\tli ${temp_node.register.name}, {index_node.value}\n"
-                            index_register = temp_node.register
-                if node.type == "float" or node.type == "int":
-                    out_local += f"\tsll ${index_register.name}, ${index_register.name}, 2\n"
-                out_local += f"\tadd ${node.register.name}, ${node.register.name}, ${index_register.name}\n"
-                out_local += f"\tlw $a0, 0(${node.register.name})\n"
-                if node.type == "float":
-                    out_local += "li $v0, 2\n"
-                elif node.type == "int":
-                    out_local += "li $v0, 1\n"
-                elif node.type == "char":
-                    out_local += "li $v0, 4\n"
-                out_local += "syscall\n"
+                    out_local += "\tli $v0, 4\n"
+                out_local += "\tsyscall\n"
+                pass
             elif isinstance(list_format[i], ArrayNode):
                 temp_node = Node("temp_node", None)
                 registers.savedManager.LRU(temp_node)
@@ -2280,7 +2233,8 @@ class ArrayElementAST(AST):
             registers.temporaryManager.LRU(self.root)
             self.register = self.root.register
         # sll register_of_offset, index, 2
-        out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
+        if self.type == "int" or self.type == "float":
+            out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
         # 3. add the offset to the array address
         out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
         # 4. load the value at the address in a register
@@ -3131,9 +3085,9 @@ class FuncScopeAST(AST):
             if current not in visited:
                 if current is not self:
                     visited.append(current)
-                if not isinstance(current, While_loopAST) or not isinstance(current, FuncDeclAST) \
-                        or not isinstance(current, If_CondAST) \
-                        or not isinstance(current, FuncDefnAST) and not isinstance(current, FuncScopeAST):
+                if not (isinstance(current, While_loopAST) or  isinstance(current, FuncDeclAST) \
+                        or isinstance(current, If_CondAST) \
+                        or (isinstance(current, FuncDefnAST) and isinstance(current, FuncScopeAST)) or isinstance(current, ArrayElementAST)):
                     for i in current.children:
                         if not isinstance(i, Node):
                             not_visited.append(i)
