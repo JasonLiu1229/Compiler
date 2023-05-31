@@ -3611,16 +3611,33 @@ class ArrayDeclAST(AST):
         else:
             # make use of stack to make local variables
             # allocate memory for the array
-            out_local += f"\taddi $sp, $sp, -{self.size * 4}\n"
+            # out_local += f"\taddi $sp, $sp, -{self.size * 4}\n"
             # store the values of the array in the stack
             temp_node = Node("temp", None, None)
             if self.type == "float":
                 registers.floatManager.LRU(temp_node)
             else:
                 registers.temporaryManager.LRU(temp_node)
+            if registers.search(self.root) is None:
+                if self.root.type == "float":
+                    registers.floatManager.LRU(self.root)
+                else:
+                    registers.temporaryManager.LRU(self.root)
+            type_ = ""
+            if self.root.type == "int":
+                type_ = "int"
+            elif self.root.type == "float":
+                type_ = "flt"
+            elif self.root.type == "char":
+                type_ = "chr"
+            out_local += f"\tla ${self.root.register.name}, {type_}_{self.root.key[0]}\n"
+            if self.root.register.name.startswith("f"):
+                registers.floatManager.shuffle_name(self.root.register.name)
+            else:
+                registers.temporaryManager.shuffle_name(self.root.register.name)
             for i in range(len(self.values)):
                 out_local += f"\tli{'.s' if self.type == 'float' else ''} ${temp_node.register.name}, {self.values[i].value}\n"
-                out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, {i * 4}($sp)\n\n"
+                out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, {i * 4}(${self.root.register.name})\n\n"
                 self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
             registers.globalObjects.stackSize += self.size * 4
             out_list.append(temp_node.register.name)
