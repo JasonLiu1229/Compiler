@@ -3,7 +3,11 @@
  
 ## Features
 Compile all `.c` files.   
-```python ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e spim```   
+
+```shell
+python ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e spim
+```
+       
 The output of the scripts is located in the `MIPS_output` folder.
 
 ### Project 1
@@ -24,7 +28,14 @@ The output of the scripts is located in the `MIPS_output` folder.
 ### Project 6
 > printf, scanf and array
 
-<iframe src="../MIPS_output/scanf2.asm" title="scanf2.asm"></iframe>
+[scanf1.asm](../MIPS_output/scanf1.asm)  
+```shell 
+spim -file ../MIPS_output/scanf1.asm
+```  
+[scanf2.asm](../MIPS_output/scanf2.asm)  
+```shell
+spim -file ../MIPS_output/scanf2.asm
+```  
 
 
 ## Authors
