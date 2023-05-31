@@ -1214,6 +1214,8 @@ class ExprAST(AST):
         for child in self.children:
             if isinstance(child, VarNode) and child.ptr:
                 raise Exception("Cannot perform arithmetic operations on pointers")
+        if isinstance(self.children[0], AST) or isinstance(self.children[1], AST):
+            return self
         if self.children[0].key == "var" or self.children[1].key == "var":
             return self
         if self.children[0].value is None or self.children[1].value is None:
