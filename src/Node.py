@@ -492,8 +492,9 @@ class ArrayNode(VarNode):
         return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
 
     def __eq__(self, o):
-        return False
-
+        return isinstance(o, ArrayNode) and self.key == o.key and self.type == o.type and self.const == o.const and \
+                  self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref and \
+                    self.const_ptr == o.const_ptr and self.size == o.size
     def __ne__(self, o):
         return not self.__eq__(o)
 

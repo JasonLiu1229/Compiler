@@ -1994,10 +1994,11 @@ class TermAST(AST):
 
     def handle(self):
         node = Node("", None)
+        warnings = []
         for child in self.children:
             if isinstance(child, AST):
                 return self
-            if child.value is None:
+            if child.value is None and not isinstance(child, ArrayNode):
                 return self
             if child.key == "var":
                 return self
@@ -2041,7 +2042,9 @@ class TermAST(AST):
                 if node.parent.const:
                     raise AttributeError(f"\'Attempting to modify a const variable {node.key}\'")
             node.value -= 1
-        elif self.root.value == '<=':
+                # node.value = 0
+                # node.key = "int"
+        if  self.root.value == '<=':
             node = self.children[0] <= self.children[1]
             node.value = int(node.value)
         elif self.root.value == '<':
@@ -2074,6 +2077,14 @@ class TermAST(AST):
             node.value = int(node.value)
             node.key = "int"
         node.parent = self.parent
+        if self.root.value in ["==", "!=", "<", "<=", ">", ">="]:
+            if (isinstance(self.children[0], ArrayNode) and not isinstance(self.children[1], ArrayNode)) \
+                    or (not isinstance(self.children[0], ArrayNode) and isinstance(self.children[1], ArrayNode)):
+                raise RuntimeError(f"\'Attempting to compare array with non-array\'")
+            if isinstance(self.children[0], ArrayNode) and isinstance(self.children[1], ArrayNode):
+                # add clang style warning with pink color
+                warnings.append(f"array comparison always evaluates to false\n")
+                return node, warnings
         return node
 
     def mips(self, registers: Registers):
@@ -2209,6 +2220,10 @@ class ArrayElementAST(AST):
         matches[0].used = True
         if isinstance(self.root.value, str) or isinstance(self.root.value, Node):
             return self
+        if not isinstance(self.root.value, int):
+            raise AttributeError(f"Array index must be an integer")
+        if not isinstance(temp_symbol.object, ArrayNode):
+            raise AttributeError(f"Attempting to index a non-array type object")
         if self.root.value < 0 or self.root.value >= temp_symbol.size:
             raise AttributeError(f"Array index {self.root.value} out of bounds for array {self.root.key}")
         return temp_symbol.object.values[self.root.value]
@@ -2276,10 +2291,11 @@ class Scope_AST(AST):
                 visited.append(current)
                 if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
                         or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
-                        or isinstance(current, FuncDeclAST) or isinstance(current, SwitchAST)
-                        or (isinstance(current, InstrAST) and isinstance(current.children[0], ArrayDeclAST))):
+                        or isinstance(current, FuncDeclAST) or isinstance(current, SwitchAST)):
                     if isinstance(current, AST):
                         for i in current.children:
+                            if isinstance(i, ArrayDeclAST) and isinstance(current, InstrAST):
+                                continue
                             not_visited.append(i)
         visited.reverse()
         out_local = out_global = ""

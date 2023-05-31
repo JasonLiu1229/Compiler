@@ -1405,21 +1405,21 @@ class AstCreator(MathVisitor):
                         node = copy.copy(ast.children[0])
                         instance = copy.copy(node)
                         decr_queue.append(instance)
-                # elif isinstance(ast, TermAST) and len(ast.children) > 1 and (isinstance(ast.children[0], ArrayNode) or isinstance(ast.children[1], ArrayNode)):
-                #     # handle printf
-                #     node, warnings_handle = ast.handle()
-                #     for warning in warnings_handle:
-                #         # get line where warning is
-                #         warning_str = "\033[95mwarning: \033[0m"
-                #         f = open(self.file_name, "r")
-                #         lines = f.readlines()
-                #         f.close()
-                #         line = lines[ast.line - 1]
-                #         # insert squiggly line
-                #         line = line[:ast.column] + '\u0332' + line[ast.column:]
-                #
-                #         warning_str += f"{warning}\n{ast.line}:{ast.column}: {line}"
-                #         self.warnings.append(warning_str)
+                elif isinstance(ast, TermAST) and len(ast.children) > 1 and (isinstance(ast.children[0], ArrayNode) or isinstance(ast.children[1], ArrayNode)):
+                    # handle printf
+                    node, warnings_handle = ast.handle()
+                    for warning in warnings_handle:
+                        # get line where warning is
+                        warning_str = "\033[95mwarning: \033[0m"
+                        f = open(self.file_name, "r")
+                        lines = f.readlines()
+                        f.close()
+                        line = lines[ast.line - 1]
+                        # insert squiggly line
+                        line = line[:ast.column] + '\u0332' + line[ast.column:]
+
+                        warning_str += f"{warning}\n{ast.line}:{ast.column}: {line}"
+                        self.warnings.append(warning_str)
                 elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and evaluate:
                     if isinstance(ast.parent, For_loopAST):
                         if ast.parent.incr == ast:
