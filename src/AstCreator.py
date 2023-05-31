@@ -736,7 +736,16 @@ class AstCreator(MathVisitor):
                 ast.symbolTable.parent = ast.parent.symbolTable
                 # check function was previously declared
                 if ast.parent.symbolTable.exists(ast.root):
-                    raise AttributeError(f"Redefinition of function {ast.root.key}")
+                    # check what is redeclared
+                    match = ast.parent.symbolTable.lookup(ast.root)[0]
+                    if match.type != ast.type:
+                        raise AttributeError(f"Redeclaration of function {ast.root.key} with different return type")
+                    elif len(match.parameters) != len(ast.params):
+                        raise AttributeError(f"Redeclaration of function {ast.root.key} with different number of parameters")
+                    for param in ast.params:
+                        if not param in match.parameters:
+                            raise AttributeError(f"Redeclaration of function {ast.root.key} with different parameters")
+                    raise AttributeError(f"Redeclaration of function {ast.root.key}")
                 else:
                     new_entry = FuncSymbolEntry(ast.root)
                     param_names = []
@@ -786,6 +795,13 @@ class AstCreator(MathVisitor):
                         new_entry.parameters.append(FunctionParameter(param))
                         ast.symbolTable.insert(SymbolEntry(param))
                     if new_entry != match:
+                        if new_entry.type != match.type:
+                            raise AttributeError(f"Redefinition of function {ast.root.key} with different return type")
+                        elif len(new_entry.parameters) != len(match.parameters):
+                            raise AttributeError(f"Redefinition of function {ast.root.key} with different number of parameters")
+                        for param in new_entry.parameters:
+                            if not param in match.parameters:
+                                raise AttributeError(f"Redefinition of function {ast.root.key} with different parameters")
                         raise AttributeError(f"Redeclaration of function {ast.root.key} with different signature")
                     elif match.defined:
                         raise AttributeError(f"Redefinition of function {ast.root.key}")
@@ -830,7 +846,11 @@ class AstCreator(MathVisitor):
                 else:
                     exists_state = False
                 if exists_state:
-                    raise AttributeError(f"Redefinition of array {ast.root.key}")
+                    match = temp_symbol.lookup(ast.root.key[:-2])[0]
+                    if match.type != ast.type:
+                        raise AttributeError(f"Redeclaration of variable {match.name} with different type")
+                    elif not match.array:
+                        raise AttributeError(f"Redeclaration of variable {match.name} as array")
                 else:
                     if ast.size < 0:
                         raise AttributeError(f"Array {ast.root.key} has invalid size")
@@ -1385,6 +1405,21 @@ class AstCreator(MathVisitor):
                         node = copy.copy(ast.children[0])
                         instance = copy.copy(node)
                         decr_queue.append(instance)
+                # elif isinstance(ast, TermAST) and len(ast.children) > 1 and (isinstance(ast.children[0], ArrayNode) or isinstance(ast.children[1], ArrayNode)):
+                #     # handle printf
+                #     node, warnings_handle = ast.handle()
+                #     for warning in warnings_handle:
+                #         # get line where warning is
+                #         warning_str = "\033[95mwarning: \033[0m"
+                #         f = open(self.file_name, "r")
+                #         lines = f.readlines()
+                #         f.close()
+                #         line = lines[ast.line - 1]
+                #         # insert squiggly line
+                #         line = line[:ast.column] + '\u0332' + line[ast.column:]
+                #
+                #         warning_str += f"{warning}\n{ast.line}:{ast.column}: {line}"
+                #         self.warnings.append(warning_str)
                 elif isinstance(ast, FactorAST) and ast.root.value in ["++", "--"] and evaluate:
                     if isinstance(ast.parent, For_loopAST):
                         if ast.parent.incr == ast:
