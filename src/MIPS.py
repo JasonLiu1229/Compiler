@@ -71,7 +71,7 @@ class MIPS:
                 elif key.type == "float":
                     variables += f"\t.align 2\n\tflt_{key.key}: .space {str((key.size + 1) * 4)}\n"
                 elif key.type == "char":
-                    variables += f"\t.align 0\n\tchr_{key.key}: .space {str(key.size + 1)}\n"
+                    variables += f"\t.align 0\t\n\tchr_{key.key}: .space {str(key.size + 1)}\n"
             variables += ".text\n"
             f.write(variables)
             f.write(global_str)

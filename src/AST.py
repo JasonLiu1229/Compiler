@@ -3722,9 +3722,11 @@ class ArrayDeclAST(AST):
                 out_local += f"\tli{'.s' if self.type == 'float' else ''} ${temp_node.register.name}, {self.values[i].value}\n"
                 if self.root.type == "float" or self.root.type == "int":
                     out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {i * 4}\n"
+                    out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, 0(${self.root.register.name})\n"
                 else:
                     out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {i}\n"
-                out_local += f"\tmov{'.s' if self.type == 'float' else 'e'} ${temp_node.register.name}, ${self.root.register.name}\n\n"
+                    out_local += f"\tsb ${temp_node.register.name}, 0(${self.root.register.name})\n"
+                # out_local += f"\tmov{'.s' if self.type == 'float' else 'e'} ${self.root.register.name}, ${temp_node.register.name}\n\n"
                 self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
             registers.globalObjects.stackSize += self.size * 4
             out_list.append(temp_node.register.name)
