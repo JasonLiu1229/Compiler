@@ -2302,10 +2302,23 @@ class ArrayElementAST(AST):
         # sll register_of_offset, index, 2
         if self.type == "int" or self.type == "float":
             out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
+        else:
+            out_local += f"\tmove ${temp_node.register.name}, ${self.children[1].register.name}\n"
         # 3. add the offset to the array address
-        out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
+        # out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
         # 4. load the value at the address in a register
-        out_local += f"\tlw ${self.register.name}, 0(${self.children[0].register.name})\n"
+        type_ = "int"
+        if self.children[0].type == "int":
+            type_ = "int"
+        elif self.children[0].type == "float":
+            type_ = "flt"
+        elif self.children[0].type == "char":
+            type_ = "chr"
+        out_local += f"\tlw ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        out_list.append(temp_node.register.name)
+        out_list.append(self.children[1].register.name)
+        out_list.append(self.register)
+        registers.shuffle_name(self.register.name)
         return out_local, out_global, out_list
 
 class Scope_AST(AST):

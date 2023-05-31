@@ -582,6 +582,20 @@ class Registers:
         else:
             return self.singleManager.findRegister(name)
 
+    def shuffle_name(self, register_name: str):
+        if register_name.startswith("f"):
+            self.floatManager.shuffle_name(register_name)
+        elif register_name.startswith("t"):
+            self.temporaryManager.shuffle_name(register_name)
+        elif register_name.startswith("a"):
+            self.argumentManager.shuffle_name(register_name)
+        elif register_name.startswith("s"):
+            self.savedManager.shuffle_name(register_name)
+        elif register_name.startswith("k"):
+            self.reservedManager.shuffle_name(register_name)
+        elif register_name.startswith("v"):
+            self.returnManager.shuffle_name(register_name)
+
 class Register:
 
     def __init__(self, in_prev=None, in_next=None, in_object=None, in_register=None, in_name=None, in_manager=None) -> None:
