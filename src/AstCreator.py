@@ -689,11 +689,25 @@ class AstCreator(MathVisitor):
                 if temp_parent.symbolTable is None:
                     raise RuntimeError("Symbol table not found")
                 match_found = True
-                for entry in temp_parent.symbolTable.table:
+                for entry in temp_symbol.table:
                     # name match
                     if entry.name == ast.root.key:
+                        match = entry
                         if len(entry.parameters) != len(ast.args):
-                            continue
+                            match_found = False
+                            if len(entry.parameters) > len(ast.args):
+                                error = f"Too few arguments passed to function {entry.name}, expected {len(entry.parameters)}, got {len(ast.args)}\n"
+                            else:
+                                error = f"Too many arguments passed to function {entry.name}, expected {len(entry.parameters)}, got {len(ast.args)}\n"
+                            # get instruction in the file where the warning is by using column and line number
+                            f = open(self.file_name, "r")
+                            lines = f.readlines()
+                            line = lines[ast.line - 1]
+                            f.close()
+                            # insert squiggly line
+                            line = line[:ast.column] + '\u0332' + line[ast.column:]
+                            line = "\033[95mError:\033[0m" + line.replace('\t', ' ')
+                            raise AttributeError(error + line)
                         for i in range(len(entry.parameters)):
                             current_param = entry.parameters[i]
                             current_arg = ast.args[i]
@@ -701,18 +715,23 @@ class AstCreator(MathVisitor):
                                 continue
                             if isinstance(current_arg, VarNode):
                                 # check all attributes
-                                if current_param.name != current_arg.key:
-                                    match_found = False
-                                    break
+                                # if current_param.name != current_arg.key:
+                                #     match_found = False
+                                #     break
                                 if current_param.const != current_arg.const:
                                     match_found = False
                                     break
-                                if current_param.ptr != current_arg.ptr:
-                                    match_found = False
-                                    break
-                                if current_param.ptr_level != (current_arg.total_deref - current_arg.deref_level):
-                                    match_found = False
-                                    break
+                                if current_arg.addr:
+                                    if current_param.ptr_level != 1:
+                                        match_found = False
+                                        break
+                                else:
+                                    if current_param.ptr != current_arg.ptr:
+                                        match_found = False
+                                        break
+                                    if current_param.ptr_level != (current_arg.total_deref - current_arg.deref_level):
+                                        match_found = False
+                                        break
                                 if current_param.array != current_arg.array:
                                     match_found = False
                                     break
@@ -729,6 +748,7 @@ class AstCreator(MathVisitor):
                                         break
                 if not match_found:
                     raise AttributeError(f"Function {ast.root.key} not found")
+                ast.root.type = match.type
                 continue
 
             if isinstance(ast, FuncDeclAST):
@@ -814,6 +834,9 @@ class AstCreator(MathVisitor):
                 ast.children[-1].symbolTable = ast.symbolTable
                 symbol_table = self.resolve(ast.children[-1], in_func=True).symbolTable
                 # update symbol table of function definition
+                if symbol_table is None:
+                    symbol_table = SymbolTable(ast.children[-1])
+                    ast.children[-1].symbolTable = symbol_table
                 symbol_table.parent = ast.symbolTable.parent
                 ast.symbolTable = symbol_table
                 symbol_table.owner = ast
@@ -906,7 +929,7 @@ class AstCreator(MathVisitor):
                         temp_parent = temp_parent.parent
                     if isinstance(ast, For_loopAST):
                         break
-                    if isinstance(child, AST) and not isinstance(ast, Scope_AST) and not isinstance(ast, SwitchAST):
+                    if isinstance(child, AST) and not isinstance(ast, Scope_AST) and not isinstance(ast, SwitchAST) and not isinstance(child, FuncCallAST):
                         handle = False
                         continue
                     if isinstance(ast, ArrayElementAST):
@@ -1208,12 +1231,17 @@ class AstCreator(MathVisitor):
             elif isinstance(ast, AssignAST):
 
                 # check if assign value is of a valid type
-                if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode)):
+                if not (isinstance(ast.children[1], Node) or isinstance(ast.children[1], VarNode) or isinstance(ast.children[1], ArrayNode)
+                        or isinstance(ast.children[1], FuncCallAST)):
                     raise RuntimeError(f"\'Invalid assignment for variable {ast.children[0].key}\'")
                 if isinstance(ast.children[1], VarNode):
                     rtype = ast.children[1].type
-                else:
+                elif isinstance(ast.children[1], Node):
                     rtype = ast.children[1].key
+                elif isinstance(ast.children[1], ArrayNode):
+                    rtype = ast.children[1].type
+                elif isinstance(ast.children[1], FuncCallAST):
+                    rtype = ast.children[1].root.type
                 assignee = copy.copy(ast.children[0])
                 if not evaluate:
                     node = ast
@@ -1238,6 +1266,9 @@ class AstCreator(MathVisitor):
                         raise AttributeError(f"Attempting to modify a const variable {assignee.key}")
                     if rtype is None:
                         raise AttributeError(f"Type {rtype} does not exist")
+                    if isinstance(ast.children[1], FuncCallAST) and rtype != assignee.type:
+                        error = f"Variable assigned to function call of wrong type. Expected {assignee.type}, got {rtype}"
+                        raise AttributeError(error)
                     if rtype != assignee.type and not ast.children[1].cast:
                         if (assignee.type, rtype) not in conversions:
                             raise AttributeError("Variable assigned to wrong type")

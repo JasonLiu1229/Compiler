@@ -2165,6 +2165,7 @@ class PrimaryAST(AST):
 
     def handle(self):
         if self.root.value == "&":
+            self.children[0].addr = True
             return self.children[0]
         elif self.root.value[0] + self.root.value[-1] == "()":
             ret = self.children[0]

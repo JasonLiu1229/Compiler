@@ -242,6 +242,7 @@ class VarNode(Node):
         self.total_deref = total_deref
         self.const_ptr = const_ptr
         self.array = is_array
+        self.addr = False
 
     def __repr__(self) -> str:
         rep = f"{self.type} {'*' * (self.total_deref - self.deref_level - 1)} {self.key} : {self.value}"
