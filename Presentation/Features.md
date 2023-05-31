@@ -24,6 +24,9 @@ The output of the scripts is located in the `MIPS_output` folder.
 ### Project 6
 > printf, scanf and array
 
+<iframe src="../MIPS_output/scanf2.asm" title="scanf2.asm"></iframe>
+
+
 ## Authors
 | **Name**   | **Email**                           | **Student number** |
 |------------|-------------------------------------|--------------------|
