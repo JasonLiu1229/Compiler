@@ -2307,14 +2307,17 @@ class ArrayElementAST(AST):
         # 3. add the offset to the array address
         # out_local += f"\tadd ${self.children[0].register.name}, ${self.children[0].register.name}, ${temp_node.register.name}\n"
         # 4. load the value at the address in a register
-        type_ = "int"
+        type_ = ""
         if self.children[0].type == "int":
             type_ = "int"
         elif self.children[0].type == "float":
             type_ = "flt"
         elif self.children[0].type == "char":
             type_ = "chr"
-        out_local += f"\tlw ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        if self.children[0].type == "char":
+            out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        else:
+            out_local += f"\tlw ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
         out_list.append(temp_node.register.name)
         out_list.append(self.children[1].register.name)
         out_list.append(self.register)
