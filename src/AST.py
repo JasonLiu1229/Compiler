@@ -1769,7 +1769,6 @@ class PrintfAST(AST):
                 elif node.type == "char":
                     out_local += "\tli $v0, 4\n"
                 out_local += "\tsyscall\n"
-                pass
             elif isinstance(list_format[i], ArrayNode):
                 temp_node = Node("temp_node", None)
                 registers.savedManager.LRU(temp_node)
