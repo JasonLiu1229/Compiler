@@ -3670,7 +3670,11 @@ class ArrayDeclAST(AST):
                 registers.temporaryManager.shuffle_name(self.root.register.name)
             for i in range(len(self.values)):
                 out_local += f"\tli{'.s' if self.type == 'float' else ''} ${temp_node.register.name}, {self.values[i].value}\n"
-                out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, {i * 4}(${self.root.register.name})\n\n"
+                if self.root.type == "float" or self.root.type == "int":
+                    out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {i * 4}\n"
+                else:
+                    out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {i}\n"
+                out_local += f"\tmov{'.s' if self.type == 'float' else 'e'} ${temp_node.register.name}, ${self.root.register.name}\n\n"
                 self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
             registers.globalObjects.stackSize += self.size * 4
             out_list.append(temp_node.register.name)
