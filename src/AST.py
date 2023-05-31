@@ -3168,9 +3168,10 @@ class FuncScopeAST(AST):
                     visited.append(current)
                 if not (isinstance(current, While_loopAST) or isinstance(current, FuncDeclAST)
                         or isinstance(current, If_CondAST)
-                        or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)
-                        or (isinstance(current, InstrAST) and isinstance(current.children[0], ArrayDeclAST))):
+                        or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)):
                     for i in current.children:
+                        if isinstance(current, InstrAST) and isinstance(i, ArrayDeclAST):
+                            continue
                         if not isinstance(i, Node):
                             not_visited.append(i)
         visited.reverse()
