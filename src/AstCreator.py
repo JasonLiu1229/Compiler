@@ -1365,10 +1365,13 @@ class AstCreator(MathVisitor):
                     if isinstance(node.parent, ArrayNode):
                         node.value = node.value - 1 if ast.root.value == "--" else node.value + 1
                         updates_queue.append(node.parent)
-                    elif ast.root.value == "++":
-                        incr_queue.append(node)
-                    elif ast.root.value == "--":
-                        decr_queue.append(node)
+                    elif isinstance(node, VarNode):
+                        if ast.root.value == "++":
+                            incr_queue.append(node)
+                        elif ast.root.value == "--":
+                            decr_queue.append(node)
+                    else:
+                        raise AttributeError(f"Cannot increment or decrement non-variable {node.key}")
             elif isinstance(ast, CondAST):
                 if evaluate and not ast.in_loop:
                     handle = True

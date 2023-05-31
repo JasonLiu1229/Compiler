@@ -1211,10 +1211,14 @@ class ExprAST(AST):
 
     def handle(self):
         node = Node("", None, self.parent)
+        for child in self.children:
+            if isinstance(child, VarNode) and child.ptr:
+                raise Exception("Cannot perform arithmetic operations on pointers")
         if self.children[0].key == "var" or self.children[1].key == "var":
             return self
         if self.children[0].value is None or self.children[1].value is None:
             return self
+
         if self.root.value == '+':
             node = self.children[0] + self.children[1]
             node_type = checkType(str(node.value))
@@ -1998,6 +2002,8 @@ class TermAST(AST):
         for child in self.children:
             if isinstance(child, AST):
                 return self
+            if isinstance(child, VarNode) and child.ptr:
+                raise RuntimeError(f"\'Cannot use pointer as a term\'")
             if child.value is None and not isinstance(child, ArrayNode):
                 return self
             if child.key == "var":
@@ -2106,6 +2112,15 @@ class FactorAST(AST):
             return self
         if self.children[0].value is None:
             return self
+        if isinstance(self.children[0], VarNode) and self.children[0].ptr:
+            if self.root.value == '++':
+                raise RuntimeError(f"\'Attempting to increment a pointer\'")
+            elif self.root.value == '--':
+                raise RuntimeError(f"\'Attempting to decrement a pointer\'")
+            elif self.root.value == '-':
+                raise RuntimeError(f"\'Attempting to negate a pointer\'")
+            elif self.root.value == '+':
+                raise RuntimeError(f"\'Invalid operation on pointer\'")
         if self.root.value == '-':
             self.children[0].value = -self.children[0].value
             return self.children[0]
