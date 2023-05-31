@@ -2,12 +2,10 @@
 > These are all the working features of the project.
  
 ## Features
-Compile all `.c` files.   
-
+Compile all `.c` files.
 ```shell
 python ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e spim
 ```
-       
 The output of the scripts is located in the `MIPS_output` folder.
 
 ### Project 1
