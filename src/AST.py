@@ -1231,7 +1231,7 @@ class ExprAST(AST):
             node.key = node_type
 
         # convert the value of first operand to int
-        if self.children[0].key == 'char':
+        if self.children[0].key == 'char' and isinstance(self.children[0].value, str):
             temp_val1 = ord(self.children[0].value)
         else:
             temp_val1 = self.children[0].value
@@ -1380,6 +1380,7 @@ class PrintfAST(AST):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif current_child.type == 'char':
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1390,6 +1391,7 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1406,6 +1408,7 @@ class PrintfAST(AST):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif current_child.type == 'char':
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1416,6 +1419,7 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1432,6 +1436,10 @@ class PrintfAST(AST):
                     if not current_child.type == 'char':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'char'")
+                        elif current_child.type == 'int':
+                            current_child.value = chr(current_child.value)
+                            warnings.append(f"Implicit conversion from 'int' to 'char'")
                         elif current_child.value is None:
                             current_child.value = random.choice(string.ascii_letters)
                         else:
@@ -1440,6 +1448,10 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, str) or len(current_child.value) != 1:
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
+                            warnings.append(f"Implicit conversion from 'float' to 'char'")
+                        elif isinstance(current_child.value, int):
+                            current_child.value = chr(current_child.value)
+                            warnings.append(f"Implicit conversion from 'int' to 'char'")
                         elif current_child.value is None:
                             current_child.value = random.choice(string.ascii_letters)
                         else:
@@ -1465,8 +1477,10 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, float):
                         if isinstance(current_child.value, int):
                             current_child.value = array('f', [current_child.value])[0]
+                            warnings.append(f"Implicit conversion from 'int' to 'float'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = array('f', [ord(current_child.value)])[0]
+                            warnings.append(f"Implicit conversion from 'char' to 'float'")
                         elif current_child.value is None:
                             current_child.value = random.uniform(0, 10 ** length)
                         else:
@@ -1479,8 +1493,15 @@ class PrintfAST(AST):
                 if isinstance(current_child, Node):
                     if current_child.value is None:
                         current_child.value = str(uuid.uuid1())
-                    if not isinstance(current_child.value, str):
-                        raise TypeError("Invalid type for printf")
+                    else:
+                        if isinstance(current_child.value, str) and len(current_child.value) == 1:
+                            current_child.value = current_child.value
+                        elif isinstance(current_child.value, int) or isinstance(current_child.value, float):
+                            current_child.value = '\0'
+                            warnings.append("Warning: format specifies type 'char *' but the argument has type 'int'")
+                        else:
+                            raise TypeError("Invalid type for printf")
+
 
             # check the length of format specifiers and child
             if length != 0:
@@ -2190,7 +2211,21 @@ class DerefAST(AST):
             raise AttributeError(f"Attempting to dereference a non-pointer type variable")
         if child.deref_level > child.total_deref:
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
-        child = child.value
+
+        if child.value is None:
+            # check type of the pointer
+            if child.type == "int":
+                out = Node("int", 0)
+                out.parent = self.children[0]
+            elif child.type == "float":
+                out = Node("float", 0.0)
+                out.parent = self.children[0]
+            elif child.type == "char":
+                out = Node("char", "")
+                out.parent = self.children[0]
+            return out
+        else:
+            child = child.value
         return child
 
 class ArrayElementAST(AST):
