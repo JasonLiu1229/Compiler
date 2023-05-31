@@ -491,6 +491,13 @@ class ArrayNode(VarNode):
         # for example: out_key = "int*[5] a"
         return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
 
+    def __eq__(self, o):
+        return False
+
+    def __ne__(self, o):
+        return not self.__eq__(o)
+
+
 class FuncParameter(VarNode):
 
     def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
