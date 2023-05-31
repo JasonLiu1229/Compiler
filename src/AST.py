@@ -1300,8 +1300,8 @@ class InstrAST(AST):
         else:
             for child in self.children:
                 out = child.mips(registers)
-                out_global += out[0]
-                out_local += out[1]
+                out_local += out[0]
+                out_global += out[1]
                 out_list += out[2]
 
 
@@ -2277,7 +2277,8 @@ class Scope_AST(AST):
                 visited.append(current)
                 if not (isinstance(current, Scope_AST) or isinstance(current, FuncDefnAST) or isinstance(current, FuncCallAST)
                         or isinstance(current, If_CondAST) or isinstance(current, While_loopAST) or isinstance(current, For_loopAST)
-                        or isinstance(current, FuncDeclAST) or isinstance(current, SwitchAST)):
+                        or isinstance(current, FuncDeclAST) or isinstance(current, SwitchAST)
+                        or (isinstance(current, InstrAST) and isinstance(current.children[0], ArrayDeclAST))):
                     if isinstance(current, AST):
                         for i in current.children:
                             not_visited.append(i)
@@ -3152,7 +3153,8 @@ class FuncScopeAST(AST):
                     visited.append(current)
                 if not (isinstance(current, While_loopAST) or isinstance(current, FuncDeclAST)
                         or isinstance(current, If_CondAST)
-                        or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)):
+                        or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)
+                        or (isinstance(current, InstrAST) and isinstance(current.children[0], ArrayDeclAST))):
                     for i in current.children:
                         if not isinstance(i, Node):
                             not_visited.append(i)
