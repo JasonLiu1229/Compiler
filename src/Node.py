@@ -200,7 +200,6 @@ class Node:
         if self.register is None:
             # load the value in a register
             registers.temporaryManager.LRU(self)
-
         if self.key == "var":
             # variable is declared in the data section
             if self.type == "int":
@@ -217,6 +216,12 @@ class Node:
         else:
             out_local += f"\tli ${self.register.name}, {self.value}\t# {self.get_str()}"
             out_local += f"\t\t# {self.get_str()}\n"
+        if isinstance(self.parent, ArrayNode):
+            temp_node = Node("", None)
+            registers.temporaryManager.LRU(temp_node)
+            out_local += f"\tla ${temp_node.register.name}, {self.parent.type}_{self.parent.key}\n"
+            out_local += f"\taddi ${temp_node.register.name}, ${temp_node.register.name}, {self.parent.values.index(self) * 4}\n"
+            out_local += f"\tsw ${self.register.name}, 0(${temp_node.register.name})\n"
         out_list.append(self.register.name)
         # place holder
         return out_local, out_global, out_list

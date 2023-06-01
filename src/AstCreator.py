@@ -1518,7 +1518,7 @@ class AstCreator(MathVisitor):
                     index = ast.parent.children.index(ast)
                     if len(nodes) == 0:
                         ast.parent.children[index] = node
-                        if not isinstance(ast, DerefAST) or (isinstance(ast.parent, VarNode) and ast.parent.ptr):
+                        if not (isinstance(ast, DerefAST) or (isinstance(ast.parent, VarNode) and ast.parent.ptr) or isinstance(node.parent, ArrayNode)):
                             node.parent = ast.parent
                     else:
                         ast.parent.children = nodes

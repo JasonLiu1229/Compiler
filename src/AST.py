@@ -3237,10 +3237,12 @@ class FuncScopeAST(AST):
                 if not (isinstance(current, While_loopAST) or isinstance(current, FuncDeclAST)
                         or isinstance(current, If_CondAST)
                         or isinstance(current, FuncDefnAST) or isinstance(current, SwitchAST)):
+                    if isinstance(current, Node):
+                        continue
                     for i in current.children:
                         if isinstance(current, InstrAST) and isinstance(i, ArrayDeclAST):
                             continue
-                        if not isinstance(i, Node):
+                        if not (isinstance(i, Node) and not isinstance(i.parent, ArrayNode)):
                             not_visited.append(i)
         visited.reverse()
         temp_list = []
@@ -3269,10 +3271,13 @@ class FuncScopeAST(AST):
                     if entry.object.value is not None:
                         registers.globalObjects.data[2][entry.object.value] = f"{entry.type}_{entry.object.key}"
                     else:
-                        if entry.array:
-                            registers.globalObjects.uninitialized[3].append(entry.object)
-                        else:
-                            registers.globalObjects.uninitialized[2].append(f"int_{entry.object.key}")
+                        # if entry.array:
+                        #     if len(entry.object.values) == 0:
+                        #         registers.globalObjects.uninitialized[3].append(entry.object)
+                        #     else:
+                        #         registers.globalObjects.uninitialized[3].append(entry.object)
+                        # else:
+                        registers.globalObjects.uninitialized[2].append(f"int_{entry.object.key}")
                 elif entry.type == "float":
                     if entry.object.key in registers.globalObjects.data[1].values():
                         continue
@@ -3316,7 +3321,9 @@ class FuncScopeAST(AST):
         # mips code for each instruction
         for current in visited:
             output = tuple
-            if current.root.value in tokens:
+            if isinstance(current, Node):
+                output = current.mips(registers)
+            elif current.root.value in tokens:
                 output = self.visitMIPSOp(current, registers)
             else:
                 output = current.mips(registers)
