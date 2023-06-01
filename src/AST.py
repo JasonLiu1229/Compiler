@@ -2313,10 +2313,7 @@ class ArrayElementAST(AST):
             type_ = "flt"
         elif self.children[0].type == "char":
             type_ = "chr"
-        if self.children[0].type == "char":
-            out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
-        else:
-            out_local += f"\tlw ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
         out_list.append(temp_node.register.name)
         out_list.append(self.children[1].register.name)
         out_list.append(self.register)
