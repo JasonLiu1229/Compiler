@@ -78,12 +78,12 @@ def main():
     parser.add_argument('-f', '--files', nargs='+', help='this flag will define which specific files we want to test')
     parser.add_argument('-i', '--index', help='index of which file it is in the directory')
     parser.add_argument('-v', '--verbose', action='store_true', help='this flag will print the AST')
-    parser.add_argument('-nw', '--no_warning', action='store_true', help='this flag will not print the warnings')
-    parser.add_argument('-e', '--execute_with', help='this flag will execute the mips code with the given program',
+    parser.add_argument('-nw', '--no-warning', action='store_true', help='this flag will not print the warnings')
+    parser.add_argument('-e', '--execute-with', help='this flag will execute the mips code with the given program',
                         default=None, choices=["mars", "spim", "both"], type=str.lower, required=False)
     parser.add_argument('-s', '--silent', action='store_true', help='this flag will not print the output of the program')
     # disclaimer
-    parser.add_argument('-nd', '--no_disclaimer', action='store_true', help='this flag will not print the disclaimer')
+    parser.add_argument('-nd', '--no-disclaimer', action='store_true', help='this flag will not print the disclaimer')
     # visualise
     parser.add_argument('-vs', '--visualise', action='store_true', help='this flag will create a dot file and a png file')
     # try:
