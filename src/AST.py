@@ -6,7 +6,6 @@ import string
 import uuid
 from math import floor
 from array import array
-from pprint import pprint
 from typing import Any, Tuple
 from Node import Node, VarNode, FunctionNode, FuncParameter, ArrayNode
 import antlr4.error.ErrorListener
@@ -187,8 +186,8 @@ def visited_list_DFS2(ast) -> list:
 class AST:
     def __init__(self, root: Node = None, children: list = None, parent=None, symbolTable: SymbolTable | None = None):
         """
-        Initializer function
-        :param root: assign root node
+        Initializer function.
+        :param root: Assign root node
         :param children: assign children if given
         """
         super().__init__()
@@ -501,7 +500,7 @@ class AST:
                 right_type = 'float'
             else:
                 right_type = 'int'
-        # create new node
+        # create a new node
         new_node = Node("", None)
         if current.root.register is not None:
             new_node = current.root
@@ -966,7 +965,7 @@ class AST:
                             child_key = child.key
                         else:
                             child_key = child.root.key
-                        # get the right node to connect to from the nodes dictionary
+                        # get the right node to connect to from the dictionary of nodes
                         index = None
                         child_index = None
                         for i in range(len(nodes[new_key])):
@@ -1107,7 +1106,7 @@ class AST:
     @staticmethod
     def comp_gt(var_type: str, op1: str, op2: str):
         """
-        Writes LLVM code for a greater than operation
+        Writes LLVM code for a "greater than" operation
         :param var_type: the type of return value
         :param op1: the first operand
         :param op2: the second operand
@@ -1127,7 +1126,7 @@ class AST:
     @staticmethod
     def comp_eq(var_type: str, op1: str, op2: str):
         """
-        Writes LLVM code for an is equal operation
+        Writes LLVM code for an "is equal" operation
         :param var_type: the type of return value ඞ
         :param op1: the first operand
         :param op2: the second operand
@@ -1137,7 +1136,7 @@ class AST:
     @staticmethod
     def comp_geq(var_type: str, op1: str, op2: str):
         """
-        Writes LLVM code for a greater than equals operation
+        Writes LLVM code for a "greater than equals" operation
         :param var_type: the type of return value
         :param op1: the first operand
         :param op2: the second operand
@@ -1560,7 +1559,7 @@ class PrintfAST(AST):
         # keep everything in-between the format specifiers too
         format_ = re.split(r'(%[0-9]*[discf])|(\\[0-9A-Fa-f]{2})', self.format_string)
         format_ = [x for x in format_ if x is not None and x != '']
-        # loop through list and check for valid format specifiers
+        # loop through the list and check for valid format specifiers
         counter = -1
         for i in range(len(format_)):
             # if the string is a format specifier
@@ -1755,7 +1754,7 @@ class PrintfAST(AST):
         list_format = self.format(registers)
         registers.search(self.root)
         self.register = self.root.register
-        # check all strings in list_format and if they are not in the global objects add them
+        # check all strings in list_format and if they are not in the global objects, add them
         for i in list_format:
             if isinstance(i, ArrayElementAST):
                 continue
@@ -1782,7 +1781,7 @@ class PrintfAST(AST):
             # out_local += f"la $a0, {registers.globalObjects.data[0][i]}\n"
             # out_local += "li $v0, 4\n"
             # out_local += "syscall\n"
-            # change so it call the right print function
+            # change so it calls the right print function
             if isinstance(list_format[i], str) and len(list_format[i]) == 0:
                 continue
             elif isinstance(list_format[i], ArrayElementAST):
@@ -1830,7 +1829,7 @@ class PrintfAST(AST):
                     out_list.append('a0')
                 continue
             elif isinstance(list_format[i], Register):
-                # get register type
+                # get the register type
                 if list_format[i].name[0] == 'f':
                     out_local += f"\tmov.s $f12, ${list_format[i].name}\n"
                     out_local += "\tli $v0, 2\n"
@@ -2213,7 +2212,7 @@ class DerefAST(AST):
             raise AttributeError(f"Dereference depth reached for pointer {child.key}")
 
         if child.value is None:
-            # check type of the pointer
+            # check the type of the pointer
             if child.type == "int":
                 out = Node("int", 0)
                 out.parent = self.children[0]
@@ -2289,7 +2288,7 @@ class ArrayElementAST(AST):
     def mips(self, registers: Registers):
         out_local = out_global = ""
         out_list = []
-        # steps to load array element with register in a variable
+        # steps to load an array element with register in a variable
         # 1. load array address in a register - done before calling this function
         # 2. multiply the index with the size of the array element
         temp_node = Node("*", None)
@@ -2486,7 +2485,7 @@ class If_CondAST(Scope_AST):
             out_local += f"\tbeq $v1, $zero, exit_{registers.globalObjects.index}\n"
             self.exit = registers.globalObjects.index
             out_else = ""
-        # if else block exist then create else default
+        # if "else" block exist then create else default
         if len(self.children) > 1:
             self.children[1].register = registers.globalObjects.index
             output = self.children[1].mips(registers)
@@ -2789,7 +2788,7 @@ class ContAST(InstrAST):
         return out, index
 
     def mips(self, registers: Registers):
-        # get the name of it's block
+        # get the name of its block
         # search for the parent block that's a while
         parent = self.parent
         while True:
@@ -3042,7 +3041,7 @@ class FuncCallAST(AST):
         entry = None
         current = None
         temp_parent = self.parent
-        # find nearest table
+        # find the nearest table
         while temp_parent is not None:
             current = temp_parent.symbolTable
             if current is not None:
@@ -3197,7 +3196,7 @@ class FuncScopeAST(AST):
 
     def calculateStackSize(self):
         size = 0
-        # calculate the size of the stack of the function
+        # calculate stack size of the function
         for entry in self.symbolTable.table:
             if isinstance(entry.object, VarNode):
                 if entry.object.ptr:
@@ -3207,7 +3206,7 @@ class FuncScopeAST(AST):
                 else:
                     size += 4
 
-        # calculate the size of the stack of the function parameters
+        # calculate stack size of the function parameters
         for entry in self.parent.symbolTable.table:
             if isinstance(entry.object, VarNode):
                 if entry.object.ptr:
@@ -3503,12 +3502,12 @@ class ScanfAST(AST):
         return format_
 
     def mips(self, registers: Registers):
-        # scanf in mips
-        # format the format string
-        # ask for input depending on the format string, so different syscall for different types
+        # Scanf in mips
+        # format the format string.
+        # Ask for input depending on the format string, so different syscall for different types
         # store the input in the variables (registers that are assigned to the variables)
         # check if the completed format string is correct
-        # if not, print error message and exit
+        # if not, print an error message and exit
         # if yes, continue
         out_local = ""
         out_reg = []
