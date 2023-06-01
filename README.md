@@ -61,12 +61,12 @@ This project is made for the course Compilers at the **University of Antwerp**.
     </ul>
     <li><input type="checkbox"> MIPS</li>
     <ul>
-        <li><input type="checkbox"> Project 1</li>
-        <li><input type="checkbox"> Project 2</li>
+        <li><input type="checkbox" checked> Project 1</li>
+        <li><input type="checkbox" checked> Project 2</li>
         <li><input type="checkbox"> Project 3</li>
-        <li><input type="checkbox"> Project 4</li>
-        <li><input type="checkbox"> Project 5</li>
-        <li><input type="checkbox"> Project 6</li>
+        <li><input type="checkbox" checked> Project 4</li>
+        <li><input type="checkbox" checked> Project 5</li>
+        <li><input type="checkbox" checked> Project 6</li>
     </ul>
 </ul>
 
@@ -83,14 +83,20 @@ If you do it in the terminal, match the **"parameters"** option of pycharm with 
 There are two ways to run it via terminal
 Common parameter settings:
 
-| Short command | Long command | Type    | Required                  | Description                          |
-|---------------|--------------|---------|---------------------------|--------------------------------------|
-| -d            | --directory  | <path\> | **Yes**                   | Directory of the input files         |
-| -t            | --type       | <str\>  | **Yes**                   | File extension                       |
-| -f            | --files      | [str]   | Exclusive. Takes priority | Files to parse                       |
-| -a            | --all        | NaN     | Exclusive. Least priority | Parse all the files in the directory |
-| -i            | --index      | <int\>  | Exclusive                 | Parse the i-th file in the directory |
-| -h            | --help       | NaN     | NaN                       | For help                             |
+| Short command | Long command    | Type    | Required                  | Description                                                                           |
+|---------------|-----------------|---------|---------------------------|---------------------------------------------------------------------------------------|
+| -d            | --directory     | <path\> | **Yes**                   | Directory of the input files                                                          |
+| -t            | --type          | <str\>  | **Yes**                   | File extension                                                                        |
+| -f            | --files         | [str]   | Exclusive. Takes priority | Files to parse                                                                        |
+| -a            | --all           | NaN     | Exclusive. Least priority | Parse all the files in the directory                                                  |
+| -i            | --index         | <int\>  | Exclusive                 | Parse the i-th file in the directory                                                  |
+| -v            | --verbose       | NaN     | No                        | Print the AST                                                                         |
+| -nw           | --no-warning    | NaN     | No                        | Do not print warnings                                                                 |
+| -e            | --execute-with  | <str/>  | No                        | Execute the mips code generated for the program.<br/> Can be "spim", "mars" or "both" |
+| -s            | --silent        | NaN     | No                        | Do not print the output of the program                                                |
+| -nd           | --no-disclaimer | NaN     | No                        | Remove the disclaimers for "spim" and "mars" from the output                          |
+| -vs           | --visualise     | NaN     | No                        | Generate a dot format file and compile it to a png                                    |
+| -h            | --help          | NaN     | NaN                       | For help                                                                              |
 
 Example code with specified input files:
 
@@ -105,22 +111,40 @@ Example code with only the input directory and an index
     python3 -d ../input_files/ -t .c -i 3
 
  
-##### Script
-> **Warning** The LLVM class function _**execute()**_ does not work on windows. Disable it when testing on windows.
+[//]: # (##### Script)
 
-> How to disable?
-> > comment on line 36 on run.py
+[//]: # (> **Warning** The LLVM class function _**execute&#40;&#41;**_ does not work on windows. Disable it when testing on windows.)
+
+[//]: # ()
+[//]: # (> How to disable?)
+
+[//]: # (> > comment on line 36 on run.py)
 
 #### Available tests
-##### Simple tests for projects 1-3
+##### All correct programs
 ```shell
 cd src || exit &
-python3 run.py -d ../input_files/ -t .c -a
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e mars -nd
 ```
-##### Projects 1-3 without main
+##### All programs with errors
 ```shell
 cd src || exit &
-python3 run.py -d ../input_files/projecten_123_zonder_main/ -t .c -a
+python3 run.py -d ../input_files/SemanticErrors/fully_working/ -t .c -a -e mars -nd
+```
+##### Recursive fibonacci
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f fibonacciRecursive -e mars
+```
+##### Scanf tests
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f Scanf1 Scanf2 -e mars
+```
+##### Printf tests
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f Printf1 Printf2 Printf3 -e mars
 ```
 
 #### Compiling the grammar
@@ -135,7 +159,7 @@ antlr4 -o ../src/output -listener -visitor -Dlanguage=Python3 Math.g4
     Grammar: ../Grammars/Math.g4
     Python scripts: ../src/
     C Files: ../input_files/
-    The output of the scripts: ../Output/
+    The output of the scripts: ../MIPS_output/ for asm files and ../Output/graphics for png files
 
 <a name="sources"></a>
 ### Sources
