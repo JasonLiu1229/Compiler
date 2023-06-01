@@ -1494,7 +1494,7 @@ class PrintfAST(AST):
                     if current_child.value is None:
                         current_child.value = str(uuid.uuid1())
                     else:
-                        if isinstance(current_child.value, str) and len(current_child.value) == 1:
+                        if isinstance(current_child.value, str):
                             current_child.value = current_child.value
                         elif isinstance(current_child.value, int) or isinstance(current_child.value, float):
                             current_child.value = '\0'
