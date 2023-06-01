@@ -3679,7 +3679,7 @@ class ArrayDeclAST(AST):
                             temp_string += ", "
                     if len(self.values) < self.size:
                         temp_string += ", 0" * (self.size - len(self.values))
-                    registers.globalObjects.data[2][temp_string] = self.root.key[:-2] # remove the [] from the key
+                    registers.globalObjects.data[2][temp_string] = f"{self.type}_{self.root.key[:-2]}" # remove the [] from the key
             elif self.type == "float":
                 if self.root.key not in registers.globalObjects.data[1].values():
                     temp_string = ""
@@ -3689,7 +3689,7 @@ class ArrayDeclAST(AST):
                             temp_string += ", "
                     if len(self.values) < self.size:
                         temp_string += ", 0.0" * (self.size - len(self.values))
-                    registers.globalObjects.data[1][temp_string] = self.root.key
+                    registers.globalObjects.data[1][temp_string] = f"{self.type}_{self.root.key[:-2]}"
             elif self.type == "char":
                 if self.root.key not in registers.globalObjects.data[4].values():
                     temp_string = ""
@@ -3697,7 +3697,7 @@ class ArrayDeclAST(AST):
                         temp_string += f"\'{i.value}\'"
                         if i != self.values[-1]:
                             temp_string += ", "
-                    registers.globalObjects.data[4][temp_string] = self.root.key
+                    registers.globalObjects.data[4][temp_string] = f"{self.type}_{self.root.key[:-2]}"
                     if len(self.values) < self.size:
                         temp_string += ", 0" * (self.size - len(self.values))
         else:
