@@ -947,7 +947,9 @@ class AstCreator(MathVisitor):
                                 line = "\033[95mError:\033[0m" + line.replace('\t', ' ')
                                 raise AttributeError(f"Error at line {ast.line}:{ast.column}: Array {ast.root.key} was not declared\n"
                                                      f"{line}")
-                        # if not, throw error
+                        match = temp_symbol.lookup(ast.root.key)[0]
+                        ast.root.type = match.type
+                        ast.children[0].type = match.type
                     # un-replaced rvars
                     if isinstance(child, Node) and child.key == "var":
                         # temp_parent = child.parent
