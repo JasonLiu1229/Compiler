@@ -2299,7 +2299,7 @@ class ArrayElementAST(AST):
             registers.temporaryManager.LRU(self.root)
             self.register = self.root.register
         # sll register_of_offset, index, 2
-        if self.type == "int" or self.type == "float":
+        if self.children[0].type == "int" or self.children[0].type == "float":
             out_local += f"\tsll ${temp_node.register.name}, ${self.children[1].register.name}, 2\n"
         else:
             out_local += f"\tmove ${temp_node.register.name}, ${self.children[1].register.name}\n"
@@ -2313,7 +2313,10 @@ class ArrayElementAST(AST):
             type_ = "flt"
         elif self.children[0].type == "char":
             type_ = "chr"
-        out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        if self.children[0].type == "char":
+            out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
+        else:
+            out_local += f"\tlb ${self.register.name}, {type_}_{self.children[0].key}(${temp_node.register.name})\n"
         out_list.append(temp_node.register.name)
         out_list.append(self.children[1].register.name)
         out_list.append(self.register)
