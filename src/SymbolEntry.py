@@ -23,6 +23,7 @@ class SymbolEntry:
         self.register = None
         self.symbol_table = None
         self.used = False
+        self.returned = False
         self.owner = None
 
     def initialized(self):

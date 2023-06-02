@@ -912,7 +912,10 @@ class AstCreator(MathVisitor):
                 handle = True
                 temp_parent = ast.parent
                 evaluate = True
+                returned = False
                 while temp_parent is not None:
+                    if isinstance(temp_parent, FuncCallAST):
+                        returned = True
                     if isinstance(temp_parent, While_loopAST) or isinstance(temp_parent, ReturnInstr):
                         evaluate = False
                         break
@@ -982,9 +985,11 @@ class AstCreator(MathVisitor):
                             if len(matches) > 1:
                                 raise ReferenceError(f"Multiple matches for variable {ast.children[0].key}")
                             matches[0].used = True
+                            if not matches[0].returned:
+                                matches[0].returned = returned
                             if isinstance(matches[0].object, FuncParameter) or child.type is None:
                                 ast.children[index].type = matches[0].type
-                            if evaluate and not in_loop:
+                            if evaluate and not in_loop and not matches[0].returned:
                                 ast.children[index] = copy.deepcopy(matches[0].object)
                                 if isinstance(ast.children[index], FuncParameter):
                                     ast.children[index].parent = ast

@@ -723,9 +723,11 @@ class AST:
             if temp_symbol is not None:
                 if temp_symbol.exists(entry):
                     out = temp_symbol.lookup(entry)
+                    out[0].returned = True
                     return (out[0].object, len(out)) if out is not None else ([], None)
                 elif temp_symbol.exists(entry.value):
                     out = temp_symbol.lookup(entry.value)
+                    out[0].returned = True
                     return (out[0].object, len(out)) if out is not None else ([], None)
         return out, -1
 
@@ -1355,6 +1357,8 @@ class PrintfAST(AST):
                             continue
                         # check if the type of the variable matches
                         if (var_type, format_type) not in conversions:
+                            if var_type == "char" and self.args[i].array and format_type == "string":
+                                continue
                             raise Exception(f"No possible conversion from {var_type} to {format_type}")
                         if (var_type, format_type) not in conv_promotions:
                             # clang style warning
@@ -2200,6 +2204,8 @@ class DerefAST(AST):
 
     def handle(self):
         child = self.children[0]
+        if isinstance(child, Node) and child.key == "var":
+            return self
         if not isinstance(child, VarNode):
             raise ReferenceError(f"Attempting to dereference a non-variable type object")
         if not child.ptr:
@@ -3106,6 +3112,9 @@ class FuncCallAST(AST):
             registers.globalObjects.stackSize += size
         count = 0
         for vars in variables:
+            output = vars.mips(registers)
+            out += output[0]
+            temp_list += output[2]
             if parameters_org[count].ptr or parameters_org[count].reference:
                 continue
             # retrieve value globaly and store it locally
