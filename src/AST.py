@@ -3116,7 +3116,8 @@ class FuncCallAST(AST):
                     else:
                         registers.savedManager.LRU(arg)
                     if isinstance(arg, VarNode):
-                        variables.append(arg)
+                        if not arg.ptr:
+                            variables.append(arg)
 
             par_type = parameters_org[count].type
             if par_type == "float":
