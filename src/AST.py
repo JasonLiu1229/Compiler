@@ -3953,8 +3953,7 @@ class CommentAST(AST):
     def mips(self, registers: Registers):
         out_local = out_global = ""
         out_list = []
-        if self.root.value == "multiline":
-            self.comment = self.comment.replace("\n", "\n#")
+        self.comment = self.comment.replace("\n", "\n#")
         out_local += f"# {self.comment}\n"
         return out_local, out_global, out_list
 
