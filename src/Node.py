@@ -17,6 +17,12 @@ class Node:
         self.parent = parent
         self.cast = False
         self.register = None
+        self.in_loop = False
+        self.in_func = False
+        self.type = None
+        self.addr = False
+        self.deref = False
+        self.known = True
 
     # def __eq__(self, o: object) -> bool:
     #     return (self.key == o.key) and (self.value == o.value)
@@ -108,10 +114,12 @@ class Node:
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
-        if isinstance(self.value, str) and self.key != "var":
-            self.value = ord(self.value)
-        if isinstance(other.value, str) and other.key != "var":
-            other.value = ord(other.value)
+        # if isinstance(self.value, str) and self.key != "var" and len(self.value) == 1:
+        #     self.value = ord(self.value)
+        # if isinstance(self.value, str) and self.key != "var":
+        #     self.value = ord(self.value)
+        # if isinstance(other.value, str) and other.key != "var":
+        #     other.value = ord(other.value)
         if not isinstance(self, VarNode) and not isinstance(other, VarNode):
             return self.value == other.value and self.key == other.key
         else:
@@ -161,12 +169,7 @@ class Node:
         converts Node in a dot dictionary format
         :return: dot dictionary format
         """
-        out = '<\"' + self.key + '\t' + ':' + '\t'
-        if isinstance(self.value, str):
-            out += '\"\\' + self.value + '\"\\'
-        else:
-            out += str(self.value)
-        out += '\">'
+        out = f"\"{self.key}\" [label=\"{self.key}{ ' :' + self.value if self.value is not None else ''}\"];\n"
         return out
 
     def recursive_dot(self, dictionary, count, name):
@@ -189,6 +192,49 @@ class Node:
     def llvm(self, scope: bool = False, index: int = 0) -> tuple[str, int]:
         return f" ", index
 
+    def mips(self, registers):
+        out_global = ""
+        out_local = ""
+        out_list = []
+        if self.value is None and self.key != "var":
+            return "", "", []
+        # check if the value is already in a register
+        registers.search(self)
+        if self.register is None:
+            # load the value in a register
+            registers.temporaryManager.LRU(self)
+        if self.key == "var":
+            # variable is declared in the data section
+            if self.type == "int":
+                temp_type = "int"
+            elif self.type == "float":
+                temp_type = "flt"
+            elif self.type == "char":
+                temp_type = "chr"
+            else:
+                temp_type = "int"
+            out_local += f"\tlw{'c1' if (self.key == 'float' or self.register.name[0] == 'f') else ''} ${self.register.name}, {temp_type}_{self.value}\t# {self.get_str()}"
+            out_local += f"\t# {self.get_str()}\n"
+            # out_local += f"\tla ${self.register.name}, {self.value}\n"
+        else:
+            out_local += f"\tli ${self.register.name}, {self.value}\t# {self.get_str()}"
+            out_local += f"\t\t# {self.get_str()}\n"
+        if isinstance(self.parent, ArrayNode):
+            temp_node = Node("", None)
+            registers.temporaryManager.LRU(temp_node)
+            out_local += f"\tla ${temp_node.register.name}, {self.parent.type}_{self.parent.key}\n"
+            out_local += f"\taddi ${temp_node.register.name}, ${temp_node.register.name}, {self.parent.values.index(self) * 4}\n"
+            out_local += f"\tsw ${self.register.name}, 0(${temp_node.register.name})\n"
+        out_list.append(self.register.name)
+        self.register.shuffle()
+        # place holder
+        return out_local, out_global, out_list
+
+    def update(self, register, registers):
+        if registers.search(self) is not None:
+            self.register.clear()
+            self.register = None
+        register.update(self)
 
 class VarNode(Node):
 
@@ -207,7 +253,7 @@ class VarNode(Node):
         self.array = is_array
 
     def __repr__(self) -> str:
-        rep = f"{self.type} {'*' * self.total_deref} {self.key} : {self.value}"
+        rep = f"{self.type} {'*' * (self.total_deref - self.deref_level - 1)} {self.key} : {self.value}"
         return rep
 
     def __eq__(self, o):
@@ -356,6 +402,85 @@ class VarNode(Node):
         self.register = index
         return out, index + 1
 
+    def mips(self, registers):
+        if self.ptr and isinstance(self.value, VarNode):
+            if self.value.register is None:
+                if self.value.const:
+                    registers.savedManager.LRU(self.value)
+                elif self.value.type == "float":
+                    registers.floatManager.LRU(self.value)
+                else:
+                    registers.temporaryManager.LRU(self.value)
+        # assign itself to a register
+        # search for a register first
+        if self.register is None:
+            if registers.search(self) is not None:
+                pass
+            elif self.const:
+                registers.savedManager.LRU(self)
+                # registers.globalObjects.data[0][self.value] = self.key
+            elif self.type == "float":
+                registers.floatManager.LRU(self)
+                # registers.globalObjects.data[1][self.value] = self.key
+            else:
+                registers.temporaryManager.LRU(self)
+        if self.value is None:
+            return "", "", []
+        # mips variable declaration
+        # if self.const, also declare in .data
+        # get right type
+        if self.type == "int":
+            out_type = ".word"
+        elif self.type == "float":
+            out_type = ".float"
+        elif self.type == "char":
+            out_type = ".byte"
+        else:
+            out_type = ".word"
+
+        # get right value
+        if isinstance(self.value, str):
+            out_val = f"\'{self.value}\'"
+        else:
+            out_val = f"{self.value}"
+
+        # if self.const or self.type == "float":
+        #     out_global = f"{self.key}: {out_type} {out_val}\n"
+        # # if not self.const, declare in .text
+        # else:
+        out_global = ""
+        out_local = ""
+        out_reg = []
+        # local variable declaration
+        if not (self.ptr and isinstance(self.value, VarNode)):
+            if self.known:
+                if self.type == "float":
+                    out_local = f"\tlwc1 ${self.register.name}, flt_{self.key}"
+                else:
+                    out_local = f"\tli ${self.register.name}, {out_val}"
+            else:
+                out_type = "int" if self.type == "int" else "float" if self.type == "flt" else "chr"
+                out_local += f"\tlw{'c1' if self.type == 'float' else ''} ${self.register.name}, {out_type}_{self.key}\n"
+            self.register.shuffle()
+            out_local += f"\t\t# {self.get_str()}\n"
+        else:
+            # Load the pointed value into the register
+            # if self.register is None:
+            output = self.value.mips(registers)
+            out_local += output[0]
+            out_global += output[1]
+            out_reg += output[2]
+            # load the address of the variable
+            out_local += f"\tla ${self.register.name}, {self.value.key if not self.ptr else f'0(${self.value.register.name})'}"
+            out_local += f"\t# {self.get_str()}\n"
+            self.register.shuffle()
+            # store the address in the register
+            # out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${self.value.register.name}, 0(${self.register.name})\n"
+        if self.register is not None:
+            out_reg.append(self.register.name)
+        return out_local, out_global, out_reg
+
+
 class ArrayNode(VarNode):
 
     def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
@@ -381,12 +506,33 @@ class ArrayNode(VarNode):
         # for example: out_key = "int*[5] a"
         return f"{'const ' if self.const else ''}{self.type}{'*' * (self.total_deref - self.deref_level)} {self.key}"
 
+    def __eq__(self, o):
+        return isinstance(o, ArrayNode) and self.key == o.key and self.type == o.type and self.const == o.const and \
+                  self.ptr == o.ptr and self.deref_level == o.deref_level and self.total_deref == o.total_deref and \
+                    self.const_ptr == o.const_ptr and self.size == o.size
+    def __ne__(self, o):
+        return not self.__eq__(o)
+
+
 class FuncParameter(VarNode):
 
     def __init__(self, key: str, value, vtype: str, const: bool = None, ptr: bool = False, deref_level: int = 0,
                  total_deref: int = 0, const_ptr: bool = False, reference: bool = False, is_array = False) -> None:
         super().__init__(key, value, vtype, const, ptr, deref_level, total_deref, const_ptr, is_array)
         self.reference = reference
+        # if it is a pointer, create a new variable for each deref
+        if self.ptr:
+            new_values = []
+            for i in range(self.total_deref):
+                new_val = VarNode(f"{self.key}_{i}", self.value, self.type, self.const, self.ptr, i, self.total_deref, self.const_ptr, self.array)
+                new_values.append(new_val)
+                if i > 0:
+                    new_values[i - 1].value = new_val
+                    new_values[i - 1].parent = new_val
+                else:
+                    new_values[i].parent = self
+            self.deref_level = 0
+            self.value = new_values[0]
 
     def __repr__(self) -> str:
         return f"{'& ' if self.reference else ''}{super().__repr__()}"

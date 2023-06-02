@@ -138,3 +138,5 @@ dmypy.json
 /dataSources.local.xml
 /.idea/
 /Output/
+/MIPS_output/
+/LLVM_output/

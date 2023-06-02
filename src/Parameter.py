@@ -9,6 +9,7 @@ class FunctionParameter:
         self.const = in_object.const
         self.name = in_object.key
         self.default_value = in_object.value
+        self.object = in_object
 
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, FunctionParameter):
@@ -23,3 +24,6 @@ class FunctionParameter:
 
     def __repr__(self):
         return f"{self.type} {self.name} = {self.default_value}"
+
+    def update(self, register, registers):
+        self.object.update(register, registers)

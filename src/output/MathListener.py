@@ -53,6 +53,15 @@ class MathListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathParser#comment.
+    def enterComment(self, ctx:MathParser.CommentContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#comment.
+    def exitComment(self, ctx:MathParser.CommentContext):
+        pass
+
+
     # Enter a parse tree produced by MathParser#scanf.
     def enterScanf(self, ctx:MathParser.ScanfContext):
         pass
@@ -158,6 +167,42 @@ class MathListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathParser#scope.
     def exitScope(self, ctx:MathParser.ScopeContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#switch_instr.
+    def enterSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#switch_instr.
+    def exitSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#case_instr.
+    def enterCase_instr(self, ctx:MathParser.Case_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#case_instr.
+    def exitCase_instr(self, ctx:MathParser.Case_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#default_instr.
+    def enterDefault_instr(self, ctx:MathParser.Default_instrContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#default_instr.
+    def exitDefault_instr(self, ctx:MathParser.Default_instrContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#switch_scope.
+    def enterSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#switch_scope.
+    def exitSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
         pass
 
 
@@ -311,6 +356,15 @@ class MathListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathParser#rvar.
     def exitRvar(self, ctx:MathParser.RvarContext):
+        pass
+
+
+    # Enter a parse tree produced by MathParser#comp.
+    def enterComp(self, ctx:MathParser.CompContext):
+        pass
+
+    # Exit a parse tree produced by MathParser#comp.
+    def exitComp(self, ctx:MathParser.CompContext):
         pass
 
 

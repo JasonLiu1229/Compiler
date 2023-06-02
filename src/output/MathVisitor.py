@@ -34,6 +34,11 @@ class MathVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathParser#comment.
+    def visitComment(self, ctx:MathParser.CommentContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathParser#scanf.
     def visitScanf(self, ctx:MathParser.ScanfContext):
         return self.visitChildren(ctx)
@@ -91,6 +96,26 @@ class MathVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathParser#scope.
     def visitScope(self, ctx:MathParser.ScopeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#switch_instr.
+    def visitSwitch_instr(self, ctx:MathParser.Switch_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#case_instr.
+    def visitCase_instr(self, ctx:MathParser.Case_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#default_instr.
+    def visitDefault_instr(self, ctx:MathParser.Default_instrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#switch_scope.
+    def visitSwitch_scope(self, ctx:MathParser.Switch_scopeContext):
         return self.visitChildren(ctx)
 
 
@@ -176,6 +201,11 @@ class MathVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathParser#rvar.
     def visitRvar(self, ctx:MathParser.RvarContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathParser#comp.
+    def visitComp(self, ctx:MathParser.CompContext):
         return self.visitChildren(ctx)
 
 

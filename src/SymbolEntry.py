@@ -22,6 +22,9 @@ class SymbolEntry:
             self.size = self.object.size
         self.register = None
         self.symbol_table = None
+        self.used = False
+        self.returned = False
+        self.owner = None
 
     def initialized(self):
         return self.const is not None and self.type is not None
@@ -43,7 +46,7 @@ class SymbolEntry:
         return self.__eq__(o)
 
     def print(self):
-        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}".format('|', 'const', '|', 'type', '|',  'name', '|', 'value', '|'))
+        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}{:<8}{:<2}".format('|', 'const', '|', 'type', '|',  'name', '|', 'value', '|', 'used', '|'))
         if self.const:
             const = 'const'
         else:
@@ -54,8 +57,12 @@ class SymbolEntry:
             value = self.object.values
         else:
             value = self.object.value
-        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}".format('|', const, '|', self.type, '|', self.name, '|',
-                                                                       value, '|'))
+        if self.used:
+            used = 'True'
+        else:
+            used = 'False'
+        print("{:<2}{:<8}{:<2}{:<8}{:<2}{:<15}{:<2}{:<12}{:<2}{:<8}{:<2}".format('|', const, '|', self.type, '|', self.name, '|',
+                                                                       value, '|', used, '|'))
 
 
 class FuncSymbolEntry(SymbolEntry):

@@ -92,3 +92,25 @@ for each variable v in the program:
 | $29      | $sp     | Stack pointer                                         |
 | $30      | $fp/$s8 | Frame pointer (or saved temporary register)           |
 | $31      | $ra     | Return address                                        |
+
+
+| Operation                        | Example                | Description                                                                                                                                         |
+|----------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Arithmetic and Logical Operators |                        |                                                                                                                                                     |
+| Add                              | `add $s0, $t0, $t1`    | Adds the values in registers `$t0` and `$t1`, and stores the result in register `$s0`.                                                              |
+| Add Immediate                    | `addi $s1, $t2, 100`   | Adds the value 100 to the value in register `$t2`, and stores the result in register `$s1`.                                                         |
+| Subtract                         | `sub $s2, $t3, $t4`    | Subtracts the value in register `$t4` from the value in register `$t3`, and stores the result in register `$s2`.                                    |
+| Multiply                         | `mult $t5, $t6`        | Multiplies the values in registers `$t5` and `$t6`, and stores the result in two special registers, `$hi` and `$lo`.                                |
+| Divide                           | `div $t7, $t8`         | Divides the value in register `$t7` by the value in register `$t8`, and stores the quotient in register `$t9`, and the remainder in register `$t8`. |
+| And                              | `and $s3, $t9, $s4`    | Performs a bitwise AND of the values in registers `$t9` and `$s4`, and stores the result in register `$s3`.                                         |
+| Or                               | `or $s5, $t0, $s6`     | Performs a bitwise OR of the values in registers `$t0` and `$s6`, and stores the result in register `$s5`.                                          |
+| Exclusive Or                     | `xor $s7, $t1, $s8`    | Performs a bitwise exclusive OR of the values in registers `$t1` and `$s8`, and stores the result in register `$s7`.                                |
+| Nor                              | `nor $t2, $t3, $t4`    | Performs a bitwise NOR of the values in registers `$t3` and `$t4`, and stores the result in register `$t2`.                                         |
+| Set Less Than                    | `slt $t5, $t6, $t7`    | Compares the values in registers `$t6` and `$t7`, and stores the result (either 0 or 1) in register `$t5`.                                          |
+| Shift Left Logical               | `sll $s0, $t0, 3`      | Shifts the value in register `$t0` to the left by 3 bits, and stores the result in register `$s0`.                                                  |
+| Shift Right Logical              | `srl $s1, $t1, 2`      | Shifts the value in register `$t1` to the right by 2 bits, and stores the result in register `$s1`.                                                 |
+| Load and Store Operators         |                        |                                                                                                                                                     |
+| Load Word                        | `lw $t0, 0($s0)`       | Loads a 32-bit word from memory at the address `$s0 + 0`, and stores the result in register `$t0`.                                                  |
+| Store Word                       | `sw $t1, 4($s1)`       | Stores the 32-bit value in register `$t1` to memory at the address `$s1 + 4`.                                                                       |
+| Control Flow Operators           |                        |                                                                                                                                                     |
+| Branch If Equal                  | `beq $t2, $t3, Label1` | Compares the values in registers `$t2` and `$t3`. If they are equal, the program branches to the label                                              |

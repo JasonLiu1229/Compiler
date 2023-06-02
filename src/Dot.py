@@ -38,11 +38,21 @@ class dot:
                         # print(current)
                         # print(self.dot)
                         exit(1)
-
+        indexes = {"printf": 0, "scanf": 0}
         # write as dot file
         with open(self.filename, "w") as f:
-            f.write("digraph {\n")
-            for key in self.dot:
-                for value in self.dot[key]:
-                    f.write(f" \"{value.root.key}\" ->  \"{key.root.key if key.root.key not in ['int', 'char', 'float'] else str(key.root.key) + ':' + str(key.root.value)}\"\n")
+            f.write("graph {\n")
+            for key , value in self.dot.items():
+                value = value[0]
+                # declare node using save_dot() method
+                if isinstance(key, FuncDeclAST) or isinstance(key, FuncDefnAST):
+                    f.write(key.save_dot())
+                else:
+                    f.write(key.root.save_dot())
+                if isinstance(value, FuncDeclAST) or isinstance(value, FuncDefnAST):
+                    f.write(f" \"{value.root.key}\" [shape=box]\n")
+                else:
+                    f.write(value.root.save_dot())
+                # f.write(key.root.save_dot())
+                f.write(f" \"{value.root.key}\" --  \"{key.root.key if key.root.key not in ['int', 'char', 'float'] else str(key.root.key) + ':' + str(key.root.value)}\"\n")
             f.write("}")

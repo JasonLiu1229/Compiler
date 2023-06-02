@@ -44,29 +44,23 @@ class SymbolTable:
         :param index: indicates where to insert the object
         :type in_object: SymbolEntry
         """
-        self.table.insert(index, copy.deepcopy(in_object))
+        new_entry = copy.deepcopy(in_object)
+        new_entry.owner = self
+        self.table.insert(index, new_entry)
+        for entry in self.table:
+            if entry.object == in_object.object.value:
+                entry.object.parent = in_object.object
         return self.table[index]
 
     def update(self, in_object: VarNode | FunctionNode) -> bool:
         if not (isinstance(in_object, VarNode) or isinstance(in_object, FunctionNode)):
             return False
         for entry in self.table:
-            # check dereference level
-            current_object = entry.object
-            entry_stack = []
-            # if current_object.ptr:
-            #     while current_object.ptr and current_object.value is not None:
-            #         entry_stack.append(current_object)
-            #         current_object = current_object.value
-            #         if current_object == in_object:
-            #             current_object.value = in_object.value
-            #             while len(entry_stack) > 0:
-            #                 current_parent = entry_stack.pop()
-            #                 current_parent.value = current_object
-            #                 current_object = current_parent
-            #             return True
             if entry.object == in_object:
                 entry.object = copy.deepcopy(in_object)
+                if self.exists(entry.object.parent):
+                    match = self.lookup(entry.object.parent)[0].object
+                    match.value = entry.object
                 return True
 
     def refresh(self):
@@ -97,6 +91,18 @@ class SymbolTable:
                     new_length += len(element.get_str()) + 2
                 if new_length > max_width:
                     max_width = new_length
+            if isinstance(entry, SymbolEntry) and entry.object is not None:
+                if entry.object.ptr:
+                    new_length = 0
+                    temp_value = entry.object.value
+                    while isinstance(temp_value, VarNode):
+                        temp_value = temp_value.value
+                    if isinstance(temp_value, VarNode):
+                        new_length += len(temp_value.get_str()) + 2
+                    else:
+                        new_length += len(str(temp_value)) + 2
+                    if new_length > max_width:
+                        max_width = new_length
             if entry.array:
                 new_length = 0
                 for value in entry.object.values:
@@ -121,6 +127,8 @@ class SymbolTable:
             elif isinstance(Object, VarNode) and Object.ptr:
                 while isinstance(value, VarNode):
                     value = value.value
+                if value is None:
+                    value = 'None'
             if isinstance(item, FuncSymbolEntry):
                 value = item.get_str()
                 print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
@@ -129,7 +137,7 @@ class SymbolTable:
                 # |--------------- | ----------------
                 # | int a          | 1
 
-                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}")
+                print(f"{'|':<2}{name:<15}{'|':<2}{value:<{max_width}}{'|':<2}{'Used' if item.used else 'Unused':<5}{'|':<2}")
         print(under)
 
         # if print_each, print for each entry it's symbol table

@@ -19,42 +19,56 @@ This project is made for the course Compilers at the **University of Antwerp**.
 ### Assignments
 
 #### TODO list
-- [x] Project 1
-- [x] Project 2
-- [x] Project 3
-- [X] Project 4
-  - [X] For loops
-  - [X] While loops
-  - [X] Break
-  - [X] Continue
-- [X] Project 5
-  - [X] Function declarations
-  - [X] Function definitions
-  - [X] Function calls
-  - [X] Return
-  - [X] Return values and type checking / **void type**
-  - [X] No dead code after **return, break, continue**
-- [X] Project 6
-  - [X] Arrays
-    - [X] Declarations
-    - [X] Access
-  - [X] Printf
-  - [X] Scanf
-  - [X] Includes
-- [ ] LLVM
-  - [ ] Project 1
-  - [ ] Project 2
-  - [ ] Project 3
-  - [ ] Project 4
-  - [ ] Project 5
-  - [ ] Project 6
-- [ ] MIPS
-  - [ ] Project 1
-  - [ ] Project 2
-  - [ ] Project 3
-  - [ ] Project 4
-  - [ ] Project 5
-  - [ ] Project 6
+<ul>
+    <li><input type="checkbox" checked> Project 1</li>
+    <li><input type="checkbox" checked> Project 2</li>
+    <li><input type="checkbox" checked> Project 3</li>
+    <li><input type="checkbox" checked> Project 4</li>
+    <ul>
+        <li><input type="checkbox" checked> For loops</li>
+        <li><input type="checkbox" checked> While loops</li>
+        <li><input type="checkbox" checked> Break</li>
+        <li><input type="checkbox" checked> Continue</li>
+    </ul>
+    <li><input type="checkbox" checked> Project 5</li>
+    <ul>
+        <li><input type="checkbox" checked> Function declarations</li>
+        <li><input type="checkbox" checked> Function definitions</li>
+        <li><input type="checkbox" checked> Function calls</li>
+        <li><input type="checkbox" checked> Return</li>
+        <li><input type="checkbox" checked> Return values and type checking / **void type**</li>
+        <li><input type="checkbox" checked> No dead code after **return, break, continue**</li>
+    </ul>     
+    <li><input type="checkbox" checked> Project 6</li>
+    <ul>
+        <li><input type="checkbox" checked> Arrays</li>
+        <ul>
+            <li><input type="checkbox" checked> Declarations</li>
+            <li><input type="checkbox" checked> Access</li>
+        </ul>
+        <li><input type="checkbox" checked> Printf</li>
+        <li><input type="checkbox" checked> Scanf</li>
+        <li><input type="checkbox" checked> Includes</li>
+    </ul>
+    <li><input type="checkbox"> LLVM</li>
+    <ul>
+        <li><input type="checkbox" checked> Project 1</li>
+        <li><input type="checkbox" checked> Project 2</li>
+        <li><input type="checkbox" checked> Project 3</li>
+        <li><input type="checkbox"> Project 4</li>
+        <li><input type="checkbox"> Project 5</li>
+        <li><input type="checkbox" checked> Project 6 - **Half implemented**</li>
+    </ul>
+    <li><input type="checkbox"> MIPS</li>
+    <ul>
+        <li><input type="checkbox" checked> Project 1</li>
+        <li><input type="checkbox" checked> Project 2</li>
+        <li><input type="checkbox"> Project 3</li>
+        <li><input type="checkbox" checked> Project 4</li>
+        <li><input type="checkbox" checked> Project 5</li>
+        <li><input type="checkbox" checked> Project 6</li>
+    </ul>
+</ul>
 
 <a name="Testing"></a>
 ### Testing
@@ -69,14 +83,20 @@ If you do it in the terminal, match the **"parameters"** option of pycharm with 
 There are two ways to run it via terminal
 Common parameter settings:
 
-| Short command | Long command | Type    | Required                  | Description                          |
-|---------------|--------------|---------|---------------------------|--------------------------------------|
-| -d            | --directory  | <path\> | **Yes**                   | Directory of the input files         |
-| -t            | --type       | <str\>  | **Yes**                   | File extension                       |
-| -f            | --files      | [str]   | Exclusive. Takes priority | Files to parse                       |
-| -a            | --all        | NaN     | Exclusive. Least priority | Parse all the files in the directory |
-| -i            | --index      | <int\>  | Exclusive                 | Parse the i-th file in the directory |
-| -h            | --help       | NaN     | NaN                       | For help                             |
+| Short command | Long command    | Type    | Required                  | Description                                                                           |
+|---------------|-----------------|---------|---------------------------|---------------------------------------------------------------------------------------|
+| -d            | --directory     | <path\> | **Yes**                   | Directory of the input files                                                          |
+| -t            | --type          | <str\>  | **Yes**                   | File extension                                                                        |
+| -f            | --files         | [str]   | Exclusive. Takes priority | Files to parse                                                                        |
+| -a            | --all           | NaN     | Exclusive. Least priority | Parse all the files in the directory                                                  |
+| -i            | --index         | <int\>  | Exclusive                 | Parse the i-th file in the directory                                                  |
+| -v            | --verbose       | NaN     | No                        | Print the AST                                                                         |
+| -nw           | --no-warning    | NaN     | No                        | Do not print warnings                                                                 |
+| -e            | --execute-with  | <str/>  | No                        | Execute the mips code generated for the program.<br/> Can be "spim", "mars" or "both" |
+| -s            | --silent        | NaN     | No                        | Do not print the output of the program                                                |
+| -nd           | --no-disclaimer | NaN     | No                        | Remove the disclaimers for "spim" and "mars" from the output                          |
+| -vs           | --visualise     | NaN     | No                        | Generate a dot format file and compile it to a png                                    |
+| -h            | --help          | NaN     | NaN                       | For help                                                                              |
 
 Example code with specified input files:
 
@@ -91,22 +111,40 @@ Example code with only the input directory and an index
     python3 -d ../input_files/ -t .c -i 3
 
  
-##### Script
-> **Warning** The LLVM class function _**execute()**_ does not work on windows. Disable it when testing on windows.
+[//]: # (##### Script)
 
-> How to disable?
-> > comment on line 36 on run.py
+[//]: # (> **Warning** The LLVM class function _**execute&#40;&#41;**_ does not work on windows. Disable it when testing on windows.)
+
+[//]: # ()
+[//]: # (> How to disable?)
+
+[//]: # (> > comment on line 36 on run.py)
 
 #### Available tests
-##### Simple tests for projects 1-3
+##### All correct programs
 ```shell
 cd src || exit &
-python3 run.py -d ../input_files/ -t .c -a
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e mars -nd
 ```
-##### Projects 1-3 without main
+##### All programs with errors
 ```shell
 cd src || exit &
-python3 run.py -d ../input_files/projecten_123_zonder_main/ -t .c -a
+python3 run.py -d ../input_files/SemanticErrors/fully_working/ -t .c -a -e mars -nd
+```
+##### Recursive fibonacci
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f fibonacciRecursive -e mars
+```
+##### Scanf tests
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f Scanf1 Scanf2 -e mars
+```
+##### Printf tests
+```shell
+cd src || exit &
+python3 run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f Printf1 Printf2 Printf3 -e mars
 ```
 
 #### Compiling the grammar
@@ -121,7 +159,7 @@ antlr4 -o ../src/output -listener -visitor -Dlanguage=Python3 Math.g4
     Grammar: ../Grammars/Math.g4
     Python scripts: ../src/
     C Files: ../input_files/
-    The output of the scripts: ../Output/
+    The output of the scripts: ../MIPS_output/ for asm files and ../Output/graphics for png files
 
 <a name="sources"></a>
 ### Sources
@@ -132,6 +170,12 @@ antlr4 -o ../src/output -listener -visitor -Dlanguage=Python3 Math.g4
 <a href="https://llvm.org/"> LLVM </a>
 <br>
 <a href="https://llvm.org/docs/LangRef.html"> LLVM ref. page </a>  
+<br>
+<a href="https://courses.missouristate.edu/kenvollmar/mars/help/syscallhelp.html"> Mips syscall info </a>
+<br>
+<a href="https://people.cs.pitt.edu/~childers/CS0447/lectures/mips-isa4.pdf"> while loops mips </a>
+<br>
+<a href="https://stackoverflow.com/questions/29832201/unaligned-address-in-store-error-when-saving-a-word"> Unaligned address in store error, using the wrong load</a>
 
 
 <a name="authors"></a>
