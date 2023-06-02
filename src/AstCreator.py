@@ -2049,8 +2049,10 @@ class AstCreator(MathVisitor):
     def visitComment(self, ctx: MathParser.CommentContext):
         out = CommentAST(Node("comment", ctx.com.text))
         if ctx.com.text.startswith("//"):
+            out.root.value = "singleline"
             out.comment = ctx.com.text[2:]
         elif ctx.com.text.startswith("/*"):
+            out.root.value = "multiline"
             out.comment = ctx.com.text[2:-2]
         # out.comment = ctx.com.text
         return out
