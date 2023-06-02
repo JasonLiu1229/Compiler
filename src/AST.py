@@ -1507,6 +1507,13 @@ class PrintfAST(AST):
                 if isinstance(current_child, Node):
                     if length > len(str(current_child.value)):
                         current_child.value = str(current_child.value).rjust(length, ' ')
+            # if not current_child.known:
+            #     new_node = Node("var", current_child.key)
+            #     new_node.known = current_child.known
+            #     new_node.parent = current_child.parent
+            #     new_node.type = current_child.type
+            #     self.children[i] = new_node
+            #     self.args[i] = new_node
         return self , warnings
 
     def llvm_global(self, index: int = 1) -> tuple[str, int]:
@@ -2187,7 +2194,8 @@ class PrimaryAST(AST):
 
     def handle(self):
         if self.root.value == "&":
-            self.children[0].addr = True
+            if isinstance(self.children[0], Node):
+                self.children[0].addr = True
             return self.children[0]
         elif self.root.value[0] + self.root.value[-1] == "()":
             ret = self.children[0]
@@ -2205,7 +2213,18 @@ class DerefAST(AST):
     def handle(self):
         child = self.children[0]
         if isinstance(child, Node) and child.key == "var":
-            return self
+            temp_parent = child.parent
+            while temp_parent is not None:
+                if temp_parent.symbolTable is not None:
+                    break
+                temp_parent = temp_parent.parent
+            temp_symbol = temp_parent.symbolTable
+            while not temp_symbol.exists(child.value):
+                temp_symbol = temp_symbol.parent
+            match = temp_symbol.lookup(child.value)
+            match = Node("var", match[0].object.value.key)
+            match.parent = self.parent
+            return match
         if not isinstance(child, VarNode):
             raise ReferenceError(f"Attempting to dereference a non-variable type object")
         if not child.ptr:
@@ -2227,6 +2246,12 @@ class DerefAST(AST):
             return out
         else:
             child = child.value
+            child.deref = True
+            child.known = self.children[0].known
+            if not child.known:
+                new_node = Node("var", child.key)
+                new_node.parent = self.parent
+                child = new_node
         return child
 
     def mips(self, registers: Registers):
@@ -3139,6 +3164,20 @@ class FuncCallAST(AST):
         count = 0
         for vars in variables:
             if parameters_org[count].ptr or parameters_org[count].reference:
+                out_type = ""
+                if vars.type == "float":
+                    out_type = "flt"
+                elif vars.type == "int":
+                    out_type = "int"
+                elif vars.type == "char":
+                    out_type = "chr"
+                if vars.ptr:
+                    out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.value.register.name}, {out_type}_{parameters_org[count].name}\n"
+                    out += f"\tla{'c1' if vars.type == 'float' else ''} ${vars.register.name}, 0(${vars.value.register.name})\n"
+                    out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {out_type}_{vars.value.key}\n"
+                else:
+                    out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {out_type}_{parameters_org[count].name}\n"
+                    out += f"\tsw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {out_type}_{vars.key}\n"
                 continue
             out += f"\tlw{'c1' if vars.type == 'float' else ''} ${vars.register.name}, {count * 4}($sp)\n"
             vars.register.shuffle()
@@ -3279,7 +3318,7 @@ class FuncScopeAST(AST):
                 # temp_list.append(entry.object.register.name)
                 if entry.object.ptr:
                     continue
-                elif entry.type == "int":
+                if entry.type == "int":
                     if entry.object.key in registers.globalObjects.data[2].values():
                         continue
                     # declare the variable in the global scope .data
@@ -3391,7 +3430,7 @@ class FuncScopeAST(AST):
                     type_str = "flt"
                 elif parm.type == "char":
                     type_str = "chr"
-                f"\tsw{'' if parm.type != 'float' else 'c1'} ${parm.register.name}, {type_str}_{parm.key}\n"
+                out_local += f"\tsw{'' if parm.type != 'float' else 'c1'} ${parm.register.name}, {type_str}_{parm.key}\n"
         # restore registers
         out_local += f"exit_{self.parent.index}:\n"
         count = 0

@@ -20,6 +20,9 @@ class Node:
         self.in_loop = False
         self.in_func = False
         self.type = None
+        self.addr = False
+        self.deref = False
+        self.known = True
 
     # def __eq__(self, o: object) -> bool:
     #     return (self.key == o.key) and (self.value == o.value)
@@ -248,7 +251,6 @@ class VarNode(Node):
         self.total_deref = total_deref
         self.const_ptr = const_ptr
         self.array = is_array
-        self.addr = False
 
     def __repr__(self) -> str:
         rep = f"{self.type} {'*' * (self.total_deref - self.deref_level - 1)} {self.key} : {self.value}"

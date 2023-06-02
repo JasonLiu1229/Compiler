@@ -681,6 +681,8 @@ class AstCreator(MathVisitor):
                         continue
                     if not isinstance(ast.args[i], AST):
                         match = AST.getEntry(ast.args[i])
+                        if isinstance(ast.args[i], Node):
+                            match[0].addr = ast.args[i].addr
                         if match is None:
                             raise AttributeError(f"Variable {ast.args[i].value} not found in scope")
                         if match[0] is None:
@@ -987,6 +989,16 @@ class AstCreator(MathVisitor):
                             matches[0].used = True
                             if not matches[0].returned:
                                 matches[0].returned = returned
+                                # matches[0].object.known = True
+                            else:
+                                matches[0].object.known = False
+                                temp_parent = matches[0].object.parent
+                                while temp_parent is not None and isinstance(temp_parent, Node):
+                                    temp_parent.known = False
+                                    temp_symbol.update(temp_parent)
+                                    temp_symbol.refresh()
+                                    temp_parent = temp_parent.parent
+
                             if isinstance(matches[0].object, FuncParameter) or child.type is None:
                                 ast.children[index].type = matches[0].type
                             if evaluate and not in_loop and not matches[0].returned:
