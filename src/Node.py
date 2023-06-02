@@ -223,6 +223,7 @@ class Node:
             out_local += f"\taddi ${temp_node.register.name}, ${temp_node.register.name}, {self.parent.values.index(self) * 4}\n"
             out_local += f"\tsw ${self.register.name}, 0(${temp_node.register.name})\n"
         out_list.append(self.register.name)
+        self.register.shuffle()
         # place holder
         return out_local, out_global, out_list
 
@@ -454,6 +455,7 @@ class VarNode(Node):
                 out_local = f"\tlwc1 ${self.register.name}, flt_{self.key}"
             else:
                 out_local = f"\tli ${self.register.name}, {out_val}"
+            self.register.shuffle()
             out_local += f"\t\t# {self.get_str()}\n"
         else:
             # Load the pointed value into the register
@@ -465,6 +467,7 @@ class VarNode(Node):
             # load the address of the variable
             out_local += f"\tla ${self.register.name}, {self.value.key if not self.ptr else f'0(${self.value.register.name})'}"
             out_local += f"\t# {self.get_str()}\n"
+            self.register.shuffle()
             # store the address in the register
             # out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${self.value.register.name}, 0(${self.register.name})\n"
         if self.register is not None:

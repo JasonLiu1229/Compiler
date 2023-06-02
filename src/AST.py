@@ -702,12 +702,6 @@ class AST:
                 registers.temporaryManager.shuffle_name(new_register)
             else:
                 registers.floatManager.shuffle_name(new_register)
-        # if isinstance(current.parent, ArrayElementAST):
-        #     if uni:
-        #         current.parent.root = left_node
-        #     else:
-        #         current.parent.root = new_node
-        # else:
         if uni:
             current.parent.children[current.parent.children.index(current)] = left_node
         else:
@@ -1260,6 +1254,7 @@ class ExprAST(AST):
         if len(self.children) == 1 and isinstance(self.children[0], Node):
 
             out_local += f"li {self.register.name}, {self.children[0].value}\n"
+            self.register.shuffle()
             return out_local, out_global, out_list
         # check if the operands have been assigned to registers
         if self.children[0].register is None:
@@ -1812,6 +1807,7 @@ class PrintfAST(AST):
                     type_ = "chr"
                 out_local += f"\tla ${list_format[i].register.name}, {type_}_{list_format[i].key}\n"
                 out_local += f"\tli ${temp_node.register.name}, 0\n"
+                temp_node.register.shuffle()
                 out_local += f"\tadd ${list_format[i].register.name}, ${list_format[i].register.name}, ${temp_node.register.name}\n"
                 out_local += f"\tli $v0, 4\n"
                 out_local += f"\tmov{'e' if list_format[i].type != 'float' else '.s'} $a0, ${list_format[i].register.name}\n"
@@ -3104,7 +3100,7 @@ class FuncCallAST(AST):
                 calc += f"\tsw{'c1' if parameters_org[count].type == 'float' else ''} ${arg.register.name}, {par_type}{parameters_org[count].name}\n"
             # out += f"\tmov{'.s' if parameters_org[count].type == 'float' else 'e'} ${arg.register.name}, ${parameters_org[count].object.register.name}\n"
             count += 1
-        size = len(self.args) * 4
+        size = len(variables) * 4
         if size != 0:
             out += f"\taddi $sp, $sp, -{size}\n"
             registers.globalObjects.stackSize += size
@@ -3739,12 +3735,15 @@ class ArrayDeclAST(AST):
                 registers.temporaryManager.shuffle_name(self.root.register.name)
             for i in range(len(self.values)):
                 out_local += f"\tli{'.s' if self.type == 'float' else ''} ${temp_node.register.name}, {self.values[i].value}\n"
+                temp_node.register.shuffle()
                 if self.root.type == "float" or self.root.type == "int":
                     out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {0 if i == 0 else 4}\n"
                     out_local += f"\tsw{'c1' if self.type == 'float' else ''} ${temp_node.register.name}, 0(${self.root.register.name})\n"
+                    self.root.register.shuffle()
                 else:
                     out_local += f"\taddi ${self.root.register.name}, ${self.root.register.name}, {0 if i == 0 else 1}\n"
                     out_local += f"\tsb ${temp_node.register.name}, 0(${self.root.register.name})\n"
+                    self.root.register.shuffle()
                 # out_local += f"\tmov{'.s' if self.type == 'float' else 'e'} ${self.root.register.name}, ${temp_node.register.name}\n\n"
                 self.stack_indexes.append((i * 4) + registers.globalObjects.stackSize)
             registers.globalObjects.stackSize += self.size * 4
