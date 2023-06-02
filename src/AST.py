@@ -3381,7 +3381,17 @@ class FuncScopeAST(AST):
         out_local += param_str
         out_local += out_temp_local
         out_global += out_temp_global
-
+        for parm in self.parent.params:
+            if parm.ptr or parm.reference:
+                # check param type
+                type_str = ""
+                if parm.type == "int":
+                    type_str = "int"
+                elif parm.type == "float":
+                    type_str = "flt"
+                elif parm.type == "char":
+                    type_str = "chr"
+                f"\tsw{'' if parm.type != 'float' else 'c1'} ${parm.register.name}, {type_str}_{parm.key}\n"
         # restore registers
         out_local += f"exit_{self.parent.index}:\n"
         count = 0
@@ -3393,7 +3403,6 @@ class FuncScopeAST(AST):
             count += 1
         out_local += f"\taddi $sp, $sp, {size}\n"
         registers.globalObjects.stackSize -= size
-
         # End
         out_local += "\tjr $ra\n" if self.parent.root.key != "main" else "\tli $v0, 10\n\tsyscall\n"
         return out_local, out_global, []
