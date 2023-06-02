@@ -2227,6 +2227,16 @@ class DerefAST(AST):
             child = child.value
         return child
 
+    def mips(self, registers: Registers):
+        out_local = ""
+        out_global = ""
+        out_list = []
+        if self.children[0].value is not None:
+            out_local, out_global, out_list = self.children[0].value.mips(registers)
+        return out_local, out_global, out_list
+
+
+
 class ArrayElementAST(AST):
     def __init__(self, root: Node = None, children: list = None, parent=None):
         super().__init__(root, children, parent)
