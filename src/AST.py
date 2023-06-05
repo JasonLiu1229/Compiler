@@ -3332,6 +3332,8 @@ class FuncScopeAST(AST):
                         #     else:
                         #         registers.globalObjects.uninitialized[3].append(entry.object)
                         # else:
+                        if f"int_{entry.object.key}" in registers.globalObjects.uninitialized[2]:
+                            continue
                         registers.globalObjects.uninitialized[2].append(f"int_{entry.object.key}")
                 elif entry.type == "float":
                     if entry.object.key in registers.globalObjects.data[1].values():
@@ -3341,8 +3343,12 @@ class FuncScopeAST(AST):
                         registers.globalObjects.data[1][entry.object.value] = f"flt_{entry.object.key}"
                     else:
                         if entry.array:
+                            if f"flt_{entry.object.key}" in registers.globalObjects.uninitialized[3]:
+                                continue
                             registers.globalObjects.uninitialized[3].append(entry.object)
                         else:
+                            if f"flt_{entry.object.key}" in registers.globalObjects.uninitialized[1]:
+                                continue
                             registers.globalObjects.uninitialized[1].append(f"flt_{entry.object.key}")
                 elif entry.type == "char":
                     if entry.object.key in registers.globalObjects.data[0].values():
@@ -3352,8 +3358,12 @@ class FuncScopeAST(AST):
                         registers.globalObjects.data[0][entry.object.value] = f"chr_{entry.object.key}"
                     else:
                         if entry.array:
+                            if f"chr_{entry.object.key}" in registers.globalObjects.uninitialized[3]:
+                                continue
                             registers.globalObjects.uninitialized[3].append(entry.object)
                         else:
+                            if f"chr_{entry.object.key}" in registers.globalObjects.uninitialized[0]:
+                                continue
                             registers.globalObjects.uninitialized[0].append(f"chr_{entry.object.key}")
         param_str = ""
         # initialize the registers for the parameters

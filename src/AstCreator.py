@@ -636,7 +636,7 @@ class AstCreator(MathVisitor):
                     # if temp.condition is not None and not isinstance(temp.condition, Node):
                     #     not_visited.append(temp.condition)
         visited.reverse()
-        ast_in.symbolTable = self.handle(visited, in_loop, in_func, in_cond)
+        self.handle(visited, in_loop, in_func, in_cond)
         return ast_in
 
     def handle(self, list_ast: list, in_loop: bool = False, in_func: bool = False, in_cond: bool = False):
@@ -834,14 +834,14 @@ class AstCreator(MathVisitor):
                 # declare each parameter in your scope
                 # handle what's in the function scope
                 ast.children[-1].symbolTable = ast.symbolTable
-                symbol_table = self.resolve(ast.children[-1], in_func=True).symbolTable
+                self.resolve(ast.children[-1], in_func=True)
                 # update symbol table of function definition
-                if symbol_table is None:
-                    symbol_table = SymbolTable(ast.children[-1])
-                    ast.children[-1].symbolTable = symbol_table
-                symbol_table.parent = ast.symbolTable.parent
-                ast.symbolTable = symbol_table
-                symbol_table.owner = ast
+                # if symbol_table is None:
+                #     symbol_table = SymbolTable(ast.children[-1])
+                #     ast.children[-1].symbolTable = symbol_table
+                # symbol_table.parent = ast.symbolTable.parent
+                # ast.symbolTable = symbol_table
+                # symbol_table.owner = ast
                 # link symbol table to function entry in global symbol table
                 ast.symbolTable.parent.lookup(ast.root)[0].symbol_table = ast.symbolTable
                 # print symbol table
