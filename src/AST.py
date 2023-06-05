@@ -1356,11 +1356,11 @@ class PrintfAST(AST):
                         if var_type == format_type:
                             continue
                         # check if the type of the variable matches
-                        if (var_type, format_type) not in conversions:
+                        if (var_type, format_type) not in conversions and not self.args[i].cast:
                             if var_type == "char" and self.args[i].array and format_type == "string":
                                 continue
                             raise Exception(f"No possible conversion from {var_type} to {format_type}")
-                        if (var_type, format_type) not in conv_promotions:
+                        if (var_type, format_type) not in conv_promotions and not self.args[i].cast:
                             # clang style warning
                             warnings.append(f"Format specifies type '{format_type}' but the argument has type '{var_type}'\n"
                                             f"Implicit conversion from '{var_type}' to '{format_type}'")
@@ -1378,7 +1378,8 @@ class PrintfAST(AST):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'int'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif current_child.type == 'char':
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1389,7 +1390,8 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'int'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1406,7 +1408,8 @@ class PrintfAST(AST):
                     if not current_child.type == 'int':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'int'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif current_child.type == 'char':
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1417,7 +1420,8 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, int):
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'int'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'int'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = ord(current_child.value)
                         elif current_child.value is None:
@@ -1434,10 +1438,12 @@ class PrintfAST(AST):
                     if not current_child.type == 'char':
                         if current_child.type == 'float':
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'char'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'char'")
                         elif current_child.type == 'int':
                             current_child.value = chr(current_child.value)
-                            warnings.append(f"Implicit conversion from 'int' to 'char'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'int' to 'char'")
                         elif current_child.value is None:
                             current_child.value = random.choice(string.ascii_letters)
                         else:
@@ -1446,10 +1452,12 @@ class PrintfAST(AST):
                     if not isinstance(current_child.value, str) or len(current_child.value) != 1:
                         if isinstance(current_child.value, float):
                             current_child.value = int(current_child.value)
-                            warnings.append(f"Implicit conversion from 'float' to 'char'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'float' to 'char'")
                         elif isinstance(current_child.value, int):
                             current_child.value = chr(current_child.value)
-                            warnings.append(f"Implicit conversion from 'int' to 'char'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'int' to 'char'")
                         elif current_child.value is None:
                             current_child.value = random.choice(string.ascii_letters)
                         else:
@@ -1478,7 +1486,8 @@ class PrintfAST(AST):
                             warnings.append(f"Implicit conversion from 'int' to 'float'")
                         elif isinstance(current_child.value, str) and len(current_child.value) == 1:
                             current_child.value = array('f', [ord(current_child.value)])[0]
-                            warnings.append(f"Implicit conversion from 'char' to 'float'")
+                            if not current_child.cast:
+                                warnings.append(f"Implicit conversion from 'char' to 'float'")
                         elif current_child.value is None:
                             current_child.value = random.uniform(0, 10 ** length)
                         else:
