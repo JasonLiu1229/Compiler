@@ -43,15 +43,17 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
         :return: a syntax error class
         """
         pass
-        input_stream = recognizer.getInputStream()
+        input_stream = recognizer.getInputStream() if not hasattr(recognizer, "inputStream") else recognizer.inputStream
         # Get all tokens in this line or the next one
         line_text = ""
-        for token in input_stream.tokens[input_stream.index:]:
-            if token.line in range(line - 1, line + 1):
-                if input_stream.tokens.index(token) == input_stream.index:
-                    line_text += "\u0332"
-                line_text += token.text
-
+        if hasattr(input_stream, "tokens"):
+            for token in input_stream.tokens[input_stream.index:]:
+                if token.line in range(line - 1, line + 1):
+                    if input_stream.tokens.index(token) == input_stream.index:
+                        line_text += "\u0332"
+                    line_text += token.text
+        else:
+            line_text = input_stream.strdata.split("\n")[line - 1]
         out = f"Error at line {str(line)}:{str(column)} : {msg}\nLine where it occurred: {line_text}"
         raise ParseCancellationException(out)
 
