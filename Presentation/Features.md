@@ -1,10 +1,39 @@
 # All working features
-> These are all the working features of the project.
- 
+Common parameter settings:
+
+| Short command | Long command    | Type    | Required                  | Description                                                                           |
+|---------------|-----------------|---------|---------------------------|---------------------------------------------------------------------------------------|
+| -d            | --directory     | <path\> | **Yes**                   | Directory of the input files                                                          |
+| -t            | --type          | <str\>  | **Yes**                   | File extension                                                                        |
+| -f            | --files         | [str]   | Exclusive. Takes priority | Files to parse                                                                        |
+| -a            | --all           | NaN     | Exclusive. Least priority | Parse all the files in the directory                                                  |
+| -i            | --index         | <int\>  | Exclusive                 | Parse the i-th file in the directory                                                  |
+| -v            | --verbose       | NaN     | No                        | Print the AST                                                                         |
+| -nw           | --no-warning    | NaN     | No                        | Do not print warnings                                                                 |
+| -e            | --execute-with  | <str/>  | No                        | Execute the mips code generated for the program.<br/> Can be "spim", "mars" or "both" |
+| -s            | --silent        | NaN     | No                        | Do not print the output of the program                                                |
+| -nd           | --no-disclaimer | NaN     | No                        | Remove the disclaimers for "spim" and "mars" from the output                          |
+| -vs           | --visualise     | NaN     | No                        | Generate a dot format file and compile it to a png                                    |
+| -h            | --help          | NaN     | NaN                       | For help                                                                              |
+
+Example code with specified input files:
+
+    python3 -d ../input_files/ -t .c -f Project3 Project2 ...
+    
+Example code with only the input directory and file extension
+    
+    python3 -d ../input_files/ -t .c -a
+
+Example code with only the input directory and an index
+    
+    python3 -d ../input_files/ -t .c -i 3
+
 ## Features
+>These are all the working features of the project.
+
 Compile all `.c` files.
 ```shell
-python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a -e spim
+python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -a
 ```
 The output of the scripts is located in the `MIPS_output` folder.
 ### Mandatory features
@@ -12,13 +41,13 @@ The output of the scripts is located in the `MIPS_output` folder.
 > Binary operations
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f binaryOperations1 \
-binaryOperations2 -e spim -nd
+binaryOperations2 -v -e spim
 ```
 [binaryOperations1.c](../input_files/CorrectCode/fully_working/binaryOperations1.c) and
 [binaryOperations2.c](../input_files/CorrectCode/fully_working/binaryOperations2.c)  
 [binaryOperations1.asm](../MIPS_output/binaryOperations1.asm) and
 [binaryOperations2.asm](../MIPS_output/binaryOperations2.asm)
-```
+
 > Comparison operations
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f comparisons1 \
@@ -35,6 +64,14 @@ python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f unar
 ```
 [unaryOperations.c](../input_files/CorrectCode/fully_working/unaryOperations.c)  
 [unaryOperations.asm](../MIPS_output/unaryOperations.asm)
+> Constant folding
+```shell
+python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f constantFolding constantFolding2 -e spim -nd
+```
+[constantFolding.c](../input_files/CorrectCode/fully_working/constantFolding.c) and
+[constantFolding2.c](../input_files/CorrectCode/fully_working/constantFolding2.c)  
+[constantFolding.asm](../MIPS_output/constantFolding.asm) and
+[constantFolding2.asm](../MIPS_output/constantFolding2.asm)
 
 > Variables
 >> Types: int, float, char
@@ -70,6 +107,12 @@ variables7 variables8 -e spim -nd
 [variables3.asm](../MIPS_output/variables3.asm),
 [variables7.asm](../MIPS_output/variables7.asm) and
 [variables8.asm](../MIPS_output/variables8.asm)
+>> Const variables
+```shell
+python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f variableConst -e spim -nd
+```
+[variableConst.c](../input_files/CorrectCode/fully_working/variableConst.c)  
+[variableConst.asm](../MIPS_output/variableConst.asm)
 > Conditionals: if, else, scopes
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f if ifElse \
@@ -100,14 +143,14 @@ forwardDeclaration -e spim -nd
 >> Recursive
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f fibonacciRecursive \
--e spim -nd
+-e spim
 ```
 [fibonacciRecursive.c](../input_files/CorrectCode/fully_working/fibonacciRecursive.c)  
 [fibonacciRecursive.asm](../MIPS_output/fibonacciRecursive.asm)
 >> General tests
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f pointerArgument \
-prime -e spim -nd
+prime -e spim
 ```
 [pointerArgument.c](../input_files/CorrectCode/fully_working/pointerArgument.c) and
 [prime.c](../input_files/CorrectCode/fully_working/prime.c)  
@@ -127,7 +170,7 @@ printf3 -e spim -nd
 > Scanf
 ```shell
 python3 ../src/run.py -d ../input_files/CorrectCode/fully_working/ -t .c -f scanf1 scanf2 \
--e spim -nd
+-e spim
 ```
 [scanf1.c](../input_files/CorrectCode/fully_working/scanf1.c) and
 [scanf2.c](../input_files/CorrectCode/fully_working/scanf2.c)  
@@ -179,6 +222,16 @@ variableRedefinition5 variableRedefinition6 -e spim -nd
 [variableRedefinition4.c](../input_files/SemanticErrors/fully_working/variableRedefinition4.c),
 [variableRedefinition5.c](../input_files/SemanticErrors/fully_working/variableRedefinition5.c) and
 [variableRedefinition6.c](../input_files/SemanticErrors/fully_working/variableRedefinition6.c)
+> Rvalue assignment
+```shell
+python3 ../src/run.py -d ../input_files/SemanticErrors/fully_working/ -t .c -f \
+rvalueAssignment1 rvalueAssignment2 -e spim -nd
+```
+> Const reassignment
+```shell
+python3 ../src/run.py -d ../input_files/SemanticErrors/fully_working/ -t .c -f \
+constReassignment -e spim -nd
+```
 > Undeclared functions
 ```shell
 python3 ../src/run.py -d ../input_files/SemanticErrors/fully_working/ -t .c -f \

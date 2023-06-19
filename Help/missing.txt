@@ -1,0 +1,13 @@
+Constant folding:
+Het zit bij de showcase van de AST. Bij 00:40.
+Elke van de {float: 10.0} en zo is een constant gefold Node.
+
+Constant propagation:
+Het kan ook gezien zijn in de showcase van de AST. Bij 00:40.
+Bij elke test zijn alle gebruikte variables vervangen door hun waarde, als het herkend is op de compile time.
+
+Semantic error: r-value assignment: tests zijn er
+
+Semantic error: const re-assignment: tests zijn er
+
+Const variabelen: tests zijn er
