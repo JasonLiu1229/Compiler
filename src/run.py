@@ -1,12 +1,10 @@
-import sys
-from antlr4 import *
-from output.MathLexer import MathLexer
+from antlr4 import FileStream, CommonTokenStream
+from out.FileLexer import FileLexer
 from AstCreator import *
 from LLVM import *
 from MIPS import *
 import os
 import argparse
-import Dot
 
 def run(directory: str, file_type: str, filenames: list, verbose: bool = True, no_warning: bool = False,
         execute_with: str = None, disclaimer: bool = True, silent: bool = False, visualise: bool = False):
@@ -18,8 +16,8 @@ def run(directory: str, file_type: str, filenames: list, verbose: bool = True, n
             # Create error listener
             error_listener = ErrorListener()
             # Create lexer and parser
-            lexer = MathLexer(input_stream)
-            parser = MathParser(CommonTokenStream(lexer))
+            lexer = FileLexer(input_stream)
+            parser = FileParser(CommonTokenStream(lexer))
             # Remove previous error listener and add new error listener to lexer
             lexer.removeErrorListeners()
             lexer.addErrorListener(error_listener)
